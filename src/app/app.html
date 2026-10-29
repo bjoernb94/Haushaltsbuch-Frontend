@@ -1,0 +1,31 @@
+<mat-toolbar class="kopfzeile">
+  <button matIconButton (click)="sidenav.toggle()" aria-label="Navigation umschalten">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <span>Haushaltsbuch</span>
+</mat-toolbar>
+
+<mat-sidenav-container class="inhalt">
+  <mat-sidenav #sidenav mode="side" opened>
+    <mat-nav-list>
+      @for (eintrag of navigation; track eintrag.pfad) {
+        <a
+          mat-list-item
+          [routerLink]="eintrag.pfad"
+          routerLinkActive
+          #rla="routerLinkActive"
+          [activated]="rla.isActive"
+        >
+          <mat-icon matListItemIcon>{{ eintrag.icon }}</mat-icon>
+          <span matListItemTitle>{{ eintrag.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <main>
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>
