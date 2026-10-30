@@ -1,7 +1,12 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { allesErreichbar, Systemstatus, SystemstatusService } from './systemstatus.service';
+import {
+  allesErreichbar,
+  ANTWORT_TIMEOUT_MS,
+  Systemstatus,
+  SystemstatusService,
+} from './systemstatus.service';
 
 const URL = '/actuator/health/systemstatus';
 
@@ -75,6 +80,37 @@ describe('SystemstatusService', () => {
       vi.advanceTimersByTime(1);
       http.expectOne(URL).flush({});
       sub.unsubscribe();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('meldet alles als nicht erreichbar, wenn das Backend nicht rechtzeitig antwortet', () => {
+    vi.useFakeTimers();
+    try {
+      let status: Systemstatus | undefined;
+      service.abfragen().subscribe((s) => (status = s));
+      const anfrage = http.expectOne(URL);
+      vi.advanceTimersByTime(ANTWORT_TIMEOUT_MS);
+      expect(anfrage.cancelled).toBe(true);
+      expect(status).toEqual({ backend: false, datenbank: false, anmeldeserver: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('merkt sich den letzten Status', () => {
+    vi.useFakeTimers();
+    try {
+      const sub = service.beobachten().subscribe();
+      vi.advanceTimersByTime(0);
+      http.expectOne(URL).flush({ components: { db: { status: 'UP' } } });
+      sub.unsubscribe();
+      expect(service.letzterStatus).toEqual({
+        backend: true,
+        datenbank: true,
+        anmeldeserver: false,
+      });
     } finally {
       vi.useRealTimers();
     }
