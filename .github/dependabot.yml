@@ -1,0 +1,74 @@
+# Automatische Aktualisierung der Abhängigkeiten. Dependabot öffnet dafür Pull Requests,
+# die der Build-Workflow (.github/workflows/build.yml) prüft.
+version: 2
+updates:
+  # npm: Angular, Material, Tests und Tooling aus package.json
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: 'deps'
+    ignore:
+      # Angular-Majors mit `ng update` machen, das führt die Migrationen aus.
+      - dependency-name: '@angular/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@angular-devkit/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'angular-eslint'
+        update-types: ['version-update:semver-major']
+      # Angular unterstützt nur bestimmte TypeScript-Versionen; Wechsel zusammen mit ng update.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+    groups:
+      # Angular-Pakete müssen dieselbe Version haben.
+      angular:
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+      lint:
+        patterns:
+          - 'eslint'
+          - '@eslint/*'
+          - 'angular-eslint'
+          - 'typescript-eslint'
+      test:
+        patterns:
+          - 'vitest'
+          - 'jsdom'
+          - '@playwright/test'
+      # Alle übrigen kleineren Updates in einem PR statt vieler einzelner.
+      sonstige:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions in .github/workflows (checkout, setup-node, upload-artifact)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'ci'
+    groups:
+      actions:
+        patterns:
+          - '*'
+
+  # Basis-Images im Containerfile (node, nginx)
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'deps'
+    ignore:
+      # Node-Major nur zusammen mit node-version in build.yml anheben.
+      - dependency-name: 'node'
+        update-types: ['version-update:semver-major']
