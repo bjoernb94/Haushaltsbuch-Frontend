@@ -6,6 +6,21 @@ on:
   pull_request:
 
 jobs:
+  pruefung:
+    name: Lint, Format und Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      # Production-Build, damit auch Fehler bei Templates und Budgets auffallen.
+      - run: npm run build
+
   unit:
     name: Unit-Tests
     runs-on: ubuntu-latest

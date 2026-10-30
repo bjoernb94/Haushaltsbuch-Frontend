@@ -1,20 +1,22 @@
 import { Routes } from '@angular/router';
 import { abgemeldetGuard, angemeldetGuard } from './core/auth/auth.guards';
 
-// Login und Registrierung ohne Navigation; die Fachbereiche (ein Feature-Ordner je Backend-Modul, jeweils
-// lazy geladen) liegen in der Shell und brauchen eine Session.
+// Anmeldung (Login, Registrierung) ohne Navigation. Start und die Fachbereiche (ein Feature-Ordner
+// je Backend-Modul) liegen in der Shell und brauchen eine Session. Alles lazy geladen.
 export const routes: Routes = [
   {
     path: 'login',
     canActivate: [abgemeldetGuard],
-    loadComponent: () => import('./features/login/login-seite').then((m) => m.LoginSeite),
+    loadComponent: () => import('./features/anmeldung/login/login-seite').then((m) => m.LoginSeite),
     title: 'Anmelden – Haushaltsbuch',
   },
   {
     path: 'registrierung',
     canActivate: [abgemeldetGuard],
     loadComponent: () =>
-      import('./features/registrierung/registrierung-seite').then((m) => m.RegistrierungSeite),
+      import('./features/anmeldung/registrierung/registrierung-seite').then(
+        (m) => m.RegistrierungSeite,
+      ),
     title: 'Registrieren – Haushaltsbuch',
   },
   {

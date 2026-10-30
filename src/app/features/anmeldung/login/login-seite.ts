@@ -11,12 +11,16 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { sichereRuecksprungUrl } from '../../core/auth/auth.guards';
-import { AnmeldungFehlgrund, anmeldungFehlgrund, AuthService } from '../../core/auth/auth.service';
-import { systemstatusBeobachten } from '../../core/systemstatus/systemstatus.service';
-import { AnmeldeRahmen } from '../../shared/anmelde-rahmen/anmelde-rahmen';
-import { HinweisBox } from '../../shared/hinweis-box/hinweis-box';
-import { SystemstatusLeiste } from '../../shared/systemstatus-leiste/systemstatus-leiste';
+import { sichereRuecksprungUrl } from '../../../core/auth/auth.guards';
+import {
+  AnmeldungFehlgrund,
+  anmeldungFehlgrund,
+  AuthService,
+} from '../../../core/auth/auth.service';
+import { systemstatusBeobachten } from '../../../core/systemstatus/systemstatus.service';
+import { AnmeldeRahmen } from '../anmelde-rahmen/anmelde-rahmen';
+import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import { SystemstatusLeiste } from '../../../shared/systemstatus-leiste/systemstatus-leiste';
 
 const FEHLERTEXTE: Record<AnmeldungFehlgrund, string> = {
   UNGUELTIG: 'E-Mail-Adresse oder Passwort ist falsch. Bitte versuche es erneut.',
