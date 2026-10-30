@@ -40,3 +40,16 @@ test('Abmelden führt zurück zum Login', async ({ page }) => {
   await page.getByRole('button', { name: 'Abmelden' }).click();
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test('ohne Datenbank sind Login und Registrierung gesperrt', async ({ page }) => {
+  await page.unrouteAll();
+  await backendSimulieren(page, { datenbank: false });
+  await page.goto('/login');
+
+  await expect(page.getByRole('alert')).toHaveText('Login gerade nicht möglich.');
+  await expect(page.getByRole('button', { name: 'Login' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Registrieren' })).toBeDisabled();
+  await expect(page.getByRole('status', { name: 'Systemstatus' })).toContainText(
+    'Datenbank nicht erreichbar',
+  );
+});

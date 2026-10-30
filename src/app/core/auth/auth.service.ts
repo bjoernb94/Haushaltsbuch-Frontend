@@ -1,6 +1,6 @@
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchError, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
+import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
 
 /** Profil des angemeldeten Nutzers, siehe GET /api/nutzer/ich im Backend. */
@@ -67,9 +67,10 @@ export class AuthService {
       catchError((error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 401) {
           this.zuruecksetzen();
-          return of(false);
         }
-        return throwError(() => error);
+        // Backend nicht erreichbar o. Ä.: vorerst als abgemeldet behandeln (der Login zeigt
+        // dann den Fehler), aber nicht merken, damit die nächste Prüfung es erneut versucht.
+        return of(false);
       }),
     );
   }

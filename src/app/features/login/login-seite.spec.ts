@@ -1,8 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { Systemstatus, SystemstatusService } from '../../core/systemstatus/systemstatus.service';
 import { LoginSeite } from './login-seite';
 
 describe('LoginSeite', () => {
@@ -10,12 +11,22 @@ describe('LoginSeite', () => {
   let element: HTMLElement;
   let anmelden: ReturnType<typeof vi.fn>;
   let navigiert: ReturnType<typeof vi.spyOn>;
+  let systemstatus: BehaviorSubject<Systemstatus>;
 
   beforeEach(async () => {
     anmelden = vi.fn(() => of(undefined));
+    systemstatus = new BehaviorSubject<Systemstatus>({
+      backend: true,
+      datenbank: true,
+      anmeldeserver: true,
+    });
     await TestBed.configureTestingModule({
       imports: [LoginSeite],
-      providers: [provideRouter([]), { provide: AuthService, useValue: { anmelden } }],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { anmelden } },
+        { provide: SystemstatusService, useValue: { beobachten: () => systemstatus } },
+      ],
     }).compileComponents();
     navigiert = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     fixture = TestBed.createComponent(LoginSeite);
@@ -94,5 +105,37 @@ describe('LoginSeite', () => {
 
     expect(anmelden).toHaveBeenCalledTimes(1);
     expect(element.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
+  });
+
+  it('zeigt den Systemstatus', () => {
+    expect(element.querySelector('[role="status"]')?.textContent).toContain('Datenbank');
+  });
+
+  it('sperrt Login und Registrierung, wenn ein Dienst fehlt', async () => {
+    systemstatus.next({ backend: true, datenbank: false, anmeldeserver: true });
+    await fixture.whenStable();
+
+    expect(fehlertext()).toBe('Login gerade nicht möglich.');
+    expect(element.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
+    const registrieren = [...element.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Registrieren',
+    );
+    expect(registrieren?.disabled).toBe(true);
+    expect(element.querySelector('a[href="/registrierung"]')).toBeNull();
+    expect(element.textContent).toContain('Datenbank nicht erreichbar');
+
+    await eingeben('max@beispiel.de', 'geheim123');
+    (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+    expect(anmelden).not.toHaveBeenCalled();
+  });
+
+  it('gibt den Login wieder frei, sobald alle Dienste erreichbar sind', async () => {
+    systemstatus.next({ backend: false, datenbank: false, anmeldeserver: false });
+    await fixture.whenStable();
+    systemstatus.next({ backend: true, datenbank: true, anmeldeserver: true });
+    await fixture.whenStable();
+
+    expect(fehlertext()).toBeUndefined();
+    expect(element.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(false);
   });
 });

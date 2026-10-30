@@ -43,6 +43,17 @@ describe('AuthService', () => {
     expect(auth.angemeldet()).toBe(false);
   });
 
+  it('wertet ein nicht erreichbares Backend als abgemeldet und fragt erneut', () => {
+    const ergebnisse: boolean[] = [];
+    auth.sitzungPruefen().subscribe((a) => ergebnisse.push(a));
+    http.expectOne('/api/nutzer/ich').flush(null, { status: 504, statusText: 'Gateway Timeout' });
+
+    auth.sitzungPruefen().subscribe((a) => ergebnisse.push(a));
+    http.expectOne('/api/nutzer/ich').flush(MAX);
+
+    expect(ergebnisse).toEqual([false, true]);
+  });
+
   it('meldet an und lädt danach den Nutzer', () => {
     let fertig = false;
     auth.anmelden('max@beispiel.de', 'geheim123').subscribe(() => (fertig = true));

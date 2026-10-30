@@ -8,7 +8,7 @@
       <p>Willkommen zurück! Bitte gib deine Zugangsdaten ein.</p>
     </div>
 
-    @if (fehler(); as text) {
+    @if (hinweis(); as text) {
       <div class="fehler" role="alert">
         <svg
           width="20"
@@ -54,10 +54,23 @@
     </div>
 
     <div class="aktionen">
-      <button class="knopf knopf-primaer" type="submit" [disabled]="sendet()">
+      <button
+        class="knopf knopf-primaer"
+        type="submit"
+        [disabled]="sendet() || gesperrt()"
+        [attr.aria-busy]="sendet()"
+      >
         {{ sendet() ? 'Anmeldung läuft …' : 'Login' }}
       </button>
-      <a class="knopf knopf-sekundaer" routerLink="/registrierung">Registrieren</a>
+      @if (gesperrt()) {
+        <button class="knopf knopf-sekundaer" type="button" disabled>Registrieren</button>
+      } @else {
+        <a class="knopf knopf-sekundaer" routerLink="/registrierung">Registrieren</a>
+      }
     </div>
   </form>
+
+  @if (systemstatus(); as status) {
+    <app-systemstatus-leiste [status]="status" />
+  }
 </app-anmelde-rahmen>
