@@ -1,0 +1,32 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.inhalt {
+  flex: 1;
+}
+
+mat-sidenav {
+  width: 220px;
+}
+
+main {
+  padding: 16px 24px;
+}
+
+.abstand {
+  flex: 1;
+}
+
+.nutzername {
+  font: var(--mat-sys-body-large);
+  margin-right: 8px;
+}
+
+@media (max-width: 599px) {
+  .nutzername {
+    display: none;
+  }
+}

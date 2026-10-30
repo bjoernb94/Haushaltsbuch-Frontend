@@ -1,0 +1,76 @@
+<app-anmelde-rahmen
+  ueberschrift="Einnahmen und Ausgaben im Blick."
+  text="Melde dich an, um dein Haushaltsbuch zu öffnen."
+>
+  <form class="formular" [formGroup]="formular" (ngSubmit)="anmelden()" novalidate>
+    <div class="kopf">
+      <h1>Anmelden</h1>
+      <p>Willkommen zurück! Bitte gib deine Zugangsdaten ein.</p>
+    </div>
+
+    @if (hinweis(); as text) {
+      <div class="fehler" role="alert">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 7.5v5.5"></path>
+          <path d="M12 16.5h.01"></path>
+        </svg>
+        <span>{{ text }}</span>
+      </div>
+    }
+
+    <div class="feld">
+      <label for="login-email">E-Mail-Adresse</label>
+      <input
+        id="login-email"
+        type="email"
+        autocomplete="email"
+        placeholder="name@beispiel.de"
+        formControlName="email"
+        [attr.aria-invalid]="!!fehler()"
+      />
+    </div>
+
+    <div class="feld">
+      <label for="login-passwort">Passwort</label>
+      <input
+        id="login-passwort"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Dein Passwort"
+        formControlName="passwort"
+        [attr.aria-invalid]="!!fehler()"
+      />
+    </div>
+
+    <div class="aktionen">
+      <button
+        class="knopf knopf-primaer"
+        type="submit"
+        [disabled]="sendet() || gesperrt()"
+        [attr.aria-busy]="sendet()"
+      >
+        {{ sendet() ? 'Anmeldung läuft …' : 'Login' }}
+      </button>
+      @if (gesperrt()) {
+        <button class="knopf knopf-sekundaer" type="button" disabled>Registrieren</button>
+      } @else {
+        <a class="knopf knopf-sekundaer" routerLink="/registrierung">Registrieren</a>
+      }
+    </div>
+  </form>
+
+  @if (systemstatus(); as status) {
+    <app-systemstatus-leiste [status]="status" />
+  }
+</app-anmelde-rahmen>

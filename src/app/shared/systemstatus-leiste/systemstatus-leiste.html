@@ -1,0 +1,41 @@
+<div class="leiste" role="status" aria-label="Systemstatus">
+  @for (dienst of dienste(); track dienst.name) {
+    <span class="dienst" [class.gestoert]="!dienst.ok">
+      @if (dienst.ok) {
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M8 12.5l2.8 2.8L16 10"></path>
+        </svg>
+        <span>{{ dienst.name }}</span>
+        <span class="sr-only">, verfügbar</span>
+      } @else {
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M9 9l6 6"></path>
+          <path d="M15 9l-6 6"></path>
+        </svg>
+        <span>{{ dienst.name }} nicht erreichbar</span>
+      }
+    </span>
+  }
+</div>
