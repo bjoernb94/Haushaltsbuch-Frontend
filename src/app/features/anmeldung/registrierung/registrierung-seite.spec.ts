@@ -2,8 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
-import { AuthService } from '../../core/auth/auth.service';
-import { Systemstatus, SystemstatusService } from '../../core/systemstatus/systemstatus.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { Systemstatus, SystemstatusService } from '../../../core/systemstatus/systemstatus.service';
 import { RegistrierungSeite } from './registrierung-seite';
 
 describe('RegistrierungSeite', () => {

@@ -1,4 +1,4 @@
-import { Komponente } from '../../core/komponenten/komponente';
+import { Komponente } from '../../../core/komponenten/komponente';
 import { passwortFehler } from './passwort-regeln';
 
 export type Feld = 'email' | 'passwort' | 'name' | 'vorname' | 'komponenten';
