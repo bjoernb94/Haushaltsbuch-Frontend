@@ -81,6 +81,18 @@ laufenden auf Port 4200.
 Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-Build, Unit- und
 E2E-Tests aus.
 
+### Arbeitsweise mit Git
+
+Auf `main` wird nicht direkt committet. Jede Änderung entsteht auf einem eigenen Branch und
+kommt per Pull Request nach `main`, sobald die CI grün ist.
+
+- Branch-Namen: `feature/<kurzname>` für neue Funktionen, `fix/<kurzname>` für Fehlerbehebungen,
+  `docs/<kurzname>` für reine Doku-Änderungen, `chore/<kurzname>` für Wartung (Abhängigkeiten,
+  Konfiguration, Umbauten ohne neue Funktion). Gehört der Branch zu einem Issue, die Nummer
+  voranstellen, z.&nbsp;B. `feature/12-haushalt`.
+- Im Pull Request das Issue mit `Closes #<nummer>` verknüpfen, damit es beim Merge geschlossen wird.
+- Branches nach dem Merge löschen.
+
 ### IntelliJ Run Configurations
 
 Gemeinsame Run Configurations liegen in `.run/`, u.&nbsp;a. „Run Frontend“, „Unit-Tests“,

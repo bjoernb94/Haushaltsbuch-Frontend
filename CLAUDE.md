@@ -19,6 +19,14 @@ npm run e2e            # Playwright, backend simulated in the browser (e2e/backe
 Playwright reuses a dev server already running on :4200. If that server predates moved/renamed files it may
 serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --port <other>`.
 
+## Git workflow
+
+- Never commit to `main` directly. Every change goes on its own branch and reaches `main` via pull request
+  (CI must be green). Branch names: `feature/<kurzname>`, `fix/<kurzname>`, `docs/<kurzname>`, `chore/<kurzname>`,
+  prefixed with the issue number if there is one (e.g. `feature/12-haushalt`). Link the issue in the PR with
+  `Closes #<n>`.
+- Before starting work, create the branch from an up-to-date `main` if you are still on `main`.
+
 ## Architecture
 
 - Standalone components, signals, `OnPush`, zoneless; `strict` and `strictTemplates` are on.
