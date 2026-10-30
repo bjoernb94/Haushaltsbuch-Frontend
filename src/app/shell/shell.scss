@@ -12,8 +12,25 @@ mat-sidenav {
   width: 220px;
 }
 
+mat-sidenav-content {
+  display: flex;
+  flex-direction: column;
+}
+
 main {
+  flex: 1;
   padding: 16px 24px;
+}
+
+.fusszeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 16px 24px 24px;
+  font-size: 13px;
+  color: var(--app-text-gedaempft);
 }
 
 .abstand {

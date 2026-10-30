@@ -7,6 +7,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
+import { systemstatusBeobachten } from '../core/systemstatus/systemstatus.service';
+import { SystemstatusLeiste } from '../shared/systemstatus-leiste/systemstatus-leiste';
 
 interface NavEintrag {
   pfad: string;
@@ -27,6 +29,7 @@ interface NavEintrag {
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
+    SystemstatusLeiste,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
@@ -37,6 +40,9 @@ export class Shell {
   private readonly router = inject(Router);
 
   protected readonly nutzer = this.auth.nutzer;
+
+  /** Nur zur Anzeige in der Fußzeile; in der App wird nichts gesperrt. */
+  protected readonly systemstatus = systemstatusBeobachten();
 
   protected readonly navigation: NavEintrag[] = [
     { pfad: '/start', label: 'Start', icon: 'home' },

@@ -34,5 +34,11 @@
     <main>
       <router-outlet />
     </main>
+    <footer class="fusszeile">
+      <span>© Björn Bochmann</span>
+      @if (systemstatus.status(); as status) {
+        <app-systemstatus-leiste [status]="status" />
+      }
+    </footer>
   </mat-sidenav-content>
 </mat-sidenav-container>

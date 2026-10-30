@@ -1,0 +1,29 @@
+.box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--app-fehler-grund);
+  border: 1px solid var(--app-fehler-rand);
+  color: var(--app-fehler-text);
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 600;
+
+  svg {
+    flex: none;
+    margin-top: 1px;
+    color: var(--app-fehler);
+  }
+
+  &.info {
+    background: var(--app-gruen-hell);
+    border-color: var(--app-gruen-hell-rand);
+    color: var(--app-gruen-dunkel);
+
+    svg {
+      color: var(--app-erfolg);
+    }
+  }
+}

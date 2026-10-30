@@ -68,6 +68,44 @@ describe('AuthService', () => {
     expect(auth.angemeldet()).toBe(true);
   });
 
+  it('registriert und übernimmt die Anmeldung des Backends', () => {
+    let angemeldet: boolean | undefined;
+    const registrierung = {
+      email: 'max@beispiel.de',
+      passwort: 'Geheim12!',
+      vorname: 'Max',
+      name: 'Muster',
+      komponenten: ['PORTFOLIO' as const],
+    };
+    auth.registrieren(registrierung).subscribe((a) => (angemeldet = a));
+
+    const req = http.expectOne({ method: 'POST', url: '/api/registrierung' });
+    expect(req.request.body).toEqual(registrierung);
+    expect(req.request.context.get(OHNE_ANMELDE_UMLEITUNG)).toBe(true);
+    req.flush(null, { status: 201, statusText: 'Created' });
+    http.expectOne('/api/nutzer/ich').flush(MAX);
+
+    expect(angemeldet).toBe(true);
+    expect(auth.nutzer()).toEqual(MAX);
+  });
+
+  it('meldet nach der Registrierung, wenn die automatische Anmeldung gescheitert ist', () => {
+    let angemeldet: boolean | undefined;
+    auth
+      .registrieren({
+        email: 'max@beispiel.de',
+        passwort: 'Geheim12!',
+        vorname: 'Max',
+        name: 'Muster',
+        komponenten: ['PORTFOLIO'],
+      })
+      .subscribe((a) => (angemeldet = a));
+    http.expectOne('/api/registrierung').flush(null, { status: 201, statusText: 'Created' });
+    http.expectOne('/api/nutzer/ich').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(angemeldet).toBe(false);
+  });
+
   it('vergisst den Nutzer beim Abmelden', () => {
     auth.anmelden('max@beispiel.de', 'geheim123').subscribe();
     http.expectOne('/api/anmeldung').flush(null, { status: 204, statusText: 'No Content' });

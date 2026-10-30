@@ -1,6 +1,7 @@
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
+import { Komponente } from '../komponenten/komponente';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
 
 /** Profil des angemeldeten Nutzers, siehe GET /api/nutzer/ich im Backend. */
@@ -8,6 +9,15 @@ export interface Nutzer {
   vorname: string | null;
   name: string | null;
   email: string | null;
+}
+
+/** Daten des Registrierungsformulars, siehe POST /api/registrierung im Backend. */
+export interface Registrierung {
+  email: string;
+  passwort: string;
+  vorname: string;
+  name: string;
+  komponenten: Komponente[];
 }
 
 /** Wert von {@code grund} im ProblemDetail einer abgelehnten Anmeldung. */
@@ -47,6 +57,17 @@ export class AuthService {
         switchMap(() => this.nutzerLaden()),
         map(() => undefined),
       );
+  }
+
+  /**
+   * Legt das Konto an; das Backend meldet den Nutzer danach direkt an. Liefert, ob diese
+   * Anmeldung geklappt hat (sonst muss sich der Nutzer selbst anmelden).
+   * Fehler: {@link HttpErrorResponse}, z. B. 409 bei vergebener E-Mail-Adresse.
+   */
+  registrieren(registrierung: Registrierung): Observable<boolean> {
+    return this.http
+      .post<void>('/api/registrierung', registrierung, { context: OHNE_UMLEITUNG() })
+      .pipe(switchMap(() => this.nutzerLaden()));
   }
 
   abmelden(): Observable<void> {

@@ -1,0 +1,149 @@
+@use '../../shared/anmelde-rahmen/formular';
+
+@include formular.formular;
+
+.formular {
+  max-width: 520px;
+  gap: 22px;
+}
+
+.knopf {
+  flex: none;
+}
+
+.zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  .feld {
+    flex: 1 1 200px;
+    min-width: 0;
+  }
+}
+
+.regeln {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 4px 16px;
+  font-size: 13px;
+  font-weight: 600;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--app-text-gedaempft);
+
+    svg {
+      flex: none;
+      color: var(--app-platzhalter);
+    }
+
+    &.erfuellt svg {
+      color: var(--app-erfolg);
+    }
+
+    &.verletzt {
+      color: var(--app-fehler-text);
+
+      svg {
+        color: var(--app-fehler);
+      }
+    }
+  }
+}
+
+.komponenten {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  legend {
+    padding: 0;
+    margin-bottom: 4px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  > p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--app-text-gedaempft);
+  }
+}
+
+.karten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.karte {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: #fff;
+  border: 1.5px solid var(--app-rand);
+
+  &.gewaehlt {
+    background: var(--app-gruen-hell);
+    border-color: var(--app-gruen);
+  }
+
+  .ungueltig & {
+    border-color: var(--app-fehler);
+  }
+
+  input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin: 2px 0 0;
+    accent-color: var(--app-gruen);
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid var(--app-gruen-fokus-rand);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.karte-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.karte-titel {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.karte-beschreibung {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--app-text-gedaempft);
+}
+
+.zum-login {
+  margin: 0;
+  font-size: 15px;
+  color: var(--app-text-gedaempft);
+  text-align: center;
+
+  a {
+    font-weight: 700;
+  }
+}

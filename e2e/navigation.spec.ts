@@ -17,3 +17,9 @@ test('Navigation wechselt zwischen den Bereichen', async ({ page }) => {
   await expect(page).toHaveURL(/\/vertraege$/);
   await expect(page).toHaveTitle('Verträge – Haushaltsbuch');
 });
+
+test('Fußzeile zeigt den Systemstatus', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('contentinfo')).toContainText('© Björn Bochmann');
+  await expect(page.getByRole('status', { name: 'Systemstatus' })).toContainText('Datenbank');
+});
