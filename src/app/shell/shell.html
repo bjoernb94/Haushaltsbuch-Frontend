@@ -3,6 +3,13 @@
     <mat-icon>menu</mat-icon>
   </button>
   <span>Haushaltsbuch</span>
+  <span class="abstand"></span>
+  @if (nutzer(); as n) {
+    <span class="nutzername">{{ n.vorname }} {{ n.name }}</span>
+  }
+  <button matIconButton (click)="abmelden()" aria-label="Abmelden" matTooltip="Abmelden">
+    <mat-icon>logout</mat-icon>
+  </button>
 </mat-toolbar>
 
 <mat-sidenav-container class="inhalt">

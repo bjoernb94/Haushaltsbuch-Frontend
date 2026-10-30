@@ -1,0 +1,32 @@
+<main class="rahmen">
+  <section class="marke">
+    <div class="logo">
+      <svg
+        width="36"
+        height="36"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"></path>
+        <path d="M4 21.5V5.5"></path>
+        <path d="M9 8h7"></path>
+        <path d="M9 12h5"></path>
+      </svg>
+      <span>Haushaltsbuch</span>
+    </div>
+    <div class="botschaft">
+      <h2>{{ ueberschrift() }}</h2>
+      <p>{{ text() }}</p>
+    </div>
+    <p class="copyright">© Björn Bochmann</p>
+  </section>
+
+  <section class="inhalt">
+    <ng-content />
+  </section>
+</main>

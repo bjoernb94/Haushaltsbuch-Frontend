@@ -1,39 +1,62 @@
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
+// Material-3-Theme der Anwendung. Die Paletten in styles/_theme-colors.scss sind aus der
+// Primärfarbe des Designs erzeugt (ng generate @angular/material:theme-color).
+// Mehr zum Theming: https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
+@use './styles/theme-colors' as theme;
 
 html {
   height: 100%;
   @include mat.theme(
     (
       color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
+        primary: theme.$primary-palette,
+        tertiary: theme.$tertiary-palette,
       ),
-      typography: Roboto,
+      typography: Manrope,
       density: 0,
     )
   );
+
+  // Die erzeugte Palette trifft die Designfarben nur annähernd, daher die exakten Werte.
+  @include mat.theme-overrides(
+    (
+      primary: #1f5c45,
+      surface: #f3f5f2,
+      on-surface: #17201b,
+      on-surface-variant: #4e5a53,
+      error: #b42318,
+    )
+  );
+
+  // Farben des Designs für eigene Komponenten (z. B. Login), die nicht aus Material stammen.
+  --app-gruen: #1f5c45;
+  --app-gruen-dunkel: #163f30;
+  --app-gruen-fokus: rgba(31, 92, 69, 0.18);
+  --app-gruen-fokus-rand: rgba(31, 92, 69, 0.35);
+  --app-grund: #f3f5f2;
+  --app-text: #17201b;
+  --app-text-gedaempft: #4e5a53;
+  --app-platzhalter: #7a857e;
+  --app-rand: #c9d1cc;
+  --app-fehler: #b42318;
+  --app-fehler-text: #8f1d14;
+  --app-fehler-grund: #fdecea;
+  --app-fehler-rand: #f2b8b1;
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
   color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
   background-color: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
   margin: 0;
   height: 100%;
 }
-/* You can add global styles to this file, and also import other style files */
+
+a {
+  color: var(--app-gruen);
+
+  &:hover {
+    color: var(--app-gruen-dunkel);
+  }
+}
