@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { abgemeldetGuard, angemeldetGuard } from './core/auth/auth.guards';
-import { Shell } from './shell/shell';
 
 // Login und Registrierung ohne Navigation; die Fachbereiche (ein Feature-Ordner je Backend-Modul, jeweils
 // lazy geladen) liegen in der Shell und brauchen eine Session.
@@ -20,7 +19,8 @@ export const routes: Routes = [
   },
   {
     path: '',
-    component: Shell,
+    // Lazy, damit Angular Material nicht im Start-Bundle von Login und Registrierung landet.
+    loadComponent: () => import('./shell/shell').then((m) => m.Shell),
     canActivate: [angemeldetGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'start' },
