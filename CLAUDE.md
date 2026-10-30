@@ -38,8 +38,9 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   but not cached). `authInterceptor` redirects 401 under `/api/**` to `/login?returnUrl=…` unless the request
   sets the `OHNE_ANMELDE_UMLEITUNG` context token. Never redirect to Keycloak.
 - System status: `systemstatusBeobachten()` (injection context) polls `/actuator/health/systemstatus` every
-  30 s. No answer → all three services count as unreachable (reveals nothing about the setup); a 503 still
-  carries the component status. Login and registration lock while anything is down; the shell only displays it.
+  30 s. No answer within 5 s (e.g. while the DB check waits for the pool) → all three services count as
+  unreachable (reveals nothing about the setup); a 503 still carries the component status. The last known
+  status survives page changes. Login and registration lock while anything is down; the shell only displays it.
 - Password rules in `features/anmeldung/registrierung/passwort-regeln.ts` mirror the Keycloak realm policy
   (Unicode letter/digit classes like Keycloak). Keep them in sync when the policy changes.
 - Styling: design colours as CSS custom properties `--app-*` in `src/styles.scss`; Material theme generated
