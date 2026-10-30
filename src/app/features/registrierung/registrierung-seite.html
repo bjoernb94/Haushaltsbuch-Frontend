@@ -1,0 +1,131 @@
+<app-anmelde-rahmen
+  ueberschrift="Dein Haushaltsbuch in wenigen Schritten."
+  text="Lege ein Konto an und wähle die Bereiche, die du nutzen möchtest."
+>
+  <form class="formular" [formGroup]="formular" (ngSubmit)="registrieren()" novalidate>
+    <div class="kopf">
+      <h1>Registrieren</h1>
+      <p>Erstelle ein neues Konto für dein Haushaltsbuch.</p>
+    </div>
+
+    @if (hinweis(); as text) {
+      <app-hinweis-box [text]="text" />
+    }
+
+    <div class="feld">
+      <label for="reg-email">E-Mail-Adresse</label>
+      <input
+        id="reg-email"
+        type="email"
+        autocomplete="email"
+        placeholder="name@beispiel.de"
+        formControlName="email"
+        [attr.aria-invalid]="ungueltig('email')"
+      />
+    </div>
+
+    <div class="feld">
+      <label for="reg-passwort">Passwort</label>
+      <input
+        id="reg-passwort"
+        type="password"
+        autocomplete="new-password"
+        placeholder="Dein Passwort"
+        formControlName="passwort"
+        aria-describedby="reg-passwort-regeln"
+        [attr.aria-invalid]="ungueltig('passwort')"
+      />
+      <ul id="reg-passwort-regeln" class="regeln" aria-label="Anforderungen an das Passwort">
+        @for (regel of passwortRegeln(); track regel.text) {
+          <li [class]="regel.zustand">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9"></circle>
+              @if (regel.zustand === 'erfuellt') {
+                <path d="M8 12.5l2.8 2.8L16 10"></path>
+              } @else if (regel.zustand === 'verletzt') {
+                <path d="M9 9l6 6"></path>
+                <path d="M15 9l-6 6"></path>
+              }
+            </svg>
+            <span>{{ regel.text }}</span>
+            @if (regel.zustand === 'erfuellt') {
+              <span class="sr-only">, erfüllt</span>
+            } @else if (regel.zustand === 'verletzt') {
+              <span class="sr-only">, nicht erfüllt</span>
+            }
+          </li>
+        }
+      </ul>
+    </div>
+
+    <div class="zeile">
+      <div class="feld">
+        <label for="reg-name">Name</label>
+        <input
+          id="reg-name"
+          type="text"
+          autocomplete="family-name"
+          placeholder="Nachname"
+          formControlName="name"
+          [attr.aria-invalid]="ungueltig('name')"
+        />
+      </div>
+      <div class="feld">
+        <label for="reg-vorname">Vorname</label>
+        <input
+          id="reg-vorname"
+          type="text"
+          autocomplete="given-name"
+          placeholder="Vorname"
+          formControlName="vorname"
+          [attr.aria-invalid]="ungueltig('vorname')"
+        />
+      </div>
+    </div>
+
+    <fieldset class="komponenten" formGroupName="komponenten">
+      <legend>Welche Komponenten möchtest du nutzen?</legend>
+      <p>Wähle mindestens eine aus. Du kannst das später ändern.</p>
+      <div class="karten" [class.ungueltig]="ungueltig('komponenten')">
+        @for (k of komponenten; track k.wert) {
+          <label class="karte" [class.gewaehlt]="gewaehlt().has(k.wert)">
+            <input
+              type="checkbox"
+              [formControlName]="k.wert"
+              [attr.aria-invalid]="ungueltig('komponenten')"
+            />
+            <span class="karte-text">
+              <span class="karte-titel">{{ k.titel }}</span>
+              <span class="karte-beschreibung">{{ k.text }}</span>
+            </span>
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    <button
+      class="knopf knopf-primaer"
+      type="submit"
+      [disabled]="sendet() || systemstatus.gesperrt()"
+      [attr.aria-busy]="sendet()"
+    >
+      {{ sendet() ? 'Konto wird erstellt …' : 'Konto erstellen' }}
+    </button>
+
+    <p class="zum-login">Schon ein Konto? <a routerLink="/login">Zum Login</a></p>
+  </form>
+
+  @if (systemstatus.status(); as status) {
+    <app-systemstatus-leiste [status]="status" />
+  }
+</app-anmelde-rahmen>

@@ -138,4 +138,13 @@ describe('LoginSeite', () => {
     expect(fehlertext()).toBeUndefined();
     expect(element.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(false);
   });
+
+  it('bestätigt nach einer Registrierung das angelegte Konto', async () => {
+    fixture.componentRef.setInput('registriert', 'true');
+    await fixture.whenStable();
+
+    expect(element.querySelector('[role="status"]:not([aria-label])')?.textContent?.trim()).toBe(
+      'Dein Konto wurde angelegt. Bitte melde dich an.',
+    );
+  });
 });

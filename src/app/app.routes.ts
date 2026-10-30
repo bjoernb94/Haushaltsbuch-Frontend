@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { abgemeldetGuard, angemeldetGuard } from './core/auth/auth.guards';
 import { Shell } from './shell/shell';
 
-// Login ohne Navigation; die Fachbereiche (ein Feature-Ordner je Backend-Modul, jeweils
+// Login und Registrierung ohne Navigation; die Fachbereiche (ein Feature-Ordner je Backend-Modul, jeweils
 // lazy geladen) liegen in der Shell und brauchen eine Session.
 export const routes: Routes = [
   {
@@ -10,6 +10,13 @@ export const routes: Routes = [
     canActivate: [abgemeldetGuard],
     loadComponent: () => import('./features/login/login-seite').then((m) => m.LoginSeite),
     title: 'Anmelden – Haushaltsbuch',
+  },
+  {
+    path: 'registrierung',
+    canActivate: [abgemeldetGuard],
+    loadComponent: () =>
+      import('./features/registrierung/registrierung-seite').then((m) => m.RegistrierungSeite),
+    title: 'Registrieren – Haushaltsbuch',
   },
   {
     path: '',

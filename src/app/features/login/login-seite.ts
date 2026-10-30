@@ -1,4 +1,5 @@
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -7,13 +8,14 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { sichereRuecksprungUrl } from '../../core/auth/auth.guards';
 import { AnmeldungFehlgrund, anmeldungFehlgrund, AuthService } from '../../core/auth/auth.service';
-import { allesErreichbar, SystemstatusService } from '../../core/systemstatus/systemstatus.service';
+import { systemstatusBeobachten } from '../../core/systemstatus/systemstatus.service';
 import { AnmeldeRahmen } from '../../shared/anmelde-rahmen/anmelde-rahmen';
+import { HinweisBox } from '../../shared/hinweis-box/hinweis-box';
 import { SystemstatusLeiste } from '../../shared/systemstatus-leiste/systemstatus-leiste';
 
 const FEHLERTEXTE: Record<AnmeldungFehlgrund, string> = {
@@ -26,9 +28,11 @@ const FEHLER_UNBEKANNT = 'Die Anmeldung ist gerade nicht möglich. Bitte versuch
 
 const HINWEIS_GESPERRT = 'Login gerade nicht möglich.';
 
+const HINWEIS_REGISTRIERT = 'Dein Konto wurde angelegt. Bitte melde dich an.';
+
 @Component({
   selector: 'app-login-seite',
-  imports: [ReactiveFormsModule, RouterLink, AnmeldeRahmen, SystemstatusLeiste],
+  imports: [ReactiveFormsModule, RouterLink, AnmeldeRahmen, HinweisBox, SystemstatusLeiste],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './login-seite.html',
   styleUrl: './login-seite.scss',
@@ -41,6 +45,9 @@ export class LoginSeite {
   /** Seite, auf die der Nutzer vor der Anmeldung wollte (Query-Parameter). */
   readonly returnUrl = input<string>();
 
+  /** Gesetzt nach einer Registrierung, bei der die automatische Anmeldung gescheitert ist. */
+  readonly registriert = input(false, { transform: booleanAttribute });
+
   protected readonly formular = inject(NonNullableFormBuilder).group({
     email: ['', Validators.required],
     passwort: ['', Validators.required],
@@ -49,16 +56,16 @@ export class LoginSeite {
   protected readonly fehler = signal<string | null>(null);
   protected readonly sendet = signal(false);
 
-  /** {@code undefined}, bis die erste Antwort da ist; bis dahin ist nichts gesperrt. */
-  protected readonly systemstatus = toSignal(inject(SystemstatusService).beobachten());
-
   /** Fehlt ein Dienst, sind Login und Registrierung gesperrt. */
-  protected readonly gesperrt = computed(() => {
-    const status = this.systemstatus();
-    return status !== undefined && !allesErreichbar(status);
-  });
+  protected readonly systemstatus = systemstatusBeobachten();
 
-  protected readonly hinweis = computed(() => (this.gesperrt() ? HINWEIS_GESPERRT : this.fehler()));
+  protected readonly fehlerHinweis = computed(() =>
+    this.systemstatus.gesperrt() ? HINWEIS_GESPERRT : this.fehler(),
+  );
+
+  protected readonly infoHinweis = computed(() =>
+    this.registriert() && !this.fehlerHinweis() ? HINWEIS_REGISTRIERT : null,
+  );
 
   constructor() {
     // Wie im Design: Sobald der Nutzer tippt, verschwindet die Fehlermeldung.
@@ -66,7 +73,7 @@ export class LoginSeite {
   }
 
   protected anmelden(): void {
-    if (this.sendet() || this.gesperrt()) {
+    if (this.sendet() || this.systemstatus.gesperrt()) {
       return;
     }
     const { email, passwort } = this.formular.getRawValue();
