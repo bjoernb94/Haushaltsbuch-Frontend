@@ -11,7 +11,7 @@
   flex: 1 1 420px;
   min-width: 0;
   box-sizing: border-box;
-  padding: 56px;
+  padding: 56px 56px 16px;
   background: var(--app-gruen);
   color: #f3f5f2;
   display: flex;
@@ -53,8 +53,10 @@
 
 .copyright {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 16px;
   color: #b9d0c3;
+  text-align: center;
 }
 
 .inhalt {
@@ -68,13 +70,76 @@
   gap: 32px;
 }
 
-@media (max-width: 599px) {
+// Auf schmalen Bildschirmen unter dem Systemstatus statt in der Markenfläche.
+.copyright-mobil {
+  display: none;
+  margin: -20px 0 0;
+  font-size: 12px;
+  color: var(--app-text-gedaempft);
+}
+
+// :where hält die Spezifität niedrig, damit die Regeln der Umbruchpunkte greifen.
+.rahmen:where(.breit) .inhalt {
+  flex-basis: 560px;
+}
+
+@mixin untereinander {
+  flex-direction: column;
+  flex-wrap: nowrap;
+
   .marke {
-    padding: 32px 24px;
-    gap: 24px;
+    flex: none;
+    padding-bottom: 56px;
   }
 
-  .botschaft h2 {
-    font-size: 32px;
+  .inhalt {
+    flex: 1 0 auto;
+  }
+}
+
+// Untereinander, sobald Markenfläche (420px) und Inhalt nicht mehr nebeneinander passen.
+@media (max-width: 939px) {
+  .rahmen {
+    @include untereinander;
+  }
+}
+
+@media (max-width: 979px) {
+  .rahmen:where(.breit) {
+    @include untereinander;
+  }
+}
+
+// Handy: Markenfläche nur noch als Kopfzeile mit Logo.
+@media (max-width: 640px) {
+  .rahmen {
+    .marke {
+      padding: 16px 20px;
+      gap: 0;
+      justify-content: center;
+    }
+
+    .inhalt {
+      padding-top: 32px;
+      gap: 24px;
+    }
+  }
+
+  .logo {
+    font-size: 18px;
+
+    svg {
+      width: 26px;
+      height: 26px;
+    }
+  }
+
+  .botschaft,
+  .copyright {
+    display: none;
+  }
+
+  .copyright-mobil {
+    display: block;
   }
 }

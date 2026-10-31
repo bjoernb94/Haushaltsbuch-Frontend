@@ -22,7 +22,7 @@
         autocomplete="email"
         placeholder="name@beispiel.de"
         formControlName="email"
-        [attr.aria-invalid]="!!fehler()"
+        [attr.aria-invalid]="!!fehler() && !systemstatus.gesperrt()"
       />
     </div>
 
@@ -34,7 +34,7 @@
         autocomplete="current-password"
         placeholder="Dein Passwort"
         formControlName="passwort"
-        [attr.aria-invalid]="!!fehler()"
+        [attr.aria-invalid]="!!fehler() && !systemstatus.gesperrt()"
       />
     </div>
 

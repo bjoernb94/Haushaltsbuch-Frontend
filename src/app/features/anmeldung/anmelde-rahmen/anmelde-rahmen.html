@@ -1,4 +1,4 @@
-<main class="rahmen">
+<main class="rahmen" [class.breit]="breit()">
   <section class="marke">
     <div class="logo">
       <svg
@@ -28,5 +28,6 @@
 
   <section class="inhalt">
     <ng-content />
+    <p class="copyright-mobil">© Björn Bochmann</p>
   </section>
 </main>
