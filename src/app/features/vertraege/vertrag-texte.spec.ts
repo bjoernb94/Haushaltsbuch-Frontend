@@ -1,5 +1,5 @@
 import { Kuendigung } from '../../core/api/api';
-import { kategorieText, kuendigungAnzeige, vertragName } from './vertrag-texte';
+import { fristDauerText, kategorieText, kuendigungAnzeige, vertragName } from './vertrag-texte';
 
 const LEER: Kuendigung = {
   art: 'BEENDET',
@@ -91,6 +91,15 @@ describe('Vertragstexte', () => {
 
     it('zeigt beendete Verträge', () => {
       expect(kuendigungAnzeige(LEER)).toEqual({ text: 'Beendet', zusatz: '', ton: 'neutral' });
+    });
+  });
+
+  describe('fristDauerText', () => {
+    it('nennt die Dauer und unterscheidet keine Frist von fehlender Angabe', () => {
+      expect(fristDauerText(null)).toBeNull();
+      expect(fristDauerText(0)).toBe('ohne');
+      expect(fristDauerText(1)).toBe('1 Monat');
+      expect(fristDauerText(3)).toBe('3 Monate');
     });
   });
 

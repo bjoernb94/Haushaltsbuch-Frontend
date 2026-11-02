@@ -1,0 +1,62 @@
+<div class="zeile" [class.beendet]="beendet()">
+  <div class="angaben">
+    <span class="name">{{ name() }}</span>
+    <span class="meta">{{ meta() }}</span>
+    @if (vertrag().notiz; as notiz) {
+      <span class="notiz">{{ notiz }}</span>
+    }
+  </div>
+  <div class="kosten">
+    <span class="betrag">{{ vertrag().betrag | betrag }}</span>
+    <span class="klein">{{ zahlweise() }}</span>
+    <span class="klein">{{ abbuchung() }}</span>
+  </div>
+  <div class="kuendigung">
+    <span class="badge" [class]="'ton-' + kuendigung().ton">{{ kuendigung().text }}</span>
+    @if (kuendigung().zusatz; as zusatz) {
+      <span class="zusatz">{{ zusatz }}</span>
+    }
+  </div>
+  <button
+    type="button"
+    class="details-knopf"
+    [attr.aria-expanded]="offen()"
+    [attr.aria-label]="'Details zu ' + name() + (offen() ? ' ausblenden' : ' anzeigen')"
+    (click)="umschalten.emit()"
+  >
+    <svg
+      [class.offen]="offen()"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 9l6 6 6-6"></path>
+    </svg>
+    Details
+  </button>
+
+  @if (offen()) {
+    <div class="details" role="region" [attr.aria-label]="'Details zu ' + name()">
+      <dl>
+        @for (eintrag of details(); track eintrag.label) {
+          <div>
+            <dt>{{ eintrag.label }}</dt>
+            <dd>{{ eintrag.wert }}</dd>
+          </div>
+        }
+        @if (vertrag().notiz; as notiz) {
+          <div class="notiz-eintrag">
+            <dt>Notiz</dt>
+            <dd>{{ notiz }}</dd>
+          </div>
+        }
+      </dl>
+    </div>
+  }
+</div>

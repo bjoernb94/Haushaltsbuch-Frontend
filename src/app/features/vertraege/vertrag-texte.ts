@@ -4,6 +4,7 @@ import {
   Verlaengerung,
   VertragKategorieAntwort,
   VertragKategorieSchluessel,
+  Vertragsstatus,
   Zahlungsweg,
   Zahlweise,
 } from '../../core/api/api';
@@ -39,6 +40,12 @@ export const VERLAENGERUNG_TEXT: Record<Verlaengerung, string> = {
   MONATLICH: 'Nach Laufzeitende monatlich',
   ZWOELF_MONATE: 'Nach Laufzeitende um 12 Monate',
   KEINE: 'Keine, Vertrag endet',
+};
+
+export const STATUS_TEXT: Record<Vertragsstatus, string> = {
+  AKTIV: 'Aktiv',
+  GEKUENDIGT: 'Gekündigt',
+  BEENDET: 'Beendet',
 };
 
 const KATEGORIE_TEXT: Record<VertragKategorieSchluessel, string> = {
@@ -78,6 +85,11 @@ function fristText(fristMonate: number | null): string {
     default:
       return `${fristMonate} Monate Frist`;
   }
+}
+
+/** Dauer der hinterlegten Frist für die Details, {@code null} ohne Angabe. */
+export function fristDauerText(fristMonate: number | null): string | null {
+  return fristMonate === null ? null : fristText(fristMonate).replace(' Frist', '');
 }
 
 const KUENDIGUNG_ANZEIGE: Record<Kuendigungsart, (k: Kuendigung) => KuendigungAnzeige> = {

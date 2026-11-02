@@ -1,0 +1,9 @@
+// Kürzt auf höchstens so viele Zeilen und zeigt „…“. Der volle Text bleibt im DOM, also für
+// Screenreader und Browsersuche erhalten.
+@mixin zeilen($anzahl) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: $anzahl;
+  line-clamp: $anzahl;
+  overflow: hidden;
+}

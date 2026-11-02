@@ -1,0 +1,90 @@
+@use '../../shared/formular/formular';
+
+@include formular.knoepfe;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.zurueck {
+  align-self: flex-start;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.fehler {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+
+  .knopf {
+    flex: none;
+    padding: 0 18px;
+  }
+}
+
+.laedt {
+  margin: 0;
+  font-size: 15px;
+  color: var(--app-text-gedaempft);
+}
+
+.kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.kennzahl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 14px;
+  background: var(--app-flaeche);
+
+  span {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--app-text-gedaempft);
+  }
+
+  b {
+    font-size: 24px;
+    font-weight: 800;
+  }
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 24px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 16px;
+  background: var(--app-flaeche);
+}
+
+.leer {
+  margin: 0;
+  padding: 40px 0;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+}
