@@ -1,0 +1,32 @@
+<section class="kachel" [class.demnaechst]="demnaechst()" [attr.aria-label]="titel()">
+  <div class="kopf">
+    <div class="titel">
+      <span class="icon">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          @for (pfad of icon(); track pfad) {
+            <path [attr.d]="pfad"></path>
+          }
+        </svg>
+      </span>
+      <h2>{{ titel() }}</h2>
+    </div>
+    @if (demnaechst()) {
+      <p class="hinweis">Demnächst verfügbar</p>
+    } @else {
+      <ng-content select="[kachelLink]" />
+    }
+  </div>
+  <div class="inhalt" [attr.aria-hidden]="demnaechst() ? 'true' : null">
+    <ng-content />
+  </div>
+</section>

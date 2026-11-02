@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 test('Wurzel leitet auf die Startseite um', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveURL(/\/start$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen, Max');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen, Max!');
 });
 
 test('Startseite hat keine Navigation', async ({ page }) => {

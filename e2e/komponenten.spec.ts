@@ -43,7 +43,7 @@ test('nach einem Ladefehler hilft „Erneut versuchen“', async ({ page }) => {
   await page.goto('/start');
 
   await expect(page.getByRole('alert')).toHaveText('Deine Bereiche konnten nicht geladen werden.');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen, Max');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen, Max!');
   await expect(navigation(page)).toHaveCount(0);
 
   scheitert = false;

@@ -29,6 +29,23 @@ export const KOMPONENTEN: readonly {
   { wert: 'PORTFOLIO', titel: 'Portfolio', text: 'Geldanlagen und Depots', verfuegbar: false },
 ];
 
+/** Pfade des Icons je Komponente, wie im Design. */
+export const KOMPONENTE_ICON: Record<Komponente, readonly string[]> = {
+  FINANZUEBERSICHT: [
+    'M5 6h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z',
+    'M3 10h18',
+    'M7 15h3',
+  ],
+  VERTRAGSUEBERSICHT: [
+    'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z',
+    'M14 3v5h5',
+    'M9 13h6',
+    'M9 17h4',
+  ],
+  VERSORGUNGSVERTRAEGE: ['M13 2L4 14h7l-1 8 9-12h-7z'],
+  PORTFOLIO: ['M3 17l6-6 4 4 8-8', 'M15 7h6v6'],
+};
+
 export function istVerfuegbar(komponente: Komponente): boolean {
   return KOMPONENTEN.some((k) => k.wert === komponente && k.verfuegbar);
 }

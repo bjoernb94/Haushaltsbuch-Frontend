@@ -1,0 +1,120 @@
+.kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+
+  h1 {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    color: var(--app-text-gedaempft);
+  }
+}
+
+.raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+  gap: 24px;
+}
+
+a[kachelLink] {
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+// Aufbau der noch nicht verfügbaren Bereiche, ohne Werte.
+
+.kennzahlen {
+  display: grid;
+  gap: 12px;
+
+  &.drei {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.kennzahl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--app-grund);
+
+  span {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  b {
+    font-size: 20px;
+    font-weight: 800;
+  }
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+
+  > span {
+    padding-bottom: 6px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+}
+
+.zeile {
+  height: 41px;
+  box-sizing: border-box;
+  border-top: 1px solid var(--app-trenner);
+
+  &::before {
+    content: '';
+    display: block;
+    width: 60%;
+    height: 10px;
+    margin-top: 15px;
+    border-radius: 999px;
+    background: var(--app-trenner);
+  }
+}
+
+.karten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.karte {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 12px;
+
+  b {
+    font-size: 15px;
+    font-weight: 800;
+  }
+}
+
+.balken {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--app-trenner);
+
+  &.aufteilung {
+    height: 14px;
+  }
+}

@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Komponente } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
-import { istVerfuegbar } from '../../core/komponenten/komponente';
+import { istVerfuegbar, KOMPONENTE_ICON } from '../../core/komponenten/komponente';
 
 interface NavEintrag {
   pfad: string;
@@ -26,35 +26,26 @@ const BEREICHE: readonly (NavEintrag & { komponente: Komponente })[] = [
     pfad: '/buchungen',
     label: 'Finanzübersicht',
     kurz: 'Finanzen',
-    icon: [
-      'M5 6h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z',
-      'M3 10h18',
-      'M7 15h3',
-    ],
+    icon: KOMPONENTE_ICON.FINANZUEBERSICHT,
   },
   {
     komponente: 'VERTRAGSUEBERSICHT',
     pfad: '/vertraege',
     label: 'Verträge',
-    icon: [
-      'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z',
-      'M14 3v5h5',
-      'M9 13h6',
-      'M9 17h4',
-    ],
+    icon: KOMPONENTE_ICON.VERTRAGSUEBERSICHT,
   },
   {
     komponente: 'VERSORGUNGSVERTRAEGE',
     pfad: '/versorgung',
     label: 'Versorgungsverträge',
     kurz: 'Versorgung',
-    icon: ['M13 2L4 14h7l-1 8 9-12h-7z'],
+    icon: KOMPONENTE_ICON.VERSORGUNGSVERTRAEGE,
   },
   {
     komponente: 'PORTFOLIO',
     pfad: '/portfolio',
     label: 'Portfolio',
-    icon: ['M3 17l6-6 4 4 8-8', 'M15 7h6v6'],
+    icon: KOMPONENTE_ICON.PORTFOLIO,
   },
 ];
 

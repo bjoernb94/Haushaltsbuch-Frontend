@@ -1,0 +1,51 @@
+<div class="kopf">
+  <h1>Willkommen, {{ vorname() }}!</h1>
+  <p>Dein Überblick für {{ monat }}.</p>
+</div>
+
+<div class="raster">
+  @if (gebucht('FINANZUEBERSICHT')) {
+    <app-kachel komponente="FINANZUEBERSICHT" titel="Finanzübersicht">
+      <div class="kennzahlen drei">
+        <div class="kennzahl"><span>Einnahmen</span><b>–</b></div>
+        <div class="kennzahl"><span>Ausgaben</span><b>–</b></div>
+        <div class="kennzahl"><span>Saldo</span><b>–</b></div>
+      </div>
+      <div class="liste">
+        <span>Letzte Buchungen</span>
+        <div class="zeile"></div>
+        <div class="zeile"></div>
+        <div class="zeile"></div>
+      </div>
+    </app-kachel>
+  }
+
+  @if (gebucht('VERTRAGSUEBERSICHT')) {
+    <app-kachel komponente="VERTRAGSUEBERSICHT" titel="Vertragsübersicht">
+      <a kachelLink routerLink="/vertraege">Alle Verträge</a>
+    </app-kachel>
+  }
+
+  @if (gebucht('VERSORGUNGSVERTRAEGE')) {
+    <app-kachel komponente="VERSORGUNGSVERTRAEGE" titel="Versorgungsverträge">
+      <div class="kennzahl"><span>Abschläge gesamt pro Monat</span><b>–</b></div>
+      <div class="karten">
+        <div class="karte"><b>Strom</b><span class="balken"></span></div>
+        <div class="karte"><b>Gas</b><span class="balken"></span></div>
+        <div class="karte"><b>Wasser</b><span class="balken"></span></div>
+      </div>
+    </app-kachel>
+  }
+
+  @if (gebucht('PORTFOLIO')) {
+    <app-kachel komponente="PORTFOLIO" titel="Portfolio">
+      <div class="kennzahl"><span>Gesamtwert</span><b>–</b></div>
+      <div class="balken aufteilung"></div>
+      <div class="liste">
+        <div class="zeile"></div>
+        <div class="zeile"></div>
+        <div class="zeile"></div>
+      </div>
+    </app-kachel>
+  }
+</div>
