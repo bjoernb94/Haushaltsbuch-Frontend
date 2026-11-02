@@ -26,6 +26,7 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   prefixed with the issue number if there is one (e.g. `feature/12-haushalt`). Link the issue in the PR with
   `Closes #<n>`.
 - Before starting work, create the branch from an up-to-date `main` if you are still on `main`.
+- PR descriptions follow `.github/pull_request_template.md`.
 
 ## Architecture
 
