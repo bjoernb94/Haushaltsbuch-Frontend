@@ -1,0 +1,60 @@
+<nav class="seitennavigation" aria-label="Hauptmenü">
+  <div class="navliste">
+    <ng-container *ngTemplateOutlet="navLink; context: { $implicit: uebersicht }"></ng-container>
+    @if (bereiche().length) {
+      <span class="abschnitt">Komponenten</span>
+    }
+    @for (bereich of bereiche(); track bereich.pfad) {
+      @if (bereich.demnaechst) {
+        <div class="naveintrag demnaechst">
+          <ng-container
+            *ngTemplateOutlet="navInhalt; context: { $implicit: bereich }"
+          ></ng-container>
+        </div>
+      } @else {
+        <ng-container *ngTemplateOutlet="navLink; context: { $implicit: bereich }"></ng-container>
+      }
+    }
+  </div>
+  <p class="copyright">© Björn Bochmann</p>
+</nav>
+
+<ng-template #navLink let-eintrag>
+  <a
+    class="naveintrag navlink"
+    [routerLink]="eintrag.pfad"
+    routerLinkActive
+    ariaCurrentWhenActive="page"
+  >
+    <ng-container *ngTemplateOutlet="navInhalt; context: { $implicit: eintrag }"></ng-container>
+  </a>
+</ng-template>
+
+<ng-template #navInhalt let-eintrag>
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    @for (pfad of eintrag.icon; track pfad) {
+      <path [attr.d]="pfad"></path>
+    }
+  </svg>
+  <span class="navtext">
+    @if (eintrag.kurz) {
+      <span class="lang">{{ eintrag.label }}</span>
+      <span class="kurz">{{ eintrag.kurz }}</span>
+    } @else {
+      {{ eintrag.label }}
+    }
+    @if (eintrag.demnaechst) {
+      <span class="demnaechst-text">Demnächst verfügbar</span>
+    }
+  </span>
+</ng-template>

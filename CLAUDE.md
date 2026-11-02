@@ -34,7 +34,8 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - Standalone components, signals, `OnPush`, zoneless; `strict` and `strictTemplates` are on.
 - `core/` services without UI, `features/` lazy-loaded pages (one folder per backend module, plus
   `anmeldung/` for login/registration and `start/`), `shared/` components used by several areas,
-  `shell/` layout of the logged-in area (lazy, so Angular Material stays out of the initial bundle).
+  `shell/` layout of the logged-in area (lazy, so login and registration do not load it). `/start` has no
+  navigation (route data `ohneNavigation`), its tiles navigate; all other areas use `shell/hauptmenue`.
 - API types come from the backend's OpenAPI description: `core/api/api.generated.ts` (checked in, never edit by
   hand), named aliases in `core/api/api.ts`. After an API change in the backend, run `npm run api:typen` and commit
   the result. HTTP stays `HttpClient` with interceptors, no generated client.
@@ -53,9 +54,8 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   status survives page changes. Login and registration lock while anything is down; the shell only displays it.
 - Password rules in `features/anmeldung/registrierung/passwort-regeln.ts` mirror the Keycloak realm policy
   (Unicode letter/digit classes like Keycloak). Keep them in sync when the policy changes.
-- Styling: design colours as CSS custom properties `--app-*` in `src/styles.scss`; Material theme generated
-  from the design green (`src/styles/_theme-colors.scss`) plus exact overrides. Login/registration use custom
-  markup per design, not Material form fields.
+- Styling: design colours as CSS custom properties `--app-*` in `src/styles.scss`; no UI library, custom markup per
+  design, icons as inline SVG. Form fields and buttons as mixins in `shared/formular/_formular.scss`.
 - The design lives in the Claude Design canvas "Haushaltsbuch" (artboards Login, Registrierung, Startseite,
   Verträge, Neuer Vertrag). Changes to page behaviour should be reflected in the artboards as well.
 

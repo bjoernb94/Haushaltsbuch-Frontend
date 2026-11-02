@@ -15,7 +15,7 @@ test('ohne Anmeldung geht es zum Login und danach zurück', async ({ page }) => 
   await page.getByRole('button', { name: 'Login' }).click();
 
   await expect(page).toHaveURL(/\/vertraege$/);
-  await expect(page.getByText('Max Muster')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible();
 });
 
 test('falsches Passwort zeigt eine Fehlermeldung', async ({ page }) => {

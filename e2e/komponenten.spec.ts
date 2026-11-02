@@ -14,12 +14,12 @@ test('Navigation zeigt nur gebuchte Bereiche, noch nicht verfügbare ohne Link',
     angemeldet: true,
     komponenten: ['VERTRAGSUEBERSICHT', 'PORTFOLIO'],
   });
-  await page.goto('/start');
+  await page.goto('/vertraege');
 
   await expect(navigation(page).getByRole('link', { name: 'Verträge' })).toBeVisible();
   await expect(navigation(page).getByRole('link', { name: 'Portfolio' })).toHaveCount(0);
-  await expect(navigation(page)).toContainText('PortfolioDemnächst verfügbar');
-  await expect(navigation(page)).not.toContainText('Buchungen');
+  await expect(navigation(page)).toContainText(/Portfolio\s*Demnächst verfügbar/);
+  await expect(navigation(page)).not.toContainText('Finanz');
   await expect(navigation(page)).not.toContainText('Versorgung');
 });
 
@@ -44,13 +44,12 @@ test('nach einem Ladefehler hilft „Erneut versuchen“', async ({ page }) => {
 
   await expect(page.getByRole('alert')).toHaveText('Deine Bereiche konnten nicht geladen werden.');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen, Max');
-  await expect(navigation(page).getByRole('link', { name: 'Verträge' })).toHaveCount(0);
+  await expect(navigation(page)).toHaveCount(0);
 
   scheitert = false;
   await page.getByRole('button', { name: 'Erneut versuchen' }).click();
 
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await expect(navigation(page).getByRole('link', { name: 'Verträge' })).toBeVisible();
 });
 
 test('direkter Aufruf versucht es nach einem Ladefehler erneut', async ({ page }) => {
@@ -69,7 +68,7 @@ test('direkter Aufruf versucht es nach einem Ladefehler erneut', async ({ page }
 
 test('nach dem Abmelden sieht der nächste Nutzer nur seine Bereiche', async ({ page }) => {
   await backendSimulieren(page, { angemeldet: true, komponenten: ['VERTRAGSUEBERSICHT'] });
-  await page.goto('/start');
+  await page.goto('/vertraege');
   await expect(navigation(page).getByRole('link', { name: 'Verträge' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Abmelden' }).click();
@@ -80,7 +79,7 @@ test('nach dem Abmelden sieht der nächste Nutzer nur seine Bereiche', async ({ 
   await page.getByLabel('Passwort').fill('geheim123');
   await page.getByRole('button', { name: 'Login' }).click();
 
+  await page.getByRole('button', { name: 'Abmelden' }).waitFor();
+  await page.goto('/vertraege');
   await expect(page).toHaveURL(/\/start$/);
-  await expect(navigation(page).getByRole('link', { name: 'Verträge' })).toHaveCount(0);
-  await expect(navigation(page)).toContainText('Demnächst verfügbar');
 });
