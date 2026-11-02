@@ -11,7 +11,7 @@
         <div class="kennzahl"><span>Ausgaben</span><b class="minus">2.614,35 €</b></div>
         <div class="kennzahl"><span>Saldo</span><b>+1.235,65 €</b></div>
       </div>
-      <div class="liste">
+      <div class="liste fuellend">
         <span class="ueberschrift">Letzte Buchungen</span>
         <div class="zeile">
           <span><b>Gehalt</b> · 28.10.</span><b class="plus">+3.450,00 €</b>
@@ -22,14 +22,18 @@
         <div class="zeile">
           <span><b>Tanken</b> · 24.10.</span><b class="minus">−62,10 €</b>
         </div>
+        <div class="zeile">
+          <span><b>Nebenjob</b> · 15.10.</span><b class="plus">+400,00 €</b>
+        </div>
+        <div class="zeile">
+          <span><b>Miete</b> · 01.10.</span><b class="minus">−980,00 €</b>
+        </div>
       </div>
     </app-kachel>
   }
 
   @if (gebucht('VERTRAGSUEBERSICHT')) {
-    <app-kachel komponente="VERTRAGSUEBERSICHT" titel="Vertragsübersicht">
-      <a kachelLink routerLink="/vertraege">Alle Verträge</a>
-    </app-kachel>
+    <app-vertrag-kachel />
   }
 
   @if (gebucht('VERSORGUNGSVERTRAEGE')) {

@@ -214,14 +214,14 @@ function uebersicht(vertraege: VertragAntwort[]): VertragsuebersichtAntwort {
     laufendeVertraege: laufend.length,
     kostenProMonat: summeJeWaehrung(laufend.map((v) => v.berechnet.kostenProMonat)),
     kostenProJahr: summeJeWaehrung(laufend.map((v) => v.berechnet.kostenProJahr)),
-    naechsteKuendigungsfristen: laufend.flatMap(
-      ({ id, anbieter, bezeichnung, betrag, zahlweise, berechnet }) => {
+    naechsteKuendigungsfristen: laufend
+      .flatMap(({ id, anbieter, bezeichnung, betrag, zahlweise, berechnet }) => {
         const { art, kuendigenBis, zum, dringend } = berechnet.kuendigung;
         return art === 'KUENDIGEN_BIS' && kuendigenBis && zum
           ? [{ id, anbieter, bezeichnung, betrag, zahlweise, kuendigenBis, zum, dringend }]
           : [];
-      },
-    ),
+      })
+      .slice(0, 5),
   };
 }
 

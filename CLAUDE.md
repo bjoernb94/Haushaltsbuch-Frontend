@@ -69,6 +69,8 @@ Details in the README, section "Konventionen". ADRs are in the backend under `do
 - Error texts by `code` via `core/fehler` (ADR 0007), never show `detail`.
 - Money: always `Betrag` with its currency, never assume EUR, show lists per currency in full. Only exception:
   an empty list shows `0,00 €`.
+- Format money and dates via `shared/format` (browser `Intl`), not Angular's `CurrencyPipe`, `DatePipe` or
+  `formatCurrency`: Those keep about 19 kB in the initial bundle and need `registerLocaleData`, which is not set up.
 - Business dates are ISO without time and the backend decides what "today" is. Only exception: display without
   business meaning, e.g. the month in the greeting, may come from the browser.
 - A feature is one folder per backend module with service and pages. Services hold no business data: pages

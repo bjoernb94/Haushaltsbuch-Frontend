@@ -1,3 +1,7 @@
+@use 'kennzahl';
+
+@include kennzahl.kennzahl;
+
 .kopf {
   display: flex;
   flex-direction: column;
@@ -25,12 +29,6 @@
   gap: 24px;
 }
 
-a[kachelLink] {
-  white-space: nowrap;
-  font-size: 14px;
-  font-weight: 700;
-}
-
 // Beispielwerte der noch nicht verfügbaren Bereiche.
 
 .kennzahlen {
@@ -39,25 +37,6 @@ a[kachelLink] {
 
   &.drei {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  }
-}
-
-.kennzahl {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px;
-  border-radius: 12px;
-  background: var(--app-grund);
-
-  span {
-    font-size: 13px;
-    font-weight: 700;
-  }
-
-  b {
-    font-size: 20px;
-    font-weight: 800;
   }
 }
 
@@ -72,6 +51,16 @@ a[kachelLink] {
 .liste {
   display: flex;
   flex-direction: column;
+}
+
+// Füllt die Kachel, wenn die Kachel daneben höher ist.
+.fuellend {
+  flex: 1;
+
+  .zeile {
+    flex: 1;
+    align-items: center;
+  }
 }
 
 .ueberschrift {

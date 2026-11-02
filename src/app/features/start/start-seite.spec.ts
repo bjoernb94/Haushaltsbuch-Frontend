@@ -1,26 +1,35 @@
-import { registerLocaleData } from '@angular/common';
-import localeDe from '@angular/common/locales/de';
 import { LOCALE_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { Komponente } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
+import { VertragService } from '../vertraege/vertrag.service';
 import { StartSeite } from './start-seite';
-
-registerLocaleData(localeDe);
 
 describe('StartSeite', () => {
   const komponenten = signal<Komponente[]>([]);
+  const uebersicht = vi.fn();
 
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 10, 15));
     komponenten.set([]);
+    uebersicht.mockReset();
+    uebersicht.mockReturnValue(
+      of({
+        laufendeVertraege: 0,
+        kostenProMonat: [],
+        kostenProJahr: [],
+        naechsteKuendigungsfristen: [],
+      }),
+    );
     await TestBed.configureTestingModule({
       imports: [StartSeite],
       providers: [
         provideRouter([]),
         { provide: LOCALE_ID, useValue: 'de-DE' },
+        { provide: VertragService, useValue: { uebersicht } },
         {
           provide: AuthService,
           useValue: {
@@ -67,6 +76,18 @@ describe('StartSeite', () => {
       'Versorgungsverträge',
       'Portfolio',
     ]);
+  });
+
+  it('fragt die Vertragsübersicht ohne gebuchte Komponente nicht ab', async () => {
+    komponenten.set(['PORTFOLIO']);
+    await seite();
+    expect(uebersicht).not.toHaveBeenCalled();
+  });
+
+  it('fragt die Vertragsübersicht mit gebuchter Komponente ab', async () => {
+    komponenten.set(['VERTRAGSUEBERSICHT']);
+    await seite();
+    expect(uebersicht).toHaveBeenCalledOnce();
   });
 
   it('verlinkt die verfügbare Vertragskachel', async () => {

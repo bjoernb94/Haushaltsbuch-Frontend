@@ -1,6 +1,4 @@
-import { registerLocaleData } from '@angular/common';
 import { provideHttpClient, withInterceptors, withXsrfConfiguration } from '@angular/common/http';
-import localeDe from '@angular/common/locales/de';
 import {
   ApplicationConfig,
   DEFAULT_CURRENCY_CODE,
@@ -10,8 +8,6 @@ import {
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
-
-registerLocaleData(localeDe);
 
 export const appConfig: ApplicationConfig = {
   providers: [

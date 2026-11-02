@@ -1,0 +1,39 @@
+@if (!keinZugriff()) {
+  <app-kachel komponente="VERTRAGSUEBERSICHT" titel="Vertragsübersicht">
+    <a kachelLink routerLink="/vertraege">Alle Verträge</a>
+
+    @if (fehler()) {
+      <app-hinweis-box text="Die Vertragsübersicht konnte nicht geladen werden." />
+      <button type="button" class="knopf knopf-sekundaer" (click)="laden()">
+        Erneut versuchen
+      </button>
+    } @else if (uebersicht(); as daten) {
+      <div class="kennzahlen">
+        <div class="kennzahl">
+          <span>Laufende Verträge</span><b>{{ daten.laufendeVertraege }}</b>
+        </div>
+        <div class="kennzahl">
+          <span>Kosten pro Monat</span><b>{{ daten.kostenProMonat | betraege }}</b>
+        </div>
+      </div>
+      <div class="fristen">
+        <span class="ueberschrift">Nächste Kündigungsfristen</span>
+        @for (frist of fristen(); track frist.id) {
+          <div class="frist">
+            <span class="vertrag">
+              <b>{{ frist.name }}</b>
+              <span>{{ frist.betrag | betrag }}/{{ frist.einheit }}</span>
+            </span>
+            <span class="termin" [class.dringend]="frist.dringend">
+              bis {{ frist.kuendigenBis | datum }}
+            </span>
+          </div>
+        } @empty {
+          <p class="keine">Gerade steht keine Kündigungsfrist an.</p>
+        }
+      </div>
+    } @else {
+      <p class="laedt" role="status">Wird geladen …</p>
+    }
+  </app-kachel>
+}

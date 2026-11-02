@@ -1,0 +1,22 @@
+// Kennzahl in einer Kachel der Startseite, gemäß Design.
+
+@mixin kennzahl {
+  .kennzahl {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--app-grund);
+
+    span {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    b {
+      font-size: 20px;
+      font-weight: 800;
+    }
+  }
+}
