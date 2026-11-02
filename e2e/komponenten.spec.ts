@@ -62,7 +62,7 @@ test('direkter Aufruf versucht es nach einem Ladefehler erneut', async ({ page }
 
   await page.goto('/vertraege');
 
-  await expect(page).toHaveURL(/\/vertraege$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Verträge');
   expect(versuche).toBe(2);
 });
 

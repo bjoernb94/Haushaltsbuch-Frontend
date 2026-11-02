@@ -55,7 +55,8 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - Password rules in `features/anmeldung/registrierung/passwort-regeln.ts` mirror the Keycloak realm policy
   (Unicode letter/digit classes like Keycloak). Keep them in sync when the policy changes.
 - Styling: design colours as CSS custom properties `--app-*` in `src/styles.scss`; no UI library, custom markup per
-  design, icons as inline SVG. Form fields and buttons as mixins in `shared/formular/_formular.scss`.
+  design, icons as inline SVG, font Manrope from `@fontsource-variable/manrope` (no requests to third parties).
+  Form fields and buttons as mixins in `shared/formular/_formular.scss`.
 - The design lives in the Claude Design canvas "Haushaltsbuch" (artboards Login, Registrierung, Startseite,
   Verträge, Neuer Vertrag). Changes to page behaviour should be reflected in the artboards as well.
 
