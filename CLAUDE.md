@@ -37,7 +37,8 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - Auth (see backend CLAUDE.md): the SPA posts email/password to `POST /api/anmeldung` and only ever holds the
   session cookie; `AuthService` asks `GET /api/nutzer/ich` once (401 = logged out, other errors = logged out
   but not cached). `authInterceptor` redirects 401 under `/api/**` to `/login?returnUrl=…` unless the request
-  sets the `OHNE_ANMELDE_UMLEITUNG` context token. Never redirect to Keycloak.
+  sets the `OHNE_ANMELDE_UMLEITUNG` context token or the user is already on `/login` (keeps the `returnUrl`).
+  Never redirect to Keycloak.
 - System status: `systemstatusBeobachten()` (injection context) polls `/actuator/health/systemstatus` every
   30 s. No answer within 5 s (e.g. while the DB check waits for the pool) → all three services count as
   unreachable (reveals nothing about the setup); a 503 still carries the component status. The last known
@@ -49,6 +50,22 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   markup per design, not Material form fields.
 - The design lives in the Claude Design canvas "Haushaltsbuch" (artboards Login, Registrierung, Startseite,
   Verträge, Neuer Vertrag). Changes to page behaviour should be reflected in the artboards as well.
+
+## Conventions
+
+Details in the README, section "Konventionen". ADRs are in the backend under `docs/entscheidungen`.
+
+- No business calculations in the SPA (ADR 0010): only format; status, costs, dates and sorting come from the
+  backend. Form checks are for usability only; the backend's field errors decide.
+- Error texts by `code` via `core/fehler` (ADR 0007), never show `detail`.
+- Money: always `Betrag` with its currency, never assume EUR, show lists per currency in full. Only exception:
+  an empty list shows `0,00 €`.
+- Business dates are ISO without time and the backend decides what "today" is. Only exception: display without
+  business meaning, e.g. the month in the greeting, may come from the browser.
+- A feature is one folder per backend module with service and pages. Services hold no business data: pages
+  load it when opened and reload after changes, so nothing is left for the next user after logout. Exempt:
+  session data in `AuthService` and the system status.
+- Every page with data has loading, error (with "Erneut versuchen") and empty states.
 
 ## Tests
 
