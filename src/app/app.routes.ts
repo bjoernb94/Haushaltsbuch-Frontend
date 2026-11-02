@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { abgemeldetGuard, angemeldetGuard } from './core/auth/auth.guards';
+import { abgemeldetGuard, angemeldetGuard, bereichGuard } from './core/auth/auth.guards';
 
 // Anmeldung (Login, Registrierung) ohne Navigation. Start und die Fachbereiche (ein Feature-Ordner
 // je Backend-Modul) liegen in der Shell und brauchen eine Session. Alles lazy geladen.
@@ -32,21 +32,25 @@ export const routes: Routes = [
       },
       {
         path: 'buchungen',
+        canActivate: [bereichGuard('FINANZUEBERSICHT')],
         loadChildren: () =>
           import('./features/buchungen/buchungen.routes').then((m) => m.BUCHUNGEN_ROUTES),
       },
       {
         path: 'vertraege',
+        canActivate: [bereichGuard('VERTRAGSUEBERSICHT')],
         loadChildren: () =>
           import('./features/vertraege/vertraege.routes').then((m) => m.VERTRAEGE_ROUTES),
       },
       {
         path: 'versorgung',
+        canActivate: [bereichGuard('VERSORGUNGSVERTRAEGE')],
         loadChildren: () =>
           import('./features/versorgung/versorgung.routes').then((m) => m.VERSORGUNG_ROUTES),
       },
       {
         path: 'portfolio',
+        canActivate: [bereichGuard('PORTFOLIO')],
         loadChildren: () =>
           import('./features/portfolio/portfolio.routes').then((m) => m.PORTFOLIO_ROUTES),
       },

@@ -20,6 +20,13 @@ function problem(route: Route, status: number, code: string, detail: string) {
   });
 }
 
+const ALLE_KOMPONENTEN = [
+  'FINANZUEBERSICHT',
+  'VERTRAGSUEBERSICHT',
+  'VERSORGUNGSVERTRAEGE',
+  'PORTFOLIO',
+];
+
 /**
  * Simuliert die Anmelde-Endpunkte und den Systemstatus des Backends im Browser, damit die Tests ohne Backend und
  * Keycloak laufen. Gültig ist nur max@beispiel.de / geheim123; die Registrierung klappt für
@@ -27,7 +34,7 @@ function problem(route: Route, status: number, code: string, detail: string) {
  */
 export async function backendSimulieren(
   page: Page,
-  { angemeldet = false, datenbank = true, keycloak = true } = {},
+  { angemeldet = false, datenbank = true, keycloak = true, komponenten = ALLE_KOMPONENTEN } = {},
 ) {
   let session = angemeldet;
   const komponente = (up: boolean) => ({ status: up ? 'UP' : 'DOWN' });
@@ -43,6 +50,11 @@ export async function backendSimulieren(
   await page.route('/api/nutzer/ich', (route) =>
     session
       ? route.fulfill({ json: MAX })
+      : problem(route, 401, 'NICHT_ANGEMELDET', 'Authentication required.'),
+  );
+  await page.route('/api/nutzer/ich/komponenten', (route) =>
+    session
+      ? route.fulfill({ json: komponenten })
       : problem(route, 401, 'NICHT_ANGEMELDET', 'Authentication required.'),
   );
   await page.route('/api/anmeldung', async (route) => {

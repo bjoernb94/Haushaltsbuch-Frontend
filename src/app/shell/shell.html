@@ -15,23 +15,37 @@
 <mat-sidenav-container class="inhalt">
   <mat-sidenav #sidenav mode="side" opened>
     <mat-nav-list>
-      @for (eintrag of navigation; track eintrag.pfad) {
-        <a
-          mat-list-item
-          [routerLink]="eintrag.pfad"
-          routerLinkActive
-          #rla="routerLinkActive"
-          [activated]="rla.isActive"
-        >
-          <mat-icon matListItemIcon>{{ eintrag.icon }}</mat-icon>
-          <span matListItemTitle>{{ eintrag.label }}</span>
-        </a>
+      @for (eintrag of navigation(); track eintrag.pfad) {
+        @if (eintrag.demnaechst) {
+          <mat-list-item class="demnaechst">
+            <mat-icon matListItemIcon>{{ eintrag.icon }}</mat-icon>
+            <span matListItemTitle>{{ eintrag.label }}</span>
+            <span matListItemLine>Demnächst verfügbar</span>
+          </mat-list-item>
+        } @else {
+          <a
+            mat-list-item
+            [routerLink]="eintrag.pfad"
+            routerLinkActive
+            #rla="routerLinkActive"
+            [activated]="rla.isActive"
+          >
+            <mat-icon matListItemIcon>{{ eintrag.icon }}</mat-icon>
+            <span matListItemTitle>{{ eintrag.label }}</span>
+          </a>
+        }
       }
     </mat-nav-list>
   </mat-sidenav>
 
   <mat-sidenav-content>
     <main>
+      @if (komponentenFehler()) {
+        <div class="ladefehler">
+          <app-hinweis-box text="Deine Bereiche konnten nicht geladen werden." />
+          <button matButton="outlined" (click)="komponentenLaden()">Erneut versuchen</button>
+        </div>
+      }
       <router-outlet />
     </main>
     <footer class="fusszeile">

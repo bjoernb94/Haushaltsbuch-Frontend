@@ -43,6 +43,10 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   but not cached). `authInterceptor` redirects 401 under `/api/**` to `/login?returnUrl=…` unless the request
   sets the `OHNE_ANMELDE_UMLEITUNG` context token or the user is already on `/login` (keeps the `returnUrl`).
   Never redirect to Keycloak.
+- Booked components: `AuthService` loads them with the user (`GET /api/nutzer/ich/komponenten`). The navigation
+  shows booked areas only, not yet available ones (`verfuegbar` in `core/komponenten`) without a link;
+  `bereichGuard` sends everything else to `/start`. A failed load keeps the user logged in, the shell then shows a
+  hint with "Erneut versuchen". 403 `KEIN_ZUGRIFF` reloads them in `authInterceptor` and goes to `/start`.
 - System status: `systemstatusBeobachten()` (injection context) polls `/actuator/health/systemstatus` every
   30 s. No answer within 5 s (e.g. while the DB check waits for the pool) → all three services count as
   unreachable (reveals nothing about the setup); a 503 still carries the component status. The last known
