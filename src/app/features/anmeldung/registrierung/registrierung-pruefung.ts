@@ -1,4 +1,4 @@
-import { Komponente } from '../../../core/komponenten/komponente';
+import { Komponente } from '../../../core/api/api';
 import { passwortFehler } from './passwort-regeln';
 
 export const FELDER = ['email', 'passwort', 'name', 'vorname', 'komponenten'] as const;

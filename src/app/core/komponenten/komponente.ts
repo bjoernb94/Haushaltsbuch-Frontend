@@ -1,7 +1,6 @@
-/** Fachbereiche, die ein Nutzer bucht; Werte wie {@code Komponente} im Backend. */
-export type Komponente =
-  'FINANZUEBERSICHT' | 'VERTRAGSUEBERSICHT' | 'VERSORGUNGSVERTRAEGE' | 'PORTFOLIO';
+import { Komponente } from '../api/api';
 
+/** Fachbereiche, die ein Nutzer bucht. */
 export const KOMPONENTEN: readonly { wert: Komponente; titel: string; text: string }[] = [
   {
     wert: 'FINANZUEBERSICHT',

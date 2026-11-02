@@ -1,1 +1,2 @@
 package-lock.json
+src/app/core/api/api.generated.ts

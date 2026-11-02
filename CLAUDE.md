@@ -14,6 +14,7 @@ npm run lint           # ESLint incl. angular-eslint template + accessibility ru
 npm run format:check   # Prettier; npm run format to fix (ng add/generate may reformat angular.json)
 npm run test:ci        # Vitest unit tests once (npm test = watch)
 npm run e2e            # Playwright, backend simulated in the browser (e2e/backend-mock.ts)
+npm run api:typen      # regenerate core/api/api.generated.ts from ../Haushaltsbuch-Backend/docs/openapi.json
 ```
 
 Playwright reuses a dev server already running on :4200. If that server predates moved/renamed files it may
@@ -34,6 +35,9 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - `core/` services without UI, `features/` lazy-loaded pages (one folder per backend module, plus
   `anmeldung/` for login/registration and `start/`), `shared/` components used by several areas,
   `shell/` layout of the logged-in area (lazy, so Angular Material stays out of the initial bundle).
+- API types come from the backend's OpenAPI description: `core/api/api.generated.ts` (checked in, never edit by
+  hand), named aliases in `core/api/api.ts`. After an API change in the backend, run `npm run api:typen` and commit
+  the result. HTTP stays `HttpClient` with interceptors, no generated client.
 - Auth (see backend CLAUDE.md): the SPA posts email/password to `POST /api/anmeldung` and only ever holds the
   session cookie; `AuthService` asks `GET /api/nutzer/ich` once (401 = logged out, other errors = logged out
   but not cached). `authInterceptor` redirects 401 under `/api/**` to `/login?returnUrl=…` unless the request
