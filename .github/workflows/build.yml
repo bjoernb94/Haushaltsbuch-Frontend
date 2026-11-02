@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   pruefung:
     name: Lint, Format und Build
@@ -13,13 +16,23 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
       # Production-Build, damit auch Fehler bei Templates und Budgets auffallen.
       - run: npm run build
+      # Nur Laufzeit-Abhängigkeiten; Hinweise unter high sollen nicht jeden PR blockieren.
+      - run: npm audit --omit=dev --audit-level=high
+
+  image:
+    name: Container-Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Podman, denn nur Podman liest .containerignore.
+      - run: npm run image
 
   unit:
     name: Unit-Tests
@@ -28,7 +41,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
       - run: npm ci
       - run: npm run test:ci
@@ -40,7 +53,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
