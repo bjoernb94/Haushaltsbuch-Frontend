@@ -79,6 +79,7 @@ npm run format:check   # Prettier (npm run format formatiert)
 npm test               # Unit-Tests (Vitest), im Watch-Modus
 npm run test:ci        # Unit-Tests einmalig
 npm run e2e            # E2E-Tests (Playwright)
+npm run api:typen      # API-Typen aus der OpenAPI-Beschreibung des Backends erzeugen
 ```
 
 Die E2E-Tests simulieren das Backend im Browser (`e2e/backend-mock.ts`) und brauchen weder
@@ -87,6 +88,14 @@ laufenden auf Port 4200.
 
 Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-Build, Unit- und
 E2E-Tests aus.
+
+### API-Typen
+
+Die Typen der API stehen in `src/app/core/api/api.generated.ts`. `npm run api:typen` erzeugt die
+Datei aus `../Haushaltsbuch-Backend/docs/openapi.json`, das Backend muss also daneben ausgecheckt
+sein. Nach einer API-Änderung im Backend das Skript ausführen und das Ergebnis mit einchecken. Die
+CI kann das private Backend-Repo nicht abrufen und prüft nur, dass der eingecheckte Stand
+kompiliert. Sprechende Namen für die Typen stehen in `core/api/api.ts`.
 
 ### Arbeitsweise mit Git
 
