@@ -20,9 +20,6 @@ export interface Registrierung {
   komponenten: Komponente[];
 }
 
-/** Wert von {@code grund} im ProblemDetail einer abgelehnten Anmeldung. */
-export type AnmeldungFehlgrund = 'UNGUELTIG' | 'GESPERRT' | 'NICHT_EINGERICHTET';
-
 const OHNE_UMLEITUNG = () => new HttpContext().set(OHNE_ANMELDE_UMLEITUNG, true);
 
 /**
@@ -49,7 +46,7 @@ export class AuthService {
     return bekannt === undefined ? this.nutzerLaden() : of(bekannt !== null);
   }
 
-  /** Fehler: {@link HttpErrorResponse}, siehe {@link anmeldungFehlgrund}. */
+  /** Fehler: {@link HttpErrorResponse}, Auswertung über {@code problemCode}. */
   anmelden(email: string, passwort: string): Observable<void> {
     return this.http
       .post<void>('/api/anmeldung', { email, passwort }, { context: OHNE_UMLEITUNG() })
@@ -62,7 +59,7 @@ export class AuthService {
   /**
    * Legt das Konto an; das Backend meldet den Nutzer danach direkt an. Liefert, ob diese
    * Anmeldung geklappt hat (sonst muss sich der Nutzer selbst anmelden).
-   * Fehler: {@link HttpErrorResponse}, z. B. 409 bei vergebener E-Mail-Adresse.
+   * Fehler: {@link HttpErrorResponse}, Auswertung über {@code problemCode}.
    */
   registrieren(registrierung: Registrierung): Observable<boolean> {
     return this.http
@@ -95,15 +92,4 @@ export class AuthService {
       }),
     );
   }
-}
-
-/** Grund einer abgelehnten Anmeldung aus dem ProblemDetail des Backends, sonst {@code null}. */
-export function anmeldungFehlgrund(error: unknown): AnmeldungFehlgrund | null {
-  if (!(error instanceof HttpErrorResponse)) {
-    return null;
-  }
-  const grund: unknown = error.error?.grund;
-  return grund === 'UNGUELTIG' || grund === 'GESPERRT' || grund === 'NICHT_EINGERICHTET'
-    ? grund
-    : null;
 }

@@ -1,8 +1,8 @@
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
-import { anmeldungFehlgrund, AuthService, Nutzer } from './auth.service';
+import { AuthService, Nutzer } from './auth.service';
 
 const MAX: Nutzer = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
 
@@ -118,17 +118,5 @@ describe('AuthService', () => {
     });
 
     expect(auth.angemeldet()).toBe(false);
-  });
-});
-
-describe('anmeldungFehlgrund', () => {
-  it('liest den Grund aus dem ProblemDetail', () => {
-    const error = new HttpErrorResponse({ status: 403, error: { grund: 'GESPERRT' } });
-    expect(anmeldungFehlgrund(error)).toBe('GESPERRT');
-  });
-
-  it('liefert null ohne bekannten Grund', () => {
-    expect(anmeldungFehlgrund(new HttpErrorResponse({ status: 0 }))).toBeNull();
-    expect(anmeldungFehlgrund(new HttpErrorResponse({ status: 500, error: 'x' }))).toBeNull();
   });
 });

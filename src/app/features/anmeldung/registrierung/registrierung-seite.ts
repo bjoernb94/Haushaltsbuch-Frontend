@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,17 +12,23 @@ import { Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { STARTSEITE } from '../../../core/auth/auth.guards';
 import { AuthService } from '../../../core/auth/auth.service';
+import { problemCode, problemFelder } from '../../../core/fehler/problem';
 import { Komponente, KOMPONENTEN } from '../../../core/komponenten/komponente';
 import { systemstatusBeobachten } from '../../../core/systemstatus/systemstatus.service';
 import { AnmeldeRahmen } from '../anmelde-rahmen/anmelde-rahmen';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import { SystemstatusLeiste } from '../../../shared/systemstatus-leiste/systemstatus-leiste';
 import { PASSWORT_REGELN } from './passwort-regeln';
-import { Feld, registrierungPruefen, RegistrierungWerte } from './registrierung-pruefung';
+import { Feld, FELDER, registrierungPruefen, RegistrierungWerte } from './registrierung-pruefung';
 
 const HINWEIS_GESPERRT = 'Registrierung gerade nicht möglich.';
 
 const FEHLER_VERGEBEN = 'Für diese E-Mail-Adresse gibt es bereits ein Konto.';
+
+const FEHLER_ABGELEHNT =
+  'Das Konto konnte mit diesen Daten nicht angelegt werden. Bitte prüfe deine Eingaben, vor allem das Passwort.';
+
+const FEHLER_VALIDIERUNG = 'Bitte prüfe die markierten Felder.';
 
 const FEHLER_UNBEKANNT =
   'Die Registrierung ist gerade nicht möglich. Bitte versuche es später erneut.';
@@ -63,8 +68,8 @@ export class RegistrierungSeite {
   /** Erst nach dem ersten Absenden werden fehlerhafte Felder markiert. */
   private readonly versucht = signal(false);
 
-  /** Feld, das das Backend beanstandet hat (z. B. vergebene E-Mail-Adresse). */
-  private readonly serverFeld = signal<Feld | null>(null);
+  /** Felder, die das Backend beanstandet hat (z. B. vergebene E-Mail-Adresse). */
+  private readonly serverFelder = signal<ReadonlySet<Feld>>(new Set());
 
   protected readonly fehler = signal<string | null>(null);
   protected readonly sendet = signal(false);
@@ -91,12 +96,12 @@ export class RegistrierungSeite {
     // Wie im Design: Sobald der Nutzer etwas ändert, verschwindet die Fehlermeldung.
     this.formular.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
       this.fehler.set(null);
-      this.serverFeld.set(null);
+      this.serverFelder.set(new Set());
     });
   }
 
   protected ungueltig(feld: Feld): boolean {
-    return (this.versucht() && this.pruefung().felder.has(feld)) || this.serverFeld() === feld;
+    return (this.versucht() && this.pruefung().felder.has(feld)) || this.serverFelder().has(feld);
   }
 
   protected registrieren(): void {
@@ -134,18 +139,23 @@ export class RegistrierungSeite {
   }
 
   private serverFehlerAnzeigen(error: unknown): void {
-    if (error instanceof HttpErrorResponse && error.status === 409) {
-      this.fehler.set(FEHLER_VERGEBEN);
-      this.serverFeld.set('email');
-    } else if (
-      error instanceof HttpErrorResponse &&
-      error.status === 400 &&
-      typeof error.error?.detail === 'string'
-    ) {
-      // Z. B. Passwort-Richtlinie von Keycloak (Text vom Backend).
-      this.fehler.set(error.error.detail);
-    } else {
-      this.fehler.set(FEHLER_UNBEKANNT);
+    switch (problemCode(error)) {
+      case 'EMAIL_BEREITS_VERGEBEN':
+        this.fehler.set(FEHLER_VERGEBEN);
+        this.serverFelder.set(new Set(['email']));
+        break;
+      case 'REGISTRIERUNG_ABGELEHNT':
+        // Z. B. Passwort-Richtlinie von Keycloak; welche Regel, sagt das Backend noch nicht.
+        this.fehler.set(FEHLER_ABGELEHNT);
+        break;
+      case 'VALIDIERUNG':
+        this.fehler.set(FEHLER_VALIDIERUNG);
+        this.serverFelder.set(
+          new Set(FELDER.filter((feld) => problemFelder(error).some((f) => f.feld === feld))),
+        );
+        break;
+      default:
+        this.fehler.set(FEHLER_UNBEKANNT);
     }
   }
 

@@ -1,7 +1,9 @@
 import { Komponente } from '../../../core/komponenten/komponente';
 import { passwortFehler } from './passwort-regeln';
 
-export type Feld = 'email' | 'passwort' | 'name' | 'vorname' | 'komponenten';
+export const FELDER = ['email', 'passwort', 'name', 'vorname', 'komponenten'] as const;
+
+export type Feld = (typeof FELDER)[number];
 
 export interface RegistrierungWerte {
   email: string;

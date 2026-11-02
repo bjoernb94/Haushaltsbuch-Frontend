@@ -7,7 +7,8 @@ import { AuthService } from './auth.service';
 
 /**
  * Das Backend antwortet auf nicht angemeldete Aufrufe unter /api/** mit 401, z. B. wenn die
- * Session abgelaufen ist. Dann geht es zum Login und danach zurück zur aktuellen Seite.
+ * Session abgelaufen ist. Dann geht es zum Login und danach zurück zur aktuellen Seite. Ein
+ * weiteres 401 paralleler Aufrufe darf die returnUrl auf dem Login nicht überschreiben.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
@@ -21,7 +22,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         !req.context.get(OHNE_ANMELDE_UMLEITUNG)
       ) {
         auth.zuruecksetzen();
-        void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+        if (router.url.split('?')[0] !== '/login') {
+          void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+        }
       }
       return throwError(() => error);
     }),

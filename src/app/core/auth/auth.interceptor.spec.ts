@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
 import { authInterceptor } from './auth.interceptor';
+import { AuthService } from './auth.service';
 
 describe('authInterceptor', () => {
   let http: HttpClient;
@@ -28,6 +29,17 @@ describe('authInterceptor', () => {
     backend.expectOne('/api/buchungen').flush(null, { status: 401, statusText: 'Unauthorized' });
 
     expect(navigiert).toHaveBeenCalledWith(['/login'], { queryParams: { returnUrl: '/' } });
+  });
+
+  it('erhält die returnUrl, wenn ein weiteres 401 auf dem Login ankommt', () => {
+    const zuruecksetzen = vi.spyOn(TestBed.inject(AuthService), 'zuruecksetzen');
+    vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/login?returnUrl=%2Fvertraege');
+
+    http.get('/api/buchungen').subscribe({ error: () => undefined });
+    backend.expectOne('/api/buchungen').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(navigiert).not.toHaveBeenCalled();
+    expect(zuruecksetzen).toHaveBeenCalled();
   });
 
   it('lässt 401 bei Aufrufen mit erwarteter 401 durch', () => {

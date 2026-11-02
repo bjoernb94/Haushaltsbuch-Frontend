@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { backendSimulieren, VERGEBEN } from './backend-mock';
+import { ABGELEHNT, backendSimulieren, VERGEBEN } from './backend-mock';
 
 async function ausfuellen(page: Page, email: string) {
   await page.getByLabel('E-Mail-Adresse').fill(email);
@@ -51,6 +51,17 @@ test('vergebene E-Mail-Adresse wird gemeldet', async ({ page }) => {
     'Für diese E-Mail-Adresse gibt es bereits ein Konto.',
   );
   await expect(page.getByLabel('E-Mail-Adresse')).toHaveAttribute('aria-invalid', 'true');
+});
+
+test('Ablehnung durch Keycloak zeigt einen deutschen Text', async ({ page }) => {
+  await backendSimulieren(page);
+  await page.goto('/registrierung');
+  await ausfuellen(page, ABGELEHNT);
+  await page.getByRole('button', { name: 'Konto erstellen' }).click();
+
+  await expect(page.getByRole('alert')).toHaveText(
+    'Das Konto konnte mit diesen Daten nicht angelegt werden. Bitte prüfe deine Eingaben, vor allem das Passwort.',
+  );
 });
 
 test('ohne Anmeldeserver ist die Registrierung gesperrt', async ({ page }) => {
