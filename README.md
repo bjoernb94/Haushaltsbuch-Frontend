@@ -23,9 +23,10 @@ Die App läuft unter http://localhost:4200. Der Dev-Server leitet `/api` und `/a
 `http://localhost:8080` weiter (`proxy.conf.json`); so laufen Session- und CSRF-Cookie über
 denselben Origin.
 
-Für Login und Registrierung muss das Backend mit `SPRING_PROFILES_ACTIVE=dev,keycloak` laufen
-(Einrichtung siehe README des Backends). Ohne Profil `keycloak` gibt es dort keine Anmeldung;
-die Login-Seite zeigt dann „Anmeldeserver nicht erreichbar“ und sperrt das Formular.
+Für Login und Registrierung müssen Backend und Keycloak laufen: `./mvnw spring-boot:run` und
+Keycloak z.&nbsp;B. per `docker compose up -d keycloak` (Einrichtung siehe README des Backends).
+Ist Keycloak nicht erreichbar, zeigt die Login-Seite „Anmeldeserver nicht erreichbar“ und sperrt
+das Formular.
 
 Nach dem Verschieben oder Umbenennen von Dateien den Dev-Server neu starten, sonst liefert er
 unter Umständen noch das alte Bundle aus.
@@ -33,6 +34,11 @@ unter Umständen noch das alte Bundle aus.
 ## Anmeldung
 
 Es gibt keine Weiterleitung zu Keycloak: Login und Registrierung sind eigene Seiten der SPA.
+Alle Endpunkte, Fehlercodes und Datenformate stehen in
+[`docs/api.md`](https://github.com/bjoernb94/Haushaltsbuch-Backend/blob/main/docs/api.md) im
+Backend, die Gründe in den
+[Entscheidungen](https://github.com/bjoernb94/Haushaltsbuch-Backend/tree/main/docs/entscheidungen)
+(ADRs).
 
 | Aufruf                              | Zweck                                                |
 | ----------------------------------- | ---------------------------------------------------- |
@@ -46,7 +52,8 @@ Es gibt keine Weiterleitung zu Keycloak: Login und Registrierung sind eigene Sei
   Abgemeldete zum Login (mit `returnUrl`) und Angemeldete von Login und Registrierung zur
   Startseite.
 - Der `authInterceptor` leitet bei 401 unter `/api/**` zum Login um. Aufrufe, bei denen 401
-  erwartet ist (Login, Statusabfrage), setzen dafür `OHNE_ANMELDE_UMLEITUNG`.
+  erwartet ist (Login, Statusabfrage), setzen dafür `OHNE_ANMELDE_UMLEITUNG`. Auf `/login` leitet
+  er nicht erneut um, damit ein weiteres 401 die `returnUrl` nicht überschreibt.
 - CSRF: Angular schickt den Header `X-XSRF-TOKEN` aus dem Cookie `XSRF-TOKEN` mit (nur bei
   relativen URLs, deshalb laufen alle Aufrufe über `/api`).
 
@@ -90,6 +97,7 @@ kommt per Pull Request nach `main`, sobald die CI grün ist.
   `docs/<kurzname>` für reine Doku-Änderungen, `chore/<kurzname>` für Wartung (Abhängigkeiten,
   Konfiguration, Umbauten ohne neue Funktion). Gehört der Branch zu einem Issue, die Nummer
   voranstellen, z.&nbsp;B. `feature/12-haushalt`.
+- Pull Requests folgen der Vorlage (`.github/pull_request_template.md`).
 - Im Pull Request das Issue mit `Closes #<nummer>` verknüpfen, damit es beim Merge geschlossen wird.
 - Branches nach dem Merge löschen.
 
@@ -112,7 +120,7 @@ selben Origin bleiben.
 
 ```
 src/app/
-  core/        Dienste ohne eigene Oberfläche: auth/, komponenten/, systemstatus/
+  core/        Dienste ohne eigene Oberfläche: auth/, fehler/, komponenten/, systemstatus/
   features/    Seiten, lazy geladen
     anmeldung/   login/, registrierung/ und ihr gemeinsamer anmelde-rahmen/
     start/       Startseite nach der Anmeldung
@@ -122,3 +130,26 @@ src/app/
 src/styles.scss          Material-Theme und Farb-Tokens (--app-*) des Designs
 src/styles/_theme-colors.scss   aus der Designfarbe erzeugte Material-Paletten
 ```
+
+## Konventionen
+
+ADR meint die [Entscheidungen](https://github.com/bjoernb94/Haushaltsbuch-Backend/tree/main/docs/entscheidungen)
+im Backend.
+
+- **Keine fachlichen Berechnungen in der SPA** (ADR 0010): Die SPA formatiert nur. Status, Kosten,
+  Termine und Sortierung kommen vom Backend. Prüfungen im Formular dienen nur der Bedienung,
+  maßgeblich sind die Feldfehler des Backends.
+- **Fehlertexte nach `code`** (ADR 0007): `core/fehler` liest `code` und `felder` aus der
+  Fehlerantwort, die Texte stehen in der SPA. `detail` ist nur für Entwickler und wird nie
+  angezeigt. Ohne bekannten `code` erscheint ein allgemeiner Text.
+- **Geld:** Immer `Betrag` mit seiner Währung, nie EUR annehmen, Listen je Währung vollständig
+  anzeigen. Einzige Ausnahme: Eine leere Liste zeigt `0,00 €`.
+- **Daten:** Fachliche Daten sind ISO-Daten ohne Uhrzeit, und „heute“ bestimmt das Backend.
+  Ausnahme ist reine Anzeige ohne fachliche Bedeutung, z.&nbsp;B. der Monat in der Begrüßung: Sie
+  darf aus dem Browser kommen.
+- **Aufbau eines Fachbereichs:** ein Ordner je Backend-Modul unter `features/` mit Service und
+  Seiten. Services halten keine Fachdaten: Die Daten liegen in der Seite und werden beim Öffnen
+  geladen, nach einer Änderung neu. So bleibt nach dem Abmelden nichts für den nächsten Nutzer im
+  Speicher. Ausgenommen sind Sitzungsdaten im `AuthService` und der Systemstatus.
+- **Zustände einer Seite:** Jede Seite mit Daten hat einen Lade- und einen Fehlerzustand mit
+  „Erneut versuchen“ sowie einen Leerzustand.
