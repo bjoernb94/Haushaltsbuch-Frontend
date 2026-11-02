@@ -1,6 +1,8 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { map } from 'rxjs';
+import { map, of } from 'rxjs';
+import { Komponente } from '../api/api';
+import { istVerfuegbar } from '../komponenten/komponente';
 import { AuthService } from './auth.service';
 
 /** Ziel nach der Anmeldung, wenn keine (gültige) returnUrl angegeben ist. */
@@ -26,6 +28,25 @@ export const abgemeldetGuard: CanActivateFn = () => {
     .sitzungPruefen()
     .pipe(map((angemeldet) => (angemeldet ? router.parseUrl(STARTSEITE) : true)));
 };
+
+/**
+ * Bereich einer Komponente nur, wenn sie gebucht und schon verfügbar ist, sonst zur Startseite.
+ * Reine Anzeige, der Schutz liegt im Backend. Konnten die Komponenten nicht geladen werden, gibt
+ * es hier einen neuen Versuch.
+ */
+export function bereichGuard(komponente: Komponente): CanActivateFn {
+  return () => {
+    const auth = inject(AuthService);
+    const router = inject(Router);
+    return (auth.komponentenFehler() ? auth.komponentenLaden() : of(undefined)).pipe(
+      map(
+        () =>
+          (auth.komponenten().includes(komponente) && istVerfuegbar(komponente)) ||
+          router.parseUrl(STARTSEITE),
+      ),
+    );
+  };
+}
 
 /** Nur Pfade innerhalb der App, damit returnUrl nicht auf fremde Seiten führt. */
 export function sichereRuecksprungUrl(url: string | null | undefined): string {

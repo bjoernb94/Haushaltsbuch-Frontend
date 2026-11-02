@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
 import { Profil } from '../api/api';
-import { AuthService } from './auth.service';
+import { AuthService, KOMPONENTEN_URL } from './auth.service';
 
 const MAX: Profil = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
 
@@ -27,12 +27,15 @@ describe('AuthService', () => {
     const req = http.expectOne('/api/nutzer/ich');
     expect(req.request.context.get(OHNE_ANMELDE_UMLEITUNG)).toBe(true);
     req.flush(MAX);
+    http.expectOne(KOMPONENTEN_URL).flush(['PORTFOLIO']);
 
     auth.sitzungPruefen().subscribe((a) => ergebnisse.push(a));
     http.expectNone('/api/nutzer/ich');
 
     expect(ergebnisse).toEqual([true, true]);
     expect(auth.nutzer()).toEqual(MAX);
+    expect(auth.komponenten()).toEqual(['PORTFOLIO']);
+    expect(auth.komponentenFehler()).toBe(false);
   });
 
   it('wertet 401 beim Status als abgemeldet', () => {
@@ -51,6 +54,7 @@ describe('AuthService', () => {
 
     auth.sitzungPruefen().subscribe((a) => ergebnisse.push(a));
     http.expectOne('/api/nutzer/ich').flush(MAX);
+    http.expectOne(KOMPONENTEN_URL).flush([]);
 
     expect(ergebnisse).toEqual([false, true]);
   });
@@ -64,6 +68,7 @@ describe('AuthService', () => {
     expect(req.request.context.get(OHNE_ANMELDE_UMLEITUNG)).toBe(true);
     req.flush(null, { status: 204, statusText: 'No Content' });
     http.expectOne('/api/nutzer/ich').flush(MAX);
+    http.expectOne(KOMPONENTEN_URL).flush(['PORTFOLIO']);
 
     expect(fertig).toBe(true);
     expect(auth.angemeldet()).toBe(true);
@@ -85,6 +90,7 @@ describe('AuthService', () => {
     expect(req.request.context.get(OHNE_ANMELDE_UMLEITUNG)).toBe(true);
     req.flush(null, { status: 201, statusText: 'Created' });
     http.expectOne('/api/nutzer/ich').flush(MAX);
+    http.expectOne(KOMPONENTEN_URL).flush(['PORTFOLIO']);
 
     expect(angemeldet).toBe(true);
     expect(auth.nutzer()).toEqual(MAX);
@@ -111,6 +117,8 @@ describe('AuthService', () => {
     auth.anmelden('max@beispiel.de', 'geheim123').subscribe();
     http.expectOne('/api/anmeldung').flush(null, { status: 204, statusText: 'No Content' });
     http.expectOne('/api/nutzer/ich').flush(MAX);
+    http.expectOne(KOMPONENTEN_URL).flush(['PORTFOLIO']);
+    expect(auth.komponenten()).toEqual(['PORTFOLIO']);
 
     auth.abmelden().subscribe();
     http.expectOne({ method: 'POST', url: '/api/abmeldung' }).flush(null, {
@@ -119,5 +127,34 @@ describe('AuthService', () => {
     });
 
     expect(auth.angemeldet()).toBe(false);
+    expect(auth.komponenten()).toEqual([]);
+    expect(auth.komponentenFehler()).toBe(false);
+  });
+
+  it('bleibt angemeldet, wenn die Komponenten nicht laden, und lädt sie erneut', () => {
+    let angemeldet: boolean | undefined;
+    auth.sitzungPruefen().subscribe((a) => (angemeldet = a));
+    http.expectOne('/api/nutzer/ich').flush(MAX);
+    http.expectOne(KOMPONENTEN_URL).flush(null, { status: 500, statusText: 'Server Error' });
+
+    expect(angemeldet).toBe(true);
+    expect(auth.komponenten()).toEqual([]);
+    expect(auth.komponentenFehler()).toBe(true);
+
+    auth.komponentenLaden().subscribe();
+    http.expectOne(KOMPONENTEN_URL).flush(['VERTRAGSUEBERSICHT']);
+
+    expect(auth.komponenten()).toEqual(['VERTRAGSUEBERSICHT']);
+    expect(auth.komponentenFehler()).toBe(false);
+  });
+
+  it('vergisst die Komponenten, wenn die Session endet', () => {
+    auth.sitzungPruefen().subscribe();
+    http.expectOne('/api/nutzer/ich').flush(MAX);
+    http.expectOne(KOMPONENTEN_URL).flush(['PORTFOLIO']);
+
+    auth.zuruecksetzen();
+
+    expect(auth.komponenten()).toEqual([]);
   });
 });

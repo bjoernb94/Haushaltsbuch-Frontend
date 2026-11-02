@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
 import { authInterceptor } from './auth.interceptor';
-import { AuthService } from './auth.service';
+import { AuthService, KOMPONENTEN_URL } from './auth.service';
 
 describe('authInterceptor', () => {
   let http: HttpClient;
@@ -55,5 +55,48 @@ describe('authInterceptor', () => {
     backend.expectOne('/api/buchungen').flush(null, { status: 403, statusText: 'Forbidden' });
 
     expect(navigiert).not.toHaveBeenCalled();
+  });
+
+  describe('bei 403', () => {
+    const verboten = (code: string) => ({
+      body: { status: 403, code },
+      optionen: { status: 403, statusText: 'Forbidden' },
+    });
+    let zurStartseite: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      zurStartseite = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    });
+
+    it('lädt bei KEIN_ZUGRIFF die Komponenten neu und geht zur Startseite', () => {
+      let fehler: unknown;
+      http.get('/api/vertraege').subscribe({ error: (e: unknown) => (fehler = e) });
+      const { body, optionen } = verboten('KEIN_ZUGRIFF');
+      backend.expectOne('/api/vertraege').flush(body, optionen);
+
+      expect(fehler).toBeDefined();
+      expect(zurStartseite).not.toHaveBeenCalled();
+      backend.expectOne(KOMPONENTEN_URL).flush(['PORTFOLIO']);
+
+      expect(TestBed.inject(AuthService).komponenten()).toEqual(['PORTFOLIO']);
+      expect(zurStartseite).toHaveBeenCalledWith('/start');
+    });
+
+    it('lässt CSRF_TOKEN_UNGUELTIG unberührt', () => {
+      http.post('/api/vertraege', {}).subscribe({ error: () => undefined });
+      const { body, optionen } = verboten('CSRF_TOKEN_UNGUELTIG');
+      backend.expectOne('/api/vertraege').flush(body, optionen);
+
+      backend.expectNone(KOMPONENTEN_URL);
+      expect(zurStartseite).not.toHaveBeenCalled();
+    });
+
+    it('lädt nicht in einer Schleife, wenn der Komponentenabruf selbst 403 liefert', () => {
+      TestBed.inject(AuthService).komponentenLaden().subscribe();
+      const { body, optionen } = verboten('KEIN_ZUGRIFF');
+      backend.expectOne(KOMPONENTEN_URL).flush(body, optionen);
+
+      backend.expectNone(KOMPONENTEN_URL);
+    });
   });
 });

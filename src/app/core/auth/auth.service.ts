@@ -1,8 +1,10 @@
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
-import { Profil, RegistrierungAnfrage } from '../api/api';
+import { Komponente, Profil, RegistrierungAnfrage } from '../api/api';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
+
+export const KOMPONENTEN_URL = '/api/nutzer/ich/komponenten';
 
 const OHNE_UMLEITUNG = () => new HttpContext().set(OHNE_ANMELDE_UMLEITUNG, true);
 
@@ -18,8 +20,15 @@ export class AuthService {
   /** {@code undefined}, solange der Status noch nicht beim Backend abgefragt wurde. */
   private readonly aktuellerNutzer = signal<Profil | null | undefined>(undefined);
 
+  /** {@code null}, solange die gebuchten Komponenten nicht geladen werden konnten. */
+  private readonly gebuchteKomponenten = signal<Komponente[] | null>(null);
+
   readonly nutzer = computed(() => this.aktuellerNutzer() ?? null);
   readonly angemeldet = computed(() => !!this.aktuellerNutzer());
+  readonly komponenten = computed(() => this.gebuchteKomponenten() ?? []);
+  readonly komponentenFehler = computed(
+    () => this.angemeldet() && this.gebuchteKomponenten() === null,
+  );
 
   /**
    * Liefert, ob eine Session besteht. Fragt nur beim ersten Aufruf das Backend; das setzt
@@ -57,15 +66,31 @@ export class AuthService {
       .pipe(tap({ finalize: () => this.zuruecksetzen() }));
   }
 
+  /**
+   * Lädt die gebuchten Komponenten neu. Scheitert das, bleibt der Nutzer angemeldet und
+   * {@code komponentenFehler} ist gesetzt; ein 401 behandelt der {@code authInterceptor}.
+   */
+  komponentenLaden(): Observable<void> {
+    return this.http.get<Komponente[]>(KOMPONENTEN_URL).pipe(
+      map((komponenten) => this.gebuchteKomponenten.set(komponenten)),
+      catchError(() => {
+        this.gebuchteKomponenten.set(null);
+        return of(undefined);
+      }),
+    );
+  }
+
   /** Vergisst den Nutzer, z. B. wenn das Backend die Session beendet hat (401). */
   zuruecksetzen(): void {
     this.aktuellerNutzer.set(null);
+    this.gebuchteKomponenten.set(null);
   }
 
   private nutzerLaden(): Observable<boolean> {
     return this.http.get<Profil>('/api/nutzer/ich', { context: OHNE_UMLEITUNG() }).pipe(
       tap((nutzer) => this.aktuellerNutzer.set(nutzer)),
-      map(() => true),
+      switchMap(() => this.komponentenLaden()),
+      map(() => this.angemeldet()),
       catchError((error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 401) {
           this.zuruecksetzen();

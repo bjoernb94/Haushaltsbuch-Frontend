@@ -46,6 +46,7 @@ Backend, die Gründe in den
 | `POST /api/registrierung`           | Konto anlegen, danach direkt angemeldet              |
 | `POST /api/abmeldung`               | Abmelden                                             |
 | `GET /api/nutzer/ich`               | Status: angemeldet (Profil) oder 401                 |
+| `GET /api/nutzer/ich/komponenten`   | Gebuchte Komponenten                                 |
 | `GET /actuator/health/systemstatus` | Erreichbarkeit von Datenbank und Anmeldeserver       |
 
 - `AuthService` (`core/auth`) hält den angemeldeten Nutzer als Signal. Die Guards schicken
@@ -54,6 +55,11 @@ Backend, die Gründe in den
 - Der `authInterceptor` leitet bei 401 unter `/api/**` zum Login um. Aufrufe, bei denen 401
   erwartet ist (Login, Statusabfrage), setzen dafür `OHNE_ANMELDE_UMLEITUNG`. Auf `/login` leitet
   er nicht erneut um, damit ein weiteres 401 die `returnUrl` nicht überschreibt.
+- `AuthService` lädt mit dem Nutzer auch die gebuchten Komponenten. Die Navigation zeigt nur
+  gebuchte Bereiche, noch nicht verfügbare ausgegraut ohne Link; `bereichGuard` leitet alles
+  andere zur Startseite um. Scheitert das Laden, zeigt die Shell einen Hinweis mit „Erneut
+  versuchen“. Bei 403 `KEIN_ZUGRIFF` lädt der `authInterceptor` die Komponenten neu und geht zur
+  Startseite.
 - CSRF: Angular schickt den Header `X-XSRF-TOKEN` aus dem Cookie `XSRF-TOKEN` mit (nur bei
   relativen URLs, deshalb laufen alle Aufrufe über `/api`).
 
