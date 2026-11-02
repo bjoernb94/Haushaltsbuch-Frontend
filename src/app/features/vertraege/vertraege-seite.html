@@ -1,0 +1,51 @@
+<a class="zurueck" routerLink="/start">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M15 18l-6-6 6-6"></path>
+  </svg>
+  Zur Übersicht
+</a>
+
+<h1>Verträge</h1>
+
+@if (fehler()) {
+  <div class="fehler">
+    <app-hinweis-box text="Die Verträge konnten nicht geladen werden." />
+    <button type="button" class="knopf knopf-sekundaer" (click)="laden()">Erneut versuchen</button>
+  </div>
+} @else if (daten(); as stand) {
+  <div class="kennzahlen">
+    <div class="kennzahl">
+      <span>Laufende Verträge</span><b>{{ stand.uebersicht.laufendeVertraege }}</b>
+    </div>
+    <div class="kennzahl">
+      <span>Kosten pro Monat</span><b>{{ stand.uebersicht.kostenProMonat | betraege }}</b>
+    </div>
+    <div class="kennzahl">
+      <span>Kosten pro Jahr</span><b>{{ stand.uebersicht.kostenProJahr | betraege }}</b>
+    </div>
+  </div>
+
+  <section class="liste" aria-label="Vertragsliste">
+    @for (vertrag of stand.vertraege; track vertrag.id) {
+      <app-vertrag-zeile
+        [vertrag]="vertrag"
+        [offen]="offeneId() === vertrag.id"
+        (umschalten)="umschalten(vertrag.id)"
+      />
+    } @empty {
+      <p class="leer">Noch keine Verträge</p>
+    }
+  </section>
+} @else {
+  <p class="laedt" role="status">Wird geladen …</p>
+}

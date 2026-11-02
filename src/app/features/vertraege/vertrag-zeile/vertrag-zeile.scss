@@ -1,0 +1,188 @@
+@use '../../../shared/format/kuerzen';
+
+:host {
+  display: block;
+
+  &:not(:first-child) .zeile {
+    border-top: 1px solid var(--app-trenner);
+  }
+}
+
+.zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 16px 0;
+}
+
+.angaben {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+
+.name,
+.betrag {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+// Der volle Text steht in den Details.
+.name {
+  @include kuerzen.zeilen(2);
+}
+
+.meta,
+.notiz {
+  @include kuerzen.zeilen(1);
+}
+
+// Abgeblendet über die Farbe: Deckkraft 0,75 läge bei gedämpftem Text unter 4,5:1.
+.beendet {
+  .name,
+  .betrag {
+    color: var(--app-text-gedaempft);
+  }
+}
+
+.meta,
+.klein,
+.zusatz,
+.notiz {
+  color: var(--app-text-gedaempft);
+}
+
+.meta {
+  font-size: 14px;
+}
+
+.notiz {
+  font-size: 13px;
+  font-style: italic;
+}
+
+.kosten {
+  flex: 0 0 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.klein {
+  font-size: 13px;
+}
+
+.kuendigung {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ton-warnung {
+  background: var(--app-hinweis-grund);
+  color: var(--app-hinweis-text);
+}
+
+.ton-ok {
+  background: var(--app-gruen-hell);
+  color: var(--app-gruen-dunkel);
+}
+
+.ton-info {
+  background: var(--app-info-grund);
+  color: var(--app-info-text);
+}
+
+.ton-neutral {
+  background: var(--app-grund);
+  color: var(--app-text-gedaempft);
+}
+
+.zusatz {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.details-knopf {
+  flex: none;
+  min-height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid var(--app-rand);
+  border-radius: 10px;
+  background: var(--app-flaeche);
+  color: var(--app-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
+  }
+
+  .offen {
+    transform: rotate(180deg);
+  }
+}
+
+.details {
+  flex: 1 1 100%;
+  box-sizing: border-box;
+  padding: 16px 20px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 12px;
+  background: var(--app-details-grund);
+}
+
+dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px 24px;
+
+  div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-wrap: anywhere;
+  }
+}
+
+// Einziger längerer Freitext: volle Breite, Zeilenumbrüche bleiben erhalten.
+.notiz-eintrag {
+  grid-column: 1 / -1;
+
+  dd {
+    white-space: pre-line;
+  }
+}
+
+dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text-gedaempft);
+}
+
+dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}

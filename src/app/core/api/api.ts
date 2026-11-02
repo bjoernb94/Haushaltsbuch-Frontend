@@ -16,6 +16,7 @@ export type VertragAnfrage = Schemas['VertragAnfrage'];
 export type VertragAntwort = Schemas['VertragAntwort'];
 export type VertragKategorieAntwort = Schemas['VertragKategorieAntwort'];
 export type VertragKategorieSchluessel = Schemas['VertragKategorieSchluessel'];
+export type Vertragsstatus = Schemas['Vertragsstatus'];
 export type VertragsuebersichtAntwort = Schemas['VertragsuebersichtAntwort'];
 export type VertragVorschauAnfrage = Schemas['VertragVorschauAnfrage'];
 export type VertragVorschauAntwort = Schemas['VertragVorschauAntwort'];

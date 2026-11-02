@@ -67,6 +67,25 @@ test.describe('Vertragskachel', () => {
     await expect(kachel(page)).toContainText('bis 30.11.2026');
   });
 
+  test('kürzt lange Namen auf zwei Zeilen', async ({ page }) => {
+    const lang = 'Sehr langer Text '.repeat(30).trim();
+    await backendSimulieren(page, {
+      angemeldet: true,
+      vertraege: [{ ...BEISPIEL_VERTRAEGE[0], bezeichnung: lang }],
+    });
+    await page.goto('/start');
+
+    const name = kachel(page).locator('.vertrag b');
+    await expect(name).toHaveText(lang);
+    const { sichtbar, gesamt, zeilenhoehe } = await name.evaluate((e) => ({
+      sichtbar: e.clientHeight,
+      gesamt: e.scrollHeight,
+      zeilenhoehe: parseFloat(getComputedStyle(e).lineHeight),
+    }));
+    expect(gesamt).toBeGreaterThan(sichtbar);
+    expect(sichtbar).toBeLessThanOrEqual(Math.ceil(zeilenhoehe * 2));
+  });
+
   test('zeigt den Leerzustand', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true });
     await page.goto('/start');

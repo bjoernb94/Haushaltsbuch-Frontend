@@ -4,7 +4,7 @@ import { Betrag } from '../../core/api/api';
 /** Nur für eine leere Liste; sonst steht die Währung immer am Betrag. */
 const KEIN_BETRAG: Betrag = { wert: 0, waehrung: 'EUR' };
 
-function betragText({ wert, waehrung }: Betrag, locale: string): string {
+export function betragText({ wert, waehrung }: Betrag, locale: string): string {
   return new Intl.NumberFormat(locale, { style: 'currency', currency: waehrung }).format(wert);
 }
 
