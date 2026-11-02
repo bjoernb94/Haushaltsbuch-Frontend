@@ -1,0 +1,99 @@
+@use '../kennzahl';
+@use '../../../shared/formular/formular';
+
+@include kennzahl.kennzahl;
+@include formular.knoepfe;
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+a[kachelLink] {
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.kennzahl span {
+  color: var(--app-text-gedaempft);
+}
+
+.fristen {
+  display: flex;
+  flex-direction: column;
+}
+
+.ueberschrift {
+  padding-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-text-gedaempft);
+}
+
+.frist {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--app-trenner);
+  font-size: 15px;
+}
+
+.vertrag {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  // Erste Zeile mittig zum höheren Badge.
+  padding-top: 3px;
+  overflow-wrap: anywhere;
+  color: var(--app-text-gedaempft);
+
+  b {
+    font-weight: 700;
+    color: var(--app-text);
+  }
+}
+
+.termin {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--app-grund);
+  color: var(--app-text-gedaempft);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &.dringend {
+    background: var(--app-hinweis-grund);
+    color: var(--app-hinweis-text);
+  }
+}
+
+.keine {
+  margin: 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--app-trenner);
+  font-size: 15px;
+  color: var(--app-text-gedaempft);
+}
+
+.laedt {
+  margin: 0;
+  font-size: 15px;
+  color: var(--app-text-gedaempft);
+}
+
+.knopf {
+  flex: none;
+  align-self: flex-start;
+  padding: 0 18px;
+}

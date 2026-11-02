@@ -1,4 +1,3 @@
-import { formatCurrency, getCurrencySymbol } from '@angular/common';
 import { inject, LOCALE_ID, Pipe, PipeTransform } from '@angular/core';
 import { Betrag } from '../../core/api/api';
 
@@ -6,7 +5,7 @@ import { Betrag } from '../../core/api/api';
 const KEIN_BETRAG: Betrag = { wert: 0, waehrung: 'EUR' };
 
 function betragText({ wert, waehrung }: Betrag, locale: string): string {
-  return formatCurrency(wert, locale, getCurrencySymbol(waehrung, 'wide', locale), waehrung);
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: waehrung }).format(wert);
 }
 
 /** Betrag mit seiner Währung, z. B. „586,80 €“. */

@@ -1,11 +1,7 @@
-import { registerLocaleData } from '@angular/common';
-import localeDe from '@angular/common/locales/de';
 import { LOCALE_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BetraegePipe, BetragPipe } from './betrag.pipe';
 import { datumText, DatumPipe } from './datum.pipe';
-
-registerLocaleData(localeDe);
 
 describe('Formatierung', () => {
   beforeEach(() => {
