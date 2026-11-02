@@ -53,11 +53,17 @@ describe('LoginSeite', () => {
 
   const fehlertext = () => element.querySelector('[role="alert"]')?.textContent?.trim();
 
+  const felderMarkiert = () =>
+    ['login-email', 'login-passwort'].map(
+      (id) => element.querySelector('#' + id)?.getAttribute('aria-invalid') === 'true',
+    );
+
   it('verlangt E-Mail-Adresse und Passwort', async () => {
     await eingeben('max@beispiel.de', '');
     await absenden();
 
     expect(fehlertext()).toBe('Bitte gib E-Mail-Adresse und Passwort ein.');
+    expect(felderMarkiert()).toEqual([true, true]);
     expect(anmelden).not.toHaveBeenCalled();
   });
 
@@ -77,24 +83,89 @@ describe('LoginSeite', () => {
     expect(navigiert).toHaveBeenCalledWith('/vertraege');
   });
 
+  async function ablehnen(status: number, error: unknown) {
+    anmelden.mockReturnValue(throwError(() => new HttpErrorResponse({ status, error })));
+    await eingeben('max@beispiel.de', 'falsch');
+    await absenden();
+  }
+
   it('zeigt den Grund einer abgelehnten Anmeldung', async () => {
     anmelden.mockReturnValue(
-      throwError(() => new HttpErrorResponse({ status: 401, error: { grund: 'UNGUELTIG' } })),
+      throwError(
+        () => new HttpErrorResponse({ status: 401, error: { code: 'ANMELDUNG_UNGUELTIG' } }),
+      ),
     );
     await eingeben('max@beispiel.de', 'falsch');
     await absenden();
 
     expect(fehlertext()).toBe('E-Mail-Adresse oder Passwort ist falsch. Bitte versuche es erneut.');
-    expect(element.querySelector('#login-passwort')?.getAttribute('aria-invalid')).toBe('true');
+    expect(felderMarkiert()).toEqual([true, true]);
     expect(navigiert).not.toHaveBeenCalled();
   });
 
-  it('blendet den Fehler beim Tippen aus', async () => {
+  it('hat für gesperrte und nicht eingerichtete Konten eigene Texte', async () => {
+    await ablehnen(403, { code: 'ANMELDUNG_GESPERRT' });
+    expect(fehlertext()).toBe('Das Konto ist gesperrt. Bitte versuche es später erneut.');
+
+    await ablehnen(403, { code: 'ANMELDUNG_NICHT_EINGERICHTET' });
+    expect(fehlertext()).toBe('Das Konto ist noch nicht vollständig eingerichtet.');
+  });
+
+  it('meldet Validierungsfehler des Backends', async () => {
+    await ablehnen(400, { code: 'VALIDIERUNG', felder: [] });
+    expect(fehlertext()).toBe('Bitte gib E-Mail-Adresse und Passwort ein.');
+  });
+
+  it('zeigt bei unbekanntem oder fehlendem Code den allgemeinen Text, nie detail', async () => {
+    const allgemein = 'Die Anmeldung ist gerade nicht möglich. Bitte versuche es später erneut.';
+
+    await ablehnen(500, { code: 'INTERNER_FEHLER', detail: 'Unexpected error.' });
+    expect(fehlertext()).toBe(allgemein);
+
+    await ablehnen(401, { detail: 'Invalid credentials.' });
+    expect(fehlertext()).toBe(allgemein);
+
+    await ablehnen(502, '<html>');
+    expect(fehlertext()).toBe(allgemein);
+  });
+
+  it('markiert die Felder nur, wenn es an den Eingaben liegt', async () => {
+    await ablehnen(400, { code: 'VALIDIERUNG', felder: [] });
+    expect(felderMarkiert()).toEqual([true, true]);
+
+    await ablehnen(403, { code: 'ANMELDUNG_GESPERRT' });
+    expect(felderMarkiert()).toEqual([false, false]);
+
+    await ablehnen(401, { code: 'ANMELDUNG_UNGUELTIG' });
+    await ablehnen(403, { code: 'ANMELDUNG_NICHT_EINGERICHTET' });
+    expect(felderMarkiert()).toEqual([false, false]);
+
+    await ablehnen(401, { code: 'ANMELDUNG_UNGUELTIG' });
+    await ablehnen(500, { code: 'INTERNER_FEHLER' });
+    expect(felderMarkiert()).toEqual([false, false]);
+
+    await ablehnen(401, { code: 'ANMELDUNG_UNGUELTIG' });
+    await ablehnen(0, null);
+    expect(felderMarkiert()).toEqual([false, false]);
+  });
+
+  it('markiert keine Felder, wenn das Formular gesperrt ist', async () => {
+    await ablehnen(401, { code: 'ANMELDUNG_UNGUELTIG' });
+    expect(felderMarkiert()).toEqual([true, true]);
+
+    systemstatus.next({ backend: true, datenbank: false, anmeldeserver: true });
+    await fixture.whenStable();
+    expect(felderMarkiert()).toEqual([false, false]);
+  });
+
+  it('blendet den Fehler und die Markierung beim Tippen aus', async () => {
     await absenden();
     expect(fehlertext()).toBeDefined();
+    expect(felderMarkiert()).toEqual([true, true]);
 
     await eingeben('m', '');
     expect(fehlertext()).toBeUndefined();
+    expect(felderMarkiert()).toEqual([false, false]);
   });
 
   it('sperrt den Knopf, solange die Anmeldung läuft', async () => {

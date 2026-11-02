@@ -139,7 +139,9 @@ describe('RegistrierungSeite', () => {
 
   it('markiert eine vergebene E-Mail-Adresse', async () => {
     registrieren.mockReturnValue(
-      throwError(() => new HttpErrorResponse({ status: 409, error: { detail: 'x' } })),
+      throwError(
+        () => new HttpErrorResponse({ status: 409, error: { code: 'EMAIL_BEREITS_VERGEBEN' } }),
+      ),
     );
     await gueltigAusfuellen();
     await absenden();
@@ -148,16 +150,66 @@ describe('RegistrierungSeite', () => {
     expect(ungueltig('reg-email')).toBe(true);
   });
 
-  it('zeigt die Ablehnung des Backends an', async () => {
+  it('zeigt bei einer Ablehnung den eigenen Text statt detail', async () => {
     registrieren.mockReturnValue(
       throwError(
-        () => new HttpErrorResponse({ status: 400, error: { detail: 'Passwort abgelehnt.' } }),
+        () =>
+          new HttpErrorResponse({
+            status: 400,
+            error: { code: 'REGISTRIERUNG_ABGELEHNT', detail: 'Invalid password.' },
+          }),
       ),
     );
     await gueltigAusfuellen();
     await absenden();
 
-    expect(hinweis()).toBe('Passwort abgelehnt.');
+    expect(hinweis()).toBe(
+      'Das Konto konnte mit diesen Daten nicht angelegt werden. Bitte prüfe deine Eingaben, vor allem das Passwort.',
+    );
+    expect(ungueltig('reg-passwort')).toBe(false);
+  });
+
+  it('markiert die Felder eines Validierungsfehlers', async () => {
+    registrieren.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 400,
+            error: {
+              code: 'VALIDIERUNG',
+              felder: [
+                { feld: 'email', code: 'Email', parameter: {} },
+                { feld: 'name', code: 'Size', parameter: { max: 255 } },
+                { feld: 'unbekannt', code: 'NotNull', parameter: {} },
+              ],
+            },
+          }),
+      ),
+    );
+    await gueltigAusfuellen();
+    await absenden();
+
+    expect(hinweis()).toBe('Bitte prüfe die markierten Felder.');
+    expect(ungueltig('reg-email')).toBe(true);
+    expect(ungueltig('reg-name')).toBe(true);
+    expect(ungueltig('reg-vorname')).toBe(false);
+
+    await ausfuellen({ 'reg-name': 'Muster' });
+    expect(hinweis()).toBeUndefined();
+    expect(ungueltig('reg-email')).toBe(false);
+  });
+
+  it('zeigt ohne Code den allgemeinen Text, auch bei Status 409', async () => {
+    registrieren.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 409, error: { detail: 'x' } })),
+    );
+    await gueltigAusfuellen();
+    await absenden();
+
+    expect(hinweis()).toBe(
+      'Die Registrierung ist gerade nicht möglich. Bitte versuche es später erneut.',
+    );
+    expect(ungueltig('reg-email')).toBe(false);
   });
 
   it('sperrt das Formular, wenn ein Dienst fehlt', async () => {

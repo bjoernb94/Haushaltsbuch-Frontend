@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { backendSimulieren } from './backend-mock';
+import { backendSimulieren, GESPERRT } from './backend-mock';
 
 test.beforeEach(async ({ page }) => {
   await backendSimulieren(page);
@@ -27,7 +27,20 @@ test('falsches Passwort zeigt eine Fehlermeldung', async ({ page }) => {
   await expect(page.getByRole('alert')).toHaveText(
     'E-Mail-Adresse oder Passwort ist falsch. Bitte versuche es erneut.',
   );
+  await expect(page.getByLabel('Passwort')).toHaveAttribute('aria-invalid', 'true');
   await expect(page).toHaveURL(/\/login$/);
+});
+
+test('gesperrtes Konto zeigt einen eigenen Text', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByLabel('E-Mail-Adresse').fill(GESPERRT);
+  await page.getByLabel('Passwort').fill('geheim123');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await expect(page.getByRole('alert')).toHaveText(
+    'Das Konto ist gesperrt. Bitte versuche es später erneut.',
+  );
+  await expect(page.getByLabel('Passwort')).toHaveAttribute('aria-invalid', 'false');
 });
 
 test('Abmelden führt zurück zum Login', async ({ page }) => {
