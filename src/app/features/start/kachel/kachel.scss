@@ -64,9 +64,20 @@ h2 {
   }
 
   .inhalt {
-    opacity: 0.45;
+    opacity: 0.55;
     user-select: none;
   }
+}
+
+.beispiel {
+  align-self: flex-start;
+  margin: -6px 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--app-hinweis-grund);
+  color: var(--app-hinweis-text);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .hinweis {

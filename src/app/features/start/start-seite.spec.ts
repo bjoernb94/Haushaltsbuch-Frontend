@@ -88,8 +88,17 @@ describe('StartSeite', () => {
     }
   });
 
-  it('erfindet keine Werte für noch nicht verfügbare Kacheln', async () => {
-    komponenten.set(['FINANZUEBERSICHT', 'VERSORGUNGSVERTRAEGE', 'PORTFOLIO']);
-    expect((await seite()).querySelector('.raster')?.textContent).not.toMatch(/\d|€/);
+  it('kennzeichnet die Werte noch nicht verfügbarer Kacheln als Beispiel', async () => {
+    komponenten.set([
+      'FINANZUEBERSICHT',
+      'VERSORGUNGSVERTRAEGE',
+      'PORTFOLIO',
+      'VERTRAGSUEBERSICHT',
+    ]);
+    const element = await seite();
+    expect(element.querySelectorAll('.beispiel').length).toBe(3);
+    expect(element.querySelector('.beispiel')?.textContent).toBe(
+      'Beispielwerte, nicht deine Daten',
+    );
   });
 });

@@ -4,7 +4,7 @@ import { istVerfuegbar, KOMPONENTE_ICON } from '../../../core/komponenten/kompon
 
 /**
  * Kachel eines Fachbereichs auf der Startseite. Bereiche ohne Backend erscheinen ausgegraut; ihr
- * Inhalt zeigt nur den Aufbau und ist für Screenreader verborgen.
+ * Inhalt zeigt Beispielwerte und ist für Screenreader verborgen.
  */
 @Component({
   selector: 'app-kachel',

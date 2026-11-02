@@ -26,6 +26,9 @@
       <ng-content select="[kachelLink]" />
     }
   </div>
+  @if (demnaechst()) {
+    <p class="beispiel" aria-hidden="true">Beispielwerte, nicht deine Daten</p>
+  }
   <div class="inhalt" [attr.aria-hidden]="demnaechst() ? 'true' : null">
     <ng-content />
   </div>
