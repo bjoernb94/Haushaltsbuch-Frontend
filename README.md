@@ -139,11 +139,11 @@ src/app/
   features/    Seiten, lazy geladen
     anmeldung/   login/, registrierung/ und ihr gemeinsamer anmelde-rahmen/
     start/       Startseite nach der Anmeldung
-    buchungen/, vertraege/, versorgung/, portfolio/, nutzer/   je ein Backend-Modul
-  shared/      Bausteine für mehrere Bereiche: hinweis-box/, systemstatus-leiste/
-  shell/       Rahmen der angemeldeten Bereiche (Kopfzeile, Navigation, Fußzeile)
-src/styles.scss          Material-Theme und Farb-Tokens (--app-*) des Designs
-src/styles/_theme-colors.scss   aus der Designfarbe erzeugte Material-Paletten
+    vertraege/   je ein Backend-Modul; weitere kommen mit ihren Seiten dazu
+  shared/      Bausteine für mehrere Bereiche: formular/, hinweis-box/, systemstatus-leiste/
+  shell/       Rahmen der angemeldeten Bereiche (Kopfzeile, hauptmenue/, Fußzeile); die Startseite
+               kommt ohne Navigation aus (Route-Data ohneNavigation)
+src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile
 ```
 
 ## Konventionen

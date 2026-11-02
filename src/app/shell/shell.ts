@@ -1,51 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { Komponente } from '../core/api/api';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
-import { istVerfuegbar } from '../core/komponenten/komponente';
 import { systemstatusBeobachten } from '../core/systemstatus/systemstatus.service';
 import { HinweisBox } from '../shared/hinweis-box/hinweis-box';
 import { SystemstatusLeiste } from '../shared/systemstatus-leiste/systemstatus-leiste';
+import { Hauptmenue } from './hauptmenue/hauptmenue';
 
-interface NavEintrag {
-  pfad: string;
-  label: string;
-  icon: string;
-  /** Ohne Komponente immer sichtbar. */
-  komponente?: Komponente;
-}
-
-const NAVIGATION: readonly NavEintrag[] = [
-  { pfad: '/start', label: 'Start', icon: 'home' },
-  { pfad: '/buchungen', label: 'Buchungen', icon: 'receipt_long', komponente: 'FINANZUEBERSICHT' },
-  { pfad: '/vertraege', label: 'Verträge', icon: 'description', komponente: 'VERTRAGSUEBERSICHT' },
-  { pfad: '/versorgung', label: 'Versorgung', icon: 'bolt', komponente: 'VERSORGUNGSVERTRAEGE' },
-  { pfad: '/portfolio', label: 'Portfolio', icon: 'trending_up', komponente: 'PORTFOLIO' },
-  { pfad: '/nutzer', label: 'Nutzer', icon: 'person' },
-];
-
-/** Rahmen der angemeldeten Bereiche: Kopfzeile und Navigation. */
+/**
+ * Rahmen der angemeldeten Bereiche, gemäß Design in zwei Layouts: Die Startseite (Route-Data
+ * {@code ohneNavigation}) navigiert über ihre Kacheln, die übrigen Bereiche über die
+ * Seitennavigation.
+ */
 @Component({
   selector: 'app-shell',
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    MatToolbarModule,
-    MatSidenavModule,
-    MatListModule,
-    MatIconModule,
-    MatButtonModule,
-    MatTooltipModule,
-    HinweisBox,
-    SystemstatusLeiste,
-  ],
+  imports: [RouterOutlet, Hauptmenue, HinweisBox, SystemstatusLeiste],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
@@ -54,18 +24,17 @@ export class Shell {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  protected readonly nutzer = this.auth.nutzer;
-
   /** Nur zur Anzeige in der Fußzeile; in der App wird nichts gesperrt. */
   protected readonly systemstatus = systemstatusBeobachten();
 
   protected readonly komponentenFehler = this.auth.komponentenFehler;
 
-  /** Nur gebuchte Bereiche; noch nicht verfügbare erscheinen ohne Link. */
-  protected readonly navigation = computed(() =>
-    NAVIGATION.filter((e) => !e.komponente || this.auth.komponenten().includes(e.komponente)).map(
-      (e) => ({ ...e, demnaechst: !!e.komponente && !istVerfuegbar(e.komponente) }),
+  protected readonly mitNavigation = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.routeMitNavigation()),
     ),
+    { initialValue: this.routeMitNavigation() },
   );
 
   protected komponentenLaden(): void {
@@ -78,5 +47,13 @@ export class Shell {
       complete: () => void this.router.navigateByUrl('/login'),
       error: () => void this.router.navigateByUrl('/login'),
     });
+  }
+
+  private routeMitNavigation(): boolean {
+    let route = this.router.routerState.snapshot.root;
+    while (route.firstChild) {
+      route = route.firstChild;
+    }
+    return !route.data['ohneNavigation'];
   }
 }

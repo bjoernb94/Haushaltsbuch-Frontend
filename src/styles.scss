@@ -1,34 +1,7 @@
-// Material-3-Theme der Anwendung. Die Paletten in styles/_theme-colors.scss sind aus der
-// Primärfarbe des Designs erzeugt (ng generate @angular/material:theme-color).
-// Mehr zum Theming: https://material.angular.dev/guide/theming
-@use '@angular/material' as mat;
-@use './styles/theme-colors' as theme;
-
 html {
   height: 100%;
-  @include mat.theme(
-    (
-      color: (
-        primary: theme.$primary-palette,
-        tertiary: theme.$tertiary-palette,
-      ),
-      typography: Manrope,
-      density: 0,
-    )
-  );
 
-  // Die erzeugte Palette trifft die Designfarben nur annähernd, daher die exakten Werte.
-  @include mat.theme-overrides(
-    (
-      primary: #1f5c45,
-      surface: #f3f5f2,
-      on-surface: #17201b,
-      on-surface-variant: #4e5a53,
-      error: #b42318,
-    )
-  );
-
-  // Farben des Designs für eigene Komponenten (z. B. Login), die nicht aus Material stammen.
+  // Farben des Designs.
   --app-gruen: #1f5c45;
   --app-gruen-dunkel: #163f30;
   --app-gruen-fokus: rgba(31, 92, 69, 0.18);
@@ -40,6 +13,9 @@ html {
   --app-text-gedaempft: #4e5a53;
   --app-platzhalter: #7a857e;
   --app-rand: #c9d1cc;
+  --app-trenner: #dce3de;
+  --app-kopfzeile-rand: #cfe0d7;
+  --app-flaeche: #fff;
   --app-erfolg: #1f7a4d;
   --app-fehler: #b42318;
   --app-fehler-text: #8f1d14;
@@ -49,9 +25,12 @@ html {
 
 body {
   color-scheme: light;
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
+  background-color: var(--app-grund);
+  color: var(--app-text);
+  font:
+    400 0.875rem / 1.25rem Manrope,
+    system-ui,
+    sans-serif;
   margin: 0;
   height: 100%;
 }

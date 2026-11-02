@@ -1,0 +1,97 @@
+// Formularbausteine gemäß Design: Felder, Aktionen und Knöpfe.
+
+@mixin felder {
+  .feld {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    label {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input {
+      height: 48px;
+      box-sizing: border-box;
+      padding: 0 14px;
+      border-radius: 10px;
+      border: 1.5px solid var(--app-rand);
+      background: #fff;
+      font: inherit;
+      font-size: 16px;
+      color: var(--app-text);
+
+      &::placeholder {
+        color: var(--app-platzhalter);
+      }
+
+      &[aria-invalid='true'] {
+        border-color: var(--app-fehler);
+      }
+
+      &:focus {
+        outline: none;
+        border-color: var(--app-gruen);
+        box-shadow: 0 0 0 3px var(--app-gruen-fokus);
+      }
+    }
+  }
+}
+
+@mixin knoepfe {
+  .aktionen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .knopf {
+    flex: 1 1 160px;
+    height: 48px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1.5px solid var(--app-gruen);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid var(--app-gruen-fokus-rand);
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    &[aria-busy='true'] {
+      cursor: progress;
+    }
+  }
+
+  .knopf-primaer {
+    background: var(--app-gruen);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--app-gruen-dunkel);
+    }
+  }
+
+  .knopf-sekundaer {
+    background: #fff;
+    color: var(--app-gruen);
+
+    &:hover {
+      color: var(--app-gruen-dunkel);
+      border-color: var(--app-gruen-dunkel);
+    }
+  }
+}

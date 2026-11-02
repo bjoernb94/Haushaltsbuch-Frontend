@@ -1,11 +1,17 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter, Router, Routes } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
 import { Komponente } from '../core/api/api';
 import { AuthService } from '../core/auth/auth.service';
 import { SystemstatusService } from '../core/systemstatus/systemstatus.service';
 import { Shell } from './shell';
+
+const ROUTEN: Routes = [
+  { path: 'start', data: { ohneNavigation: true }, children: [] },
+  { path: 'vertraege', children: [] },
+];
 
 describe('Shell', () => {
   const komponenten = signal<Komponente[]>([]);
@@ -19,11 +25,10 @@ describe('Shell', () => {
     await TestBed.configureTestingModule({
       imports: [Shell],
       providers: [
-        provideRouter([]),
+        provideRouter(ROUTEN),
         {
           provide: AuthService,
           useValue: {
-            nutzer: signal({ vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' }),
             komponenten,
             komponentenFehler,
             komponentenLaden,
@@ -47,28 +52,62 @@ describe('Shell', () => {
   }
 
   const links = (element: HTMLElement) =>
-    [...element.querySelectorAll('mat-nav-list a')].map((a) => a.getAttribute('href'));
+    [...element.querySelectorAll('nav a')].map((a) => a.getAttribute('href'));
 
-  it('zeigt Kopfzeile und Navigation', async () => {
+  it('zeigt Kopfzeile, Abmelden und Navigation', async () => {
     komponenten.set(['VERTRAGSUEBERSICHT']);
     const element = await shell();
-    expect(element.querySelector('mat-toolbar')?.textContent).toContain('Haushaltsbuch');
-    expect(links(element)).toEqual(['/start', '/vertraege', '/nutzer']);
+    expect(element.querySelector('header')?.textContent).toContain('Haushaltsbuch');
+    expect(element.querySelector('nav')?.getAttribute('aria-label')).toBe('Hauptmenü');
+    expect(element.querySelector('nav')?.textContent).toContain('Komponenten');
+    expect(links(element)).toEqual(['/start', '/vertraege']);
   });
 
-  it('blendet nicht gebuchte Bereiche aus', async () => {
+  it('blendet nicht gebuchte Bereiche und den leeren Abschnitt aus', async () => {
     const element = await shell();
-    expect(links(element)).toEqual(['/start', '/nutzer']);
-    expect(element.querySelector('mat-nav-list')?.textContent).not.toContain('Demnächst');
+    expect(links(element)).toEqual(['/start']);
+    expect(element.querySelector('nav')?.textContent).not.toContain('Komponenten');
+    expect(element.querySelector('nav')?.textContent).not.toContain('Demnächst');
   });
 
   it('zeigt gebuchte, noch nicht verfügbare Bereiche ohne Link', async () => {
     komponenten.set(['PORTFOLIO']);
     const element = await shell();
-    expect(links(element)).toEqual(['/start', '/nutzer']);
+    expect(links(element)).toEqual(['/start']);
     const eintrag = element.querySelector('.demnaechst');
     expect(eintrag?.textContent).toContain('Portfolio');
     expect(eintrag?.textContent).toContain('Demnächst verfügbar');
+  });
+
+  it('nennt lange Bereiche mit Lang- und Kurzform', async () => {
+    komponenten.set(['FINANZUEBERSICHT']);
+    const eintrag = (await shell()).querySelector('.demnaechst');
+    expect(eintrag?.querySelector('.lang')?.textContent).toBe('Finanzübersicht');
+    expect(eintrag?.querySelector('.kurz')?.textContent).toBe('Finanzen');
+  });
+
+  it('richtet das Layout nach der Route', async () => {
+    const harness = await RouterTestingHarness.create();
+    const fixture = TestBed.createComponent(Shell);
+    const shellElement = fixture.nativeElement as HTMLElement;
+
+    await harness.navigateByUrl('/start');
+    await fixture.whenStable();
+    expect(shellElement.querySelector('nav')).toBeNull();
+
+    await harness.navigateByUrl('/vertraege');
+    await fixture.whenStable();
+    expect(shellElement.querySelector('nav')).not.toBeNull();
+  });
+
+  it('markiert den aktiven Eintrag', async () => {
+    komponenten.set(['VERTRAGSUEBERSICHT']);
+    await TestBed.inject(Router).navigateByUrl('/vertraege');
+    const element = await shell();
+    expect(element.querySelector('a[href="/vertraege"]')?.getAttribute('aria-current')).toBe(
+      'page',
+    );
+    expect(element.querySelector('a[href="/start"]')?.hasAttribute('aria-current')).toBe(false);
   });
 
   it('bietet nach einem Ladefehler einen neuen Versuch an', async () => {
@@ -97,7 +136,7 @@ describe('Shell', () => {
     const element = await shell();
     const navigiert = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
 
-    element.querySelector<HTMLButtonElement>('button[aria-label="Abmelden"]')!.click();
+    element.querySelector<HTMLButtonElement>('header button')!.click();
 
     expect(navigiert).toHaveBeenCalledWith('/login');
   });

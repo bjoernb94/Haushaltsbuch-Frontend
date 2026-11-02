@@ -1,0 +1,175 @@
+:host {
+  display: flex;
+  flex: 0 0 248px;
+}
+
+.seitennavigation {
+  flex: 1;
+  box-sizing: border-box;
+  padding: 24px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  background: var(--app-flaeche);
+  border-right: 1px solid var(--app-trenner);
+}
+
+.navliste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.abschnitt {
+  padding: 16px 12px 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-gedaempft);
+}
+
+.naveintrag {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--app-text);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+
+  svg {
+    flex: none;
+    color: var(--app-text-gedaempft);
+  }
+}
+
+.navlink {
+  &:hover {
+    color: var(--app-text);
+    background: var(--app-grund);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 1px;
+  }
+
+  &[aria-current='page'] {
+    background: var(--app-gruen-hell);
+    color: var(--app-gruen);
+    font-weight: 800;
+
+    svg {
+      color: var(--app-gruen);
+    }
+  }
+}
+
+.navtext {
+  min-width: 0;
+}
+
+.kurz {
+  display: none;
+}
+
+.demnaechst {
+  padding-block: 6px;
+  color: var(--app-text-gedaempft);
+
+  svg {
+    color: var(--app-platzhalter);
+  }
+}
+
+.demnaechst-text {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+
+.copyright {
+  margin: 0;
+  margin-top: auto;
+  padding-top: 24px;
+  font-size: 13px;
+  line-height: 16px;
+  text-align: center;
+  color: var(--app-text-gedaempft);
+}
+
+@media (max-width: 900px) {
+  :host {
+    flex: none;
+  }
+
+  .seitennavigation {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-top: 1px solid var(--app-trenner);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(14px);
+  }
+
+  .navliste {
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 0;
+  }
+
+  .abschnitt,
+  .copyright {
+    display: none;
+  }
+
+  .naveintrag {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-height: 52px;
+    padding: 4px 2px;
+    font-size: 11px;
+    text-align: center;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .navlink,
+  .navlink:hover,
+  .navlink[aria-current='page'] {
+    background: transparent;
+  }
+
+  .lang {
+    display: none;
+  }
+
+  .kurz {
+    display: inline;
+  }
+
+  // Passt in der Leiste nicht; bleibt für Screenreader.
+  .demnaechst-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}

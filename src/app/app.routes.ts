@@ -21,42 +21,21 @@ export const routes: Routes = [
   },
   {
     path: '',
-    // Lazy, damit Angular Material nicht im Start-Bundle von Login und Registrierung landet.
+    // Lazy, damit Login und Registrierung den Rahmen der App nicht mitladen.
     loadComponent: () => import('./shell/shell').then((m) => m.Shell),
     canActivate: [angemeldetGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'start' },
       {
         path: 'start',
+        data: { ohneNavigation: true },
         loadChildren: () => import('./features/start/start.routes').then((m) => m.START_ROUTES),
-      },
-      {
-        path: 'buchungen',
-        canActivate: [bereichGuard('FINANZUEBERSICHT')],
-        loadChildren: () =>
-          import('./features/buchungen/buchungen.routes').then((m) => m.BUCHUNGEN_ROUTES),
       },
       {
         path: 'vertraege',
         canActivate: [bereichGuard('VERTRAGSUEBERSICHT')],
         loadChildren: () =>
           import('./features/vertraege/vertraege.routes').then((m) => m.VERTRAEGE_ROUTES),
-      },
-      {
-        path: 'versorgung',
-        canActivate: [bereichGuard('VERSORGUNGSVERTRAEGE')],
-        loadChildren: () =>
-          import('./features/versorgung/versorgung.routes').then((m) => m.VERSORGUNG_ROUTES),
-      },
-      {
-        path: 'portfolio',
-        canActivate: [bereichGuard('PORTFOLIO')],
-        loadChildren: () =>
-          import('./features/portfolio/portfolio.routes').then((m) => m.PORTFOLIO_ROUTES),
-      },
-      {
-        path: 'nutzer',
-        loadChildren: () => import('./features/nutzer/nutzer.routes').then((m) => m.NUTZER_ROUTES),
       },
     ],
   },
