@@ -1,0 +1,61 @@
+<div class="kopf">
+  <h1>Willkommen, {{ vorname() }}!</h1>
+  <p>Dein Überblick für {{ monat }}.</p>
+</div>
+
+<div class="raster">
+  @if (gebucht('FINANZUEBERSICHT')) {
+    <app-kachel komponente="FINANZUEBERSICHT" titel="Finanzübersicht">
+      <div class="kennzahlen drei">
+        <div class="kennzahl"><span>Einnahmen</span><b class="plus">3.850,00 €</b></div>
+        <div class="kennzahl"><span>Ausgaben</span><b class="minus">2.614,35 €</b></div>
+        <div class="kennzahl"><span>Saldo</span><b>+1.235,65 €</b></div>
+      </div>
+      <div class="liste">
+        <span class="ueberschrift">Letzte Buchungen</span>
+        <div class="zeile">
+          <span><b>Gehalt</b> · 28.10.</span><b class="plus">+3.450,00 €</b>
+        </div>
+        <div class="zeile">
+          <span><b>Supermarkt</b> · 27.10.</span><b class="minus">−86,40 €</b>
+        </div>
+        <div class="zeile">
+          <span><b>Tanken</b> · 24.10.</span><b class="minus">−62,10 €</b>
+        </div>
+      </div>
+    </app-kachel>
+  }
+
+  @if (gebucht('VERTRAGSUEBERSICHT')) {
+    <app-kachel komponente="VERTRAGSUEBERSICHT" titel="Vertragsübersicht">
+      <a kachelLink routerLink="/vertraege">Alle Verträge</a>
+    </app-kachel>
+  }
+
+  @if (gebucht('VERSORGUNGSVERTRAEGE')) {
+    <app-kachel komponente="VERSORGUNGSVERTRAEGE" titel="Versorgungsverträge">
+      <div class="kennzahl"><span>Abschläge gesamt pro Monat</span><b>240,00 €</b></div>
+      <div class="karten">
+        <div class="karte"><b>Strom</b><span>Stadtwerke · 92,00 €/Monat</span></div>
+        <div class="karte"><b>Gas</b><span>Stadtwerke · 110,00 €/Monat</span></div>
+        <div class="karte"><b>Wasser</b><span>Wasserverband · 38,00 €/Monat</span></div>
+      </div>
+    </app-kachel>
+  }
+
+  @if (gebucht('PORTFOLIO')) {
+    <app-kachel komponente="PORTFOLIO" titel="Portfolio">
+      <div class="kennzahl"><span>Gesamtwert</span><b>24.580,40 €</b></div>
+      <div class="aufteilung">
+        <span class="teil-1"></span><span class="teil-2"></span><span class="teil-3"></span
+        ><span class="teil-4"></span>
+      </div>
+      <div class="liste">
+        <div class="zeile"><b>ETF MSCI World</b><span>15.239,85 €</span></div>
+        <div class="zeile"><b>Tagesgeld</b><span>5.997,62 €</span></div>
+        <div class="zeile"><b>ETF Schwellenländer</b><span>2.138,49 €</span></div>
+        <div class="zeile"><b>Bausparvertrag</b><span>1.204,44 €</span></div>
+      </div>
+    </app-kachel>
+  }
+</div>

@@ -1,0 +1,139 @@
+.kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+
+  h1 {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    color: var(--app-text-gedaempft);
+  }
+}
+
+.raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+  gap: 24px;
+}
+
+a[kachelLink] {
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+// Beispielwerte der noch nicht verfügbaren Bereiche.
+
+.kennzahlen {
+  display: grid;
+  gap: 12px;
+
+  &.drei {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
+.kennzahl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--app-grund);
+
+  span {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  b {
+    font-size: 20px;
+    font-weight: 800;
+  }
+}
+
+.plus {
+  color: var(--app-gruen);
+}
+
+.minus {
+  color: var(--app-ausgabe);
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+}
+
+.ueberschrift {
+  padding-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.zeile {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--app-trenner);
+  font-size: 15px;
+}
+
+.karten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.karte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 12px;
+  font-size: 14px;
+
+  b {
+    font-size: 15px;
+    font-weight: 800;
+  }
+}
+
+.aufteilung {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.teil-1 {
+  width: 62%;
+  background: var(--app-gruen);
+}
+
+.teil-2 {
+  width: 24.4%;
+  background: var(--app-diagramm-2);
+}
+
+.teil-3 {
+  width: 8.7%;
+  background: var(--app-gruen-hell-rand);
+}
+
+.teil-4 {
+  width: 4.9%;
+  background: var(--app-diagramm-4);
+}
