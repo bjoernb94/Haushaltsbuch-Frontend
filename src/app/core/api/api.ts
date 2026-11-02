@@ -2,12 +2,24 @@ import { components } from './api.generated';
 
 type Schemas = components['schemas'];
 
+export type AnstehendeKuendigung = Schemas['AnstehendeKuendigung'];
 export type Betrag = Schemas['Betrag'];
 export type Feldfehler = Schemas['Feldfehler'];
 export type Komponente = Schemas['Komponente'];
+export type Kuendigung = Schemas['Kuendigung'];
+export type Kuendigungsart = Schemas['Kuendigungsart'];
 export type Profil = Schemas['Profil'];
 export type RegistrierungAnfrage = Schemas['RegistrierungAnfrage'];
+export type Verlaengerung = Schemas['Verlaengerung'];
+export type VertragAenderung = Schemas['VertragAenderung'];
+export type VertragAnfrage = Schemas['VertragAnfrage'];
 export type VertragAntwort = Schemas['VertragAntwort'];
+export type VertragKategorieAntwort = Schemas['VertragKategorieAntwort'];
+export type VertragKategorieSchluessel = Schemas['VertragKategorieSchluessel'];
+export type VertragsuebersichtAntwort = Schemas['VertragsuebersichtAntwort'];
+export type VertragVorschauAnfrage = Schemas['VertragVorschauAnfrage'];
+export type VertragVorschauAntwort = Schemas['VertragVorschauAntwort'];
+export type Zahlungsweg = Schemas['Zahlungsweg'];
 export type Zahlweise = Schemas['Zahlweise'];
 
 /**
