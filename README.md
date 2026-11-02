@@ -146,7 +146,7 @@ src/app/
     anmeldung/   login/, registrierung/ und ihr gemeinsamer anmelde-rahmen/
     start/       Startseite nach der Anmeldung
     vertraege/   je ein Backend-Modul; weitere kommen mit ihren Seiten dazu
-  shared/      Bausteine für mehrere Bereiche: formular/, hinweis-box/, systemstatus-leiste/
+  shared/      Bausteine für mehrere Bereiche: format/, formular/, hinweis-box/, systemstatus-leiste/
   shell/       Rahmen der angemeldeten Bereiche (Kopfzeile, hauptmenue/, Fußzeile); die Startseite
                kommt ohne Navigation aus (Route-Data ohneNavigation)
 src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile

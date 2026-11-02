@@ -1,4 +1,8 @@
 import { Page, Route } from '@playwright/test';
+import { VertragAntwort } from '../src/app/core/api/api';
+import { vertraegeSimulieren } from './vertraege-mock';
+
+export { BEISPIEL_VERTRAEGE, KATEGORIEN } from './vertraege-mock';
 
 export const MAX = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
 
@@ -34,7 +38,13 @@ const ALLE_KOMPONENTEN = [
  */
 export async function backendSimulieren(
   page: Page,
-  { angemeldet = false, datenbank = true, keycloak = true, komponenten = ALLE_KOMPONENTEN } = {},
+  {
+    angemeldet = false,
+    datenbank = true,
+    keycloak = true,
+    komponenten = ALLE_KOMPONENTEN,
+    vertraege = [] as VertragAntwort[],
+  } = {},
 ) {
   let session = angemeldet;
   const komponente = (up: boolean) => ({ status: up ? 'UP' : 'DOWN' });
@@ -82,5 +92,11 @@ export async function backendSimulieren(
   await page.route('/api/abmeldung', (route) => {
     session = false;
     return route.fulfill({ status: 204 });
+  });
+  await vertraegeSimulieren(page, vertraege, problem, () => {
+    if (!session) {
+      return 'abgemeldet';
+    }
+    return komponenten.includes('VERTRAGSUEBERSICHT') ? 'ok' : 'nicht-gebucht';
   });
 }
