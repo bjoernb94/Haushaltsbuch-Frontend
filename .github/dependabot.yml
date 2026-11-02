@@ -2,7 +2,7 @@
 # die der Build-Workflow (.github/workflows/build.yml) prüft.
 version: 2
 updates:
-  # npm: Angular, Material, Tests und Tooling aus package.json
+  # npm: Angular, Schriften, Tests und Tooling aus package.json
   - package-ecosystem: npm
     directory: /
     schedule:
