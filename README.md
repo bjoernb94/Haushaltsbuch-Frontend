@@ -6,7 +6,7 @@ Keycloak) läuft. Die Seiten folgen dem Design-Canvas „Haushaltsbuch“.
 
 ## Voraussetzungen
 
-- Node.js 24 und npm (Version siehe `packageManager` in `package.json`)
+- Node.js 26 und npm (Version siehe `packageManager` in `package.json`)
 - Für den echten Betrieb: das Backend auf `localhost:8080`, mit Keycloak
 
 ```bash
@@ -92,8 +92,8 @@ Die E2E-Tests simulieren das Backend im Browser (`e2e/backend-mock.ts`) und brau
 Backend noch Keycloak. Playwright startet den Dev-Server selbst oder nutzt einen bereits
 laufenden auf Port 4200.
 
-Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-Build, Unit- und
-E2E-Tests aus.
+Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-Build,
+`npm audit` für die Laufzeit-Abhängigkeiten, Unit- und E2E-Tests aus und baut das Container-Image.
 
 ### API-Typen
 
@@ -127,9 +127,15 @@ Gemeinsame Run Configurations liegen in `.run/`, u.&nbsp;a. „Run Frontend“, 
 npm run image
 ```
 
-Das Image (`Containerfile`) baut die App und liefert sie mit nginx aus. nginx leitet `/api` und
-`/actuator` an `BACKEND_URL` weiter (Standard `http://backend:8080`), damit die Cookies beim
-selben Origin bleiben.
+Das Image (`Containerfile`) baut die App und liefert sie mit nginx ohne Root-Rechte auf Port 8080
+aus. nginx leitet `/api` und `/actuator/health/systemstatus` an `BACKEND_URL` weiter (Standard
+`http://backend:8080`), damit die Cookies beim selben Origin bleiben.
+
+Die Sicherheits-Header stehen in `docker/nginx/sicherheits-header.conf`, darunter eine strenge
+Content Security Policy. `style-src` erlaubt `'unsafe-inline'`, weil Angular Komponenten-Styles zur
+Laufzeit anlegt. Damit `script-src 'self'` ohne Hashes reicht, ist `inlineCritical` im
+Production-Build aus, denn es schreibt ein Inline-Skript in `index.html`. HSTS gehört zur
+TLS-Terminierung und folgt mit v1.0. Die Header greifen nur im Image, nicht bei `npm start`.
 
 ## Projektstruktur
 
