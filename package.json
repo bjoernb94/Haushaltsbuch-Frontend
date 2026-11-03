@@ -15,7 +15,8 @@
     "api:typen": "openapi-typescript ../Haushaltsbuch-Backend/docs/openapi.json -o src/app/core/api/api.generated.ts",
     "outdated": "ng update",
     "audit": "npm audit",
-    "image": "podman build -t haushaltsbuch-frontend:latest -f Containerfile ."
+    "image": "podman build -t haushaltsbuch-frontend:latest -f Containerfile .",
+    "image:pruefen": "e2e-image/pruefen.sh"
   },
   "private": true,
   "packageManager": "npm@11.19.1",

@@ -92,16 +92,18 @@ npm run lint           # ESLint inkl. Template-Regeln
 npm run format:check   # Prettier (npm run format formatiert)
 npm test               # Unit-Tests (Vitest), im Watch-Modus
 npm run test:ci        # Unit-Tests einmalig
-npm run e2e            # E2E-Tests (Playwright)
+npm run e2e            # E2E-Tests (Playwright) in Chromium und Firefox
+npm run image:pruefen  # gebautes Container-Image starten und prüfen (Podman)
 npm run api:typen      # API-Typen aus der OpenAPI-Beschreibung des Backends erzeugen
 ```
 
 Die E2E-Tests simulieren das Backend im Browser (`e2e/backend-mock.ts`) und brauchen weder
 Backend noch Keycloak. Playwright startet den Dev-Server selbst oder nutzt einen bereits
-laufenden auf Port 4200.
+laufenden auf Port 4200. Die Browser installiert einmalig `npx playwright install chromium firefox`.
 
 Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-Build,
-`npm audit` für die Laufzeit-Abhängigkeiten, Unit- und E2E-Tests aus und baut das Container-Image.
+`npm audit` für die Laufzeit-Abhängigkeiten, Unit- und E2E-Tests aus. Außerdem baut sie das
+Container-Image, startet es und prüft es.
 
 ### API-Typen
 
@@ -144,6 +146,11 @@ Content Security Policy. `style-src` erlaubt `'unsafe-inline'`, weil Angular Kom
 Laufzeit anlegt. Damit `script-src 'self'` ohne Hashes reicht, ist `inlineCritical` im
 Production-Build aus, denn es schreibt ein Inline-Skript in `index.html`. HSTS gehört zur
 TLS-Terminierung und folgt mit v1.0. Die Header greifen nur im Image, nicht bei `npm start`.
+
+Deshalb prüft `npm run image:pruefen` (`e2e-image/`) das laufende Image: Die App läuft ohne
+CSP-Verstoß, die Header sind gesetzt, tiefe Links liefern `index.html`, und nur `/api` und der
+Systemstatus gehen ans Backend. Das Backend ist dabei eine Attrappe im selben Pod. Vorher muss
+`npm run image` gelaufen sein.
 
 ## Projektstruktur
 

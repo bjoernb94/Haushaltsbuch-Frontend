@@ -13,7 +13,8 @@ npm run build          # production build (budgets: initial 500 kB warning)
 npm run lint           # ESLint incl. angular-eslint template + accessibility rules
 npm run format:check   # Prettier; npm run format to fix (ng add/generate may reformat angular.json)
 npm run test:ci        # Vitest unit tests once (npm test = watch)
-npm run e2e            # Playwright, backend simulated in the browser (e2e/backend-mock.ts)
+npm run e2e            # Playwright (Chromium, Firefox), backend simulated in the browser (e2e/backend-mock.ts)
+npm run image:pruefen  # start the built image (npm run image) and check CSP, headers and nginx routes
 npm run api:typen      # regenerate core/api/api.generated.ts from ../Haushaltsbuch-Backend/docs/openapi.json
 ```
 
@@ -86,5 +87,7 @@ Details in the README, section "Konventionen". ADRs are in the backend under `do
 
 - Unit tests mock `AuthService`/`SystemstatusService` via `useValue`; HTTP via `provideHttpClientTesting`.
 - E2E: extend `backendSimulieren()` for new endpoints instead of needing a running backend.
+- CSP and nginx rules only apply in the image; `e2e-image/` covers them. Check there when changing
+  `docker/nginx` or anything the CSP could block.
 - In Playwright, `getByLabel('Passwort')` also matches the rules list ("Anforderungen an das Passwort"); use
   `{ exact: true }`.
