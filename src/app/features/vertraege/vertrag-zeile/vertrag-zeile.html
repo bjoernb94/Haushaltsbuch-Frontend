@@ -22,6 +22,7 @@
     <span class="klein">{{ abbuchung() }}</span>
   </div>
   <div class="kuendigung">
+    <span class="kuendigung-titel">Kündigung</span>
     <span class="badge" [class]="'ton-' + kuendigung().ton">{{ kuendigung().text }}</span>
     @if (kuendigung().zusatz; as zusatz) {
       <span class="zusatz">{{ zusatz }}</span>

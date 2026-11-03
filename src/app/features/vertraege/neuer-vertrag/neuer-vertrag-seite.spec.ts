@@ -9,7 +9,10 @@ const KATEGORIEN = [{ id: 'k1', schluessel: 'VERSICHERUNG', name: null }] as con
 
 async function erstellen(service: Partial<VertragService>) {
   TestBed.configureTestingModule({
-    providers: [provideRouter([]), { provide: VertragService, useValue: service }],
+    providers: [
+      provideRouter([]),
+      { provide: VertragService, useValue: { vorschau: () => NEVER, ...service } },
+    ],
   });
   const navigieren = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(NeuerVertragSeite);

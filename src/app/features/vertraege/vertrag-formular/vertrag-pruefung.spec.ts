@@ -1,6 +1,7 @@
 import { VertragAntwort } from '../../../core/api/api';
 import {
   anfrageAus,
+  vorschauAus,
   betragLesen,
   feldfehlerTexte,
   vertragPruefen,
@@ -289,6 +290,36 @@ describe('Bearbeiten', () => {
         gekuendigtZum: '2027-06-30',
         kuendigungsfristMonate: '0',
       });
+    });
+  });
+
+  describe('vorschauAus', () => {
+    it('schickt nur die Werte für den Termin, leere als null', () => {
+      expect(vorschauAus(LEER)).toEqual({
+        kuendbar: true,
+        zahlweise: null,
+        abbuchungAb: null,
+        beginn: null,
+        laufzeitende: null,
+        verlaengerung: null,
+        kuendigungsfristMonate: null,
+        gekuendigtZum: null,
+      });
+    });
+
+    it('bei „Nicht kündbar“ gibt es keine Anfrage', () => {
+      expect(vorschauAus({ ...PFLICHT, nichtKuendbar: true })).toBeNull();
+    });
+
+    it('nimmt den gespeicherten Anker, solange Datum und Zahlweise unverändert sind', () => {
+      const werte = werteAus(VERTRAG);
+      expect(vorschauAus(werte, VERTRAG)?.abbuchungAb).toBe('2026-01-31');
+      expect(vorschauAus({ ...werte, abbuchungAb: '2027-03-01' }, VERTRAG)?.abbuchungAb).toBe(
+        '2027-03-01',
+      );
+      expect(vorschauAus({ ...werte, zahlweise: 'JAEHRLICH' }, VERTRAG)?.abbuchungAb).toBe(
+        werte.abbuchungAb,
+      );
     });
   });
 

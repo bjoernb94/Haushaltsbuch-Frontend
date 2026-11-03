@@ -103,6 +103,19 @@ legend {
   color: var(--app-text-gedaempft);
 }
 
+.vorschau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 10px;
+  background: var(--app-details-grund);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .ankreuzen {
   min-width: 0;
   display: flex;
