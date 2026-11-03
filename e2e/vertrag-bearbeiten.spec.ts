@@ -105,6 +105,20 @@ test.describe('Vertrag bearbeiten', () => {
     expect((await speichernUndAnfrageLesen(page)).gekuendigtZum).toBeNull();
   });
 
+  test('die Vorschau schickt den gespeicherten Anker und folgt einer Änderung', async ({
+    page,
+  }) => {
+    const vorschau = page.waitForRequest((r) => r.url().endsWith('/vorschau'));
+    const formular = await bearbeiten(page);
+    const gespeichert = BEISPIEL_VERTRAEGE.find((v) => v.bezeichnung === KFZ)!;
+    expect((await vorschau).postDataJSON().abbuchungAb).toBe(gespeichert.abbuchungAb);
+    const zeile = formular.getByRole('status').filter({ hasText: 'Nächster Kündigungstermin:' });
+    await expect(zeile).toContainText('Kündbar bis');
+    await formular.getByLabel('Gekündigt', { exact: true }).check();
+    await formular.getByLabel('Gekündigt zum').fill('2027-06-30');
+    await expect(zeile).toContainText('Gekündigt zum 30.06.2027');
+  });
+
   test('Feldfehler: Formular bleibt offen und zeigt sie am Feld', async ({ page }) => {
     const formular = await bearbeiten(page);
     await formular.getByLabel('Betrag in € *').fill('19,999');

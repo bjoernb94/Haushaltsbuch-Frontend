@@ -134,7 +134,7 @@ describe('VertraegeSeite', () => {
         { provide: LOCALE_ID, useValue: 'de-DE' },
         {
           provide: VertragService,
-          useValue: { auflisten, uebersicht, aendern, kategorien, loeschen },
+          useValue: { auflisten, uebersicht, aendern, kategorien, loeschen, vorschau: () => NEVER },
         },
       ],
     }).compileComponents();
@@ -180,7 +180,7 @@ describe('VertraegeSeite', () => {
     expect(text(zeile.querySelectorAll('.klein')[1])).toBe('Nächste Abbuchung 01.01.2027');
     expect(text(zeile.querySelector('.badge'))).toBe('Kündbar bis 30.11.2026');
     expect(zeile.querySelector('.badge')?.classList).toContain('ton-warnung');
-    expect(text(zeile.querySelector('.zusatz'))).toBe('zum 31.12.2026, 1 Monat Frist');
+    expect(text(zeile.querySelector('.zusatz'))).toBe('Vertrag endet zum 31.12.2026');
   });
 
   it('rechnet bei monatlicher Zahlung nicht um und nennt fehlende Abbuchungen', async () => {
@@ -234,7 +234,7 @@ describe('VertraegeSeite', () => {
       Laufzeitende: '31.12.2023',
       Verlängerung: 'Nach Laufzeitende um 12 Monate',
       Kündigungsfrist: '1 Monat',
-      Kündigung: 'Kündbar bis 30.11.2026 (zum 31.12.2026, 1 Monat Frist)',
+      Kündigung: 'Kündbar bis 30.11.2026. Vertrag endet zum 31.12.2026',
       Status: 'Aktiv',
       Notiz: 'Wichtig',
     });

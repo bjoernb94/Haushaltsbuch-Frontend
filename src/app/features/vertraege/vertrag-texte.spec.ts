@@ -24,7 +24,7 @@ describe('Vertragstexte', () => {
         }),
       ).toEqual({
         text: 'Kündbar bis 30.11.2026',
-        zusatz: 'zum 31.12.2026, 1 Monat Frist',
+        zusatz: 'Vertrag endet zum 31.12.2026',
         ton: 'warnung',
       });
     });
@@ -34,17 +34,9 @@ describe('Vertragstexte', () => {
         kuendigungAnzeige({ ...LEER, ...TERMIN, art: 'KUENDIGEN_BIS', fristMonate: 3 }),
       ).toEqual({
         text: 'Kündbar bis 30.11.2026',
-        zusatz: 'zum 31.12.2026, 3 Monate Frist',
+        zusatz: 'Vertrag endet zum 31.12.2026',
         ton: 'ok',
       });
-    });
-
-    it('zeigt eine fehlende oder leere Frist als „ohne Frist“', () => {
-      for (const fristMonate of [null, 0]) {
-        expect(
-          kuendigungAnzeige({ ...LEER, ...TERMIN, art: 'KUENDIGEN_BIS', fristMonate }).zusatz,
-        ).toBe('zum 31.12.2026, ohne Frist');
-      }
     });
 
     it('zeigt monatlich kündbare Verträge', () => {
@@ -52,7 +44,7 @@ describe('Vertragstexte', () => {
         kuendigungAnzeige({ ...LEER, ...TERMIN, art: 'MONATLICH_KUENDBAR', fristMonate: 1 }),
       ).toEqual({
         text: 'Monatlich kündbar',
-        zusatz: '1 Monat Frist, nächstmöglich zum 31.12.2026',
+        zusatz: 'Kündbar zum 31.12.2026',
         ton: 'ok',
       });
     });
@@ -60,14 +52,14 @@ describe('Vertragstexte', () => {
     it('zeigt endende Verträge', () => {
       expect(kuendigungAnzeige({ ...LEER, art: 'ENDET', zum: '2027-03-31' })).toEqual({
         text: 'Endet am 31.03.2027',
-        zusatz: 'ohne Verlängerung',
+        zusatz: 'Verlängert sich nicht',
         ton: 'neutral',
       });
     });
 
     it('nennt KEINE_LAUFZEIT nicht „keine Laufzeit“', () => {
       expect(kuendigungAnzeige({ ...LEER, art: 'KEINE_LAUFZEIT' })).toEqual({
-        text: 'Kein Kündigungstermin bestimmbar',
+        text: 'Kein Termin bekannt',
         zusatz: '',
         ton: 'neutral',
       });
@@ -84,7 +76,7 @@ describe('Vertragstexte', () => {
     it('zeigt gekündigte Verträge', () => {
       expect(kuendigungAnzeige({ ...LEER, art: 'GEKUENDIGT', zum: '2026-12-31' })).toEqual({
         text: 'Gekündigt zum 31.12.2026',
-        zusatz: 'läuft noch aus',
+        zusatz: '',
         ton: 'info',
       });
     });

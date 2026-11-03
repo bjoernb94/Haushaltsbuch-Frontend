@@ -17,7 +17,7 @@ test.describe('Seite Verträge', () => {
       'Monatlich kündbar',
       'Nicht kündbar',
       'Endet am 30.06.2027',
-      'Kein Kündigungstermin bestimmbar',
+      'Kein Termin bekannt',
       'Gekündigt zum 31.12.2026',
       'Beendet',
     ]) {

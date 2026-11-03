@@ -297,6 +297,78 @@ test.describe('Neuer Vertrag', () => {
     await expect(page.getByLabel('Kategorie *')).toBeVisible();
   });
 
+  test.describe('Vorschau des Kündigungstermins', () => {
+    const zeile = (page: Page) =>
+      page.getByRole('status').filter({ hasText: 'Nächster Kündigungstermin:' });
+    const VORSCHAU = '**/api/vertraege/vorschau';
+
+    test.beforeEach(async ({ page }) => {
+      await backendSimulieren(page, { angemeldet: true });
+    });
+
+    test('startet ohne Termin und folgt den Eingaben', async ({ page }) => {
+      await page.goto('/vertraege/neu');
+      await expect(zeile(page)).toContainText('Kein Termin bekannt');
+      await page.getByLabel('Laufzeitende').fill('2027-12-31');
+      await expect(zeile(page)).toContainText('Kündbar bis 31.12.2027');
+      await page
+        .getByLabel('Verlängerung')
+        .selectOption({ label: 'Keine – Vertrag endet zum Laufzeitende' });
+      await expect(zeile(page)).toContainText('Endet am 31.12.2027. Verlängert sich nicht');
+    });
+
+    test('fragt je Pause einmal und nicht bei Feldern ohne Einfluss', async ({ page }) => {
+      await page.goto('/vertraege/neu');
+      await expect(zeile(page)).toContainText('Kein Termin bekannt');
+      let anfragen = 0;
+      page.on('request', (r) => {
+        anfragen += new URL(r.url()).pathname.endsWith('/vorschau') ? 1 : 0;
+      });
+      await page.getByLabel('Anbieter *').pressSequentially('Tippt lange', { delay: 10 });
+      await page.getByLabel('Laufzeitende').fill('2027-12-31');
+      await page.getByLabel('Laufzeitende').fill('2028-12-31');
+      await expect(zeile(page)).toContainText('31.12.2028');
+      expect(anfragen).toBe(1);
+    });
+
+    test('„Nicht kündbar“ blendet die Zeile aus', async ({ page }) => {
+      await page.goto('/vertraege/neu');
+      await expect(zeile(page)).toBeVisible();
+      await page.getByLabel('Nicht kündbar').check();
+      await expect(zeile(page)).toHaveCount(0);
+      await page.getByLabel('Nicht kündbar').uncheck();
+      await expect(zeile(page)).toContainText('Kein Termin bekannt');
+    });
+
+    for (const [name, status, json] of [
+      ['400', 400, { code: 'VALIDIERUNG', felder: [] }],
+      ['500', 500, {}],
+    ] as const) {
+      test(`${name}: „–“ ohne Fehlerbox, Speichern bleibt möglich`, async ({ page }) => {
+        await page.route(VORSCHAU, (route) =>
+          route.fulfill({ status, contentType: 'application/problem+json', json }),
+        );
+        await page.goto('/vertraege/neu');
+        await expect(zeile(page)).toHaveText(/Nächster Kündigungstermin:\s*–/);
+        await expect(page.getByRole('alert')).toHaveCount(0);
+        await pflichtfelderFuellen(page);
+        await speichernUndAnfrageLesen(page);
+        await expect(page).toHaveURL(/\/vertraege$/);
+      });
+    }
+
+    test('401: Es geht zum Login, wie bei jeder anderen Anfrage', async ({ page }) => {
+      await page.goto('/vertraege/neu');
+      await expect(zeile(page)).toBeVisible();
+      await page.route(VORSCHAU, (route) =>
+        route.fulfill({ status: 401, contentType: 'application/problem+json', json: {} }),
+      );
+      await page.getByLabel('Laufzeitende').fill('2027-12-31');
+      await expect(page).toHaveURL(/\/login\?returnUrl=/);
+      await expect(page.getByRole('dialog')).toHaveCount(0);
+    });
+  });
+
   test('ohne gebuchte Komponente führt die Route zur Startseite', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true, komponenten: ['PORTFOLIO'] });
     await page.goto('/vertraege/neu');

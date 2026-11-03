@@ -24,6 +24,7 @@ import {
   fristDauerText,
   kategorieText,
   kuendigungAnzeige,
+  kuendigungText,
   STATUS_TEXT,
   VERLAENGERUNG_TEXT,
   vertragName,
@@ -132,7 +133,6 @@ export class VertragZeile {
   protected readonly details = computed(() => {
     const v = this.vertrag();
     const { kostenProMonat, kostenProJahr, naechsteAbbuchung, status } = v.berechnet;
-    const { text, zusatz } = this.kuendigung();
     const betrag = (wert: typeof kostenProMonat) => betragText(wert, this.locale);
     return [
       { label: 'Anbieter', wert: v.anbieter },
@@ -163,7 +163,7 @@ export class VertragZeile {
         label: 'Kündigungsfrist',
         wert: fristDauerText(v.kuendigungsfristMonate) ?? NICHT_HINTERLEGT,
       },
-      { label: 'Kündigung', wert: zusatz ? `${text} (${zusatz})` : text },
+      { label: 'Kündigung', wert: kuendigungText(v.berechnet.kuendigung) },
       { label: 'Status', wert: STATUS_TEXT[status] },
     ].filter((eintrag) => !!eintrag);
   });

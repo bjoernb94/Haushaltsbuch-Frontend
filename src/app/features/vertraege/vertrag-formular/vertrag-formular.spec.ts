@@ -1,9 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { VertragAntwort, VertragKategorieAntwort } from '../../../core/api/api';
+import { NEVER, Subject } from 'rxjs';
+import {
+  Kuendigung,
+  VertragAntwort,
+  VertragKategorieAntwort,
+  VertragVorschauAnfrage,
+  VertragVorschauAntwort,
+} from '../../../core/api/api';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
-import { VertragEingabe } from '../vertrag.service';
+import { VertragEingabe, VertragService } from '../vertrag.service';
 import { VertragFormular } from './vertrag-formular';
 
 const KATEGORIEN: VertragKategorieAntwort[] = [
@@ -94,7 +101,180 @@ async function erstellen() {
 }
 
 describe('VertragFormular', () => {
+  const vorschau = vi.fn<(a: VertragVorschauAnfrage) => unknown>();
+
+  beforeEach(() => {
+    vorschau.mockReset();
+    vorschau.mockReturnValue(NEVER);
+    TestBed.configureTestingModule({
+      providers: [{ provide: VertragService, useValue: { vorschau } }],
+    });
+  });
   afterEach(() => document.body.replaceChildren());
+
+  describe('Vorschau des Kündigungstermins', () => {
+    const ERGEBNIS: Kuendigung = {
+      art: 'KUENDIGEN_BIS',
+      dringend: false,
+      fristMonate: 1,
+      kuendigenBis: '2026-11-30',
+      zum: '2026-12-31',
+    };
+    const OHNE_EINGABEN = {
+      kuendbar: true,
+      zahlweise: null,
+      abbuchungAb: null,
+      beginn: null,
+      laufzeitende: null,
+      verlaengerung: null,
+      kuendigungsfristMonate: null,
+      gekuendigtZum: null,
+    };
+    const fehler400 = () => validierung(['laufzeitende', 'LaufzeitendeNachBeginn']);
+
+    /** Antworten kommen von Hand, in jeder Reihenfolge. */
+    let anfragen: Subject<VertragVorschauAntwort>[];
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+      anfragen = [];
+      vorschau.mockImplementation(() => {
+        const antwort = new Subject<VertragVorschauAntwort>();
+        anfragen.push(antwort);
+        return antwort;
+      });
+    });
+    afterEach(() => vi.useRealTimers());
+
+    async function offen() {
+      const hilfen = await erstellen();
+      vi.advanceTimersByTime(0);
+      const antworten = (i: number, kuendigung: Kuendigung) => {
+        anfragen[i].next({ kuendigung });
+        anfragen[i].complete();
+      };
+      const zeile = () => {
+        TestBed.tick();
+        return hilfen.el.querySelector('.vorschau')?.textContent?.replace(/\s+/g, ' ').trim();
+      };
+      return { ...hilfen, antworten, zeile };
+    }
+
+    it('fragt beim Öffnen sofort und nur nach den Werten für den Termin', async () => {
+      const { zeile, antworten, el } = await offen();
+      expect(vorschau).toHaveBeenCalledExactlyOnceWith(OHNE_EINGABEN);
+      expect(zeile()).toBe('Nächster Kündigungstermin:–');
+      antworten(0, { ...ERGEBNIS, art: 'KEINE_LAUFZEIT' });
+      expect(zeile()).toBe('Nächster Kündigungstermin:Kein Termin bekannt');
+      expect(el.querySelector('.vorschau')?.getAttribute('role')).toBe('status');
+    });
+
+    it('zeigt das Ergebnis mit den Texten der Liste', async () => {
+      const { zeile, antworten } = await offen();
+      antworten(0, ERGEBNIS);
+      expect(zeile()).toBe(
+        'Nächster Kündigungstermin:Kündbar bis 30.11.2026. Vertrag endet zum 31.12.2026',
+      );
+    });
+
+    it('fragt erst nach der Pause, nicht je Tastendruck', async () => {
+      const { setzen } = await offen();
+      vorschau.mockClear();
+      setzen('laufzeitende', '2027-01-01');
+      vi.advanceTimersByTime(399);
+      setzen('laufzeitende', '2027-02-01');
+      vi.advanceTimersByTime(399);
+      expect(vorschau).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(vorschau).toHaveBeenCalledExactlyOnceWith({
+        ...OHNE_EINGABEN,
+        laufzeitende: '2027-02-01',
+      });
+    });
+
+    it('fragt nicht neu, wenn sich nur andere Felder ändern', async () => {
+      const { setzen } = await offen();
+      vorschau.mockClear();
+      setzen('anbieter', 'Anbieter');
+      setzen('betrag', '19,99');
+      setzen('notiz', 'Notiz');
+      vi.advanceTimersByTime(1000);
+      expect(vorschau).not.toHaveBeenCalled();
+    });
+
+    it('ein veraltetes Ergebnis überschreibt kein neueres, die alte Anfrage wird abgebrochen', async () => {
+      const { setzen, zeile, antworten } = await offen();
+      antworten(0, ERGEBNIS);
+      setzen('laufzeitende', '2027-01-01');
+      vi.advanceTimersByTime(400);
+      const alte = anfragen[1];
+      setzen('laufzeitende', '2027-02-01');
+      expect(alte.observed).toBe(false);
+      alte.next({ kuendigung: { ...ERGEBNIS, kuendigenBis: '2000-01-01' } });
+      expect(zeile()).toContain('Kündbar bis 30.11.2026');
+      vi.advanceTimersByTime(400);
+      antworten(2, { ...ERGEBNIS, kuendigenBis: '2027-01-15' });
+      expect(zeile()).toContain('Kündbar bis 15.01.2027');
+    });
+
+    it('400 und andere Fehler zeigen „–“ ohne Fehlerbox, danach geht es weiter', async () => {
+      const { setzen, zeile, antworten, box } = await offen();
+      antworten(0, ERGEBNIS);
+      setzen('laufzeitende', '2020-01-01');
+      vi.advanceTimersByTime(400);
+      anfragen[1].error(fehler400());
+      expect(zeile()).toBe('Nächster Kündigungstermin:–');
+      expect(box()).toBeUndefined();
+
+      setzen('laufzeitende', '2021-01-01');
+      vi.advanceTimersByTime(400);
+      anfragen[2].error(new HttpErrorResponse({ status: 500 }));
+      expect(zeile()).toBe('Nächster Kündigungstermin:–');
+      expect(box()).toBeUndefined();
+
+      setzen('laufzeitende', '2027-01-01');
+      vi.advanceTimersByTime(400);
+      antworten(3, ERGEBNIS);
+      expect(zeile()).toContain('Kündbar bis 30.11.2026');
+    });
+
+    it('nach einem Fehler bleibt Speichern möglich', async () => {
+      const { host, setzen, pflichtfelderFuellen, absenden } = await offen();
+      setzen('laufzeitende', '2020-01-01');
+      vi.advanceTimersByTime(400);
+      anfragen[1].error(fehler400());
+      pflichtfelderFuellen();
+      await absenden();
+      expect(host.gespeichert).toHaveLength(1);
+    });
+
+    it('„Nicht kündbar“ blendet die Zeile aus und fragt nicht, zurück fragt es wieder', async () => {
+      const { feld, zeile, antworten } = await offen();
+      antworten(0, ERGEBNIS);
+      vorschau.mockClear();
+      feld('nichtKuendbar').click();
+      expect(zeile()).toBeUndefined();
+      vi.advanceTimersByTime(1000);
+      expect(vorschau).not.toHaveBeenCalled();
+
+      feld('nichtKuendbar').click();
+      expect(zeile()).toBe('Nächster Kündigungstermin:–');
+      vi.advanceTimersByTime(400);
+      expect(vorschau).toHaveBeenCalledOnce();
+    });
+
+    it('schickt ein eingetragenes Kündigungsdatum nur, solange „Gekündigt“ gesetzt ist', async () => {
+      const { feld, setzen } = await offen();
+      feld('gekuendigt').click();
+      TestBed.tick();
+      setzen('gekuendigtZum', '2027-06-30');
+      vi.advanceTimersByTime(400);
+      expect(vorschau).toHaveBeenLastCalledWith({ ...OHNE_EINGABEN, gekuendigtZum: '2027-06-30' });
+      feld('gekuendigt').click();
+      vi.advanceTimersByTime(400);
+      expect(vorschau).toHaveBeenLastCalledWith(OHNE_EINGABEN);
+    });
+  });
 
   it('bietet die Kategorien an, Wert ist die id', async () => {
     const { feld } = await erstellen();
@@ -330,6 +510,13 @@ describe('VertragFormular', () => {
       };
       return { fixture, el, host: fixture.componentInstance, feld, setzen };
     }
+
+    it('die Vorschau zählt beim Öffnen vom gespeicherten Anker aus', async () => {
+      await offen();
+      await new Promise((fertig) => setTimeout(fertig, 5));
+      expect(vorschau).toHaveBeenCalledOnce();
+      expect(vorschau.mock.calls[0][0].abbuchungAb).toBe(VERTRAG.abbuchungAb);
+    });
 
     it('belegt alle Felder vor, auch Auswahlfelder und abhängige Felder', async () => {
       const { feld, el } = await offen();

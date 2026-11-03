@@ -14,12 +14,14 @@ import {
   LOCALE_ID,
   OnInit,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { distinctUntilChanged, map } from 'rxjs';
+import { catchError, distinctUntilChanged, map, of, startWith, switchMap, timer } from 'rxjs';
 import {
+  Kuendigung,
   Verlaengerung,
   VertragAntwort,
   VertragKategorieAntwort,
@@ -32,17 +34,19 @@ import { waehrungZeichen } from '../../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import {
   kategorieText,
+  kuendigungText,
   VERLAENGERUNG_TEXT,
   vertragName,
   ZAHLUNGSWEG_TEXT,
   ZAHLWEISE_TEXT,
 } from '../vertrag-texte';
-import { VertragEingabe } from '../vertrag.service';
+import { VertragEingabe, VertragService } from '../vertrag.service';
 import {
   anfrageAus,
   feldfehlerTexte,
   VertragFeld,
   vertragPruefen,
+  vorschauAus,
   werteAus,
 } from './vertrag-pruefung';
 
@@ -56,6 +60,8 @@ const BLENDET_AUS: Partial<Record<VertragFeld, VertragFeld[]>> = {
   nichtKuendbar: ['verlaengerung', 'kuendigungsfristMonate'],
   gekuendigt: ['gekuendigtZum'],
 };
+
+const VORSCHAU_VERZOEGERUNG_MS = 400;
 
 const HINWEIS_ZAHLWEISE = 'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.';
 
@@ -95,6 +101,8 @@ let letztesFormular = 0;
 })
 export class VertragFormular implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly vertraege = inject(VertragService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
   private readonly locale = inject(LOCALE_ID);
   private readonly ungespeichert = inject(UngespeicherteEingaben);
@@ -168,6 +176,13 @@ export class VertragFormular implements OnInit {
     initialValue: false,
   });
 
+  private readonly vorschau = signal<Kuendigung | null>(null);
+  /** „–“ ohne Termin, z. B. bei Werten, die das Backend ablehnt. */
+  protected readonly vorschauText = computed(() => {
+    const kuendigung = this.vorschau();
+    return kuendigung ? kuendigungText(kuendigung) : '–';
+  });
+
   private readonly feldFehler = linkedSignal<ReadonlyMap<VertragFeld, string>>(() =>
     feldfehlerTexte(problemFelder(this.fehlerAntwort())),
   );
@@ -197,7 +212,7 @@ export class VertragFormular implements OnInit {
         takeUntilDestroyed(),
       )
       .subscribe((geaendert) => this.ungespeichert.melden(geaendert));
-    inject(DestroyRef).onDestroy(() => this.ungespeichert.melden(false));
+    this.destroyRef.onDestroy(() => this.ungespeichert.melden(false));
     effect(() => {
       if (this.fehlerAntwort()) {
         this.fehlerZeigen();
@@ -206,6 +221,11 @@ export class VertragFormular implements OnInit {
   }
 
   ngOnInit(): void {
+    this.vorbelegen();
+    this.vorschauBeobachten();
+  }
+
+  private vorbelegen(): void {
     const vertrag = this.vertrag();
     if (!vertrag) {
       return;
@@ -223,6 +243,30 @@ export class VertragFormular implements OnInit {
           ?.focus({ preventScroll: true }),
       { injector: this.injector },
     );
+  }
+
+  /**
+   * Beim Öffnen sofort, danach verzögert. Die Verzögerung liegt im {@code switchMap}, damit eine neue
+   * Eingabe auch eine laufende Anfrage abbricht. Fehler zeigen nur keinen Termin, Speichern bleibt möglich.
+   */
+  private vorschauBeobachten(): void {
+    this.formular.valueChanges
+      .pipe(
+        startWith(null),
+        map(() => vorschauAus(this.formular.getRawValue(), this.vertrag())),
+        distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+        switchMap((anfrage, index) =>
+          anfrage
+            ? timer(index ? VORSCHAU_VERZOEGERUNG_MS : 0).pipe(
+                switchMap(() => this.vertraege.vorschau(anfrage)),
+                map(({ kuendigung }) => kuendigung),
+                catchError(() => of(null)),
+              )
+            : of(null),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((kuendigung) => this.vorschau.set(kuendigung));
   }
 
   protected id(feld: VertragFeld): string {

@@ -2,6 +2,7 @@ import {
   Feldfehler,
   Verlaengerung,
   VertragAntwort,
+  VertragVorschauAnfrage,
   Zahlungsweg,
   Zahlweise,
 } from '../../../core/api/api';
@@ -127,6 +128,27 @@ export function anfrageAus(
       w.nichtKuendbar || !w.kuendigungsfristMonate ? null : Number(w.kuendigungsfristMonate),
     gekuendigtZum: w.gekuendigt ? w.gekuendigtZum || null : null,
     notiz: textOderNull(w.notiz),
+  };
+}
+
+/** Die Werte, von denen der Kündigungstermin abhängt; bei „Nicht kündbar“ gibt es keine Vorschau. */
+export function vorschauAus(
+  w: VertragWerte,
+  gespeichert: VertragAntwort | null = null,
+): VertragVorschauAnfrage | null {
+  if (w.nichtKuendbar) {
+    return null;
+  }
+  const a = anfrageAus(w, gespeichert);
+  return {
+    kuendbar: true,
+    zahlweise: a.zahlweise,
+    abbuchungAb: a.abbuchungAb,
+    beginn: a.beginn,
+    laufzeitende: a.laufzeitende,
+    verlaengerung: a.verlaengerung,
+    kuendigungsfristMonate: a.kuendigungsfristMonate,
+    gekuendigtZum: a.gekuendigtZum,
   };
 }
 

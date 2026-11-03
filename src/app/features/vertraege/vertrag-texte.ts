@@ -95,24 +95,24 @@ export function fristDauerText(fristMonate: number | null): string | null {
 const KUENDIGUNG_ANZEIGE: Record<Kuendigungsart, (k: Kuendigung) => KuendigungAnzeige> = {
   KUENDIGEN_BIS: (k) => ({
     text: `Kündbar bis ${datumText(k.kuendigenBis)}`,
-    zusatz: `zum ${datumText(k.zum)}, ${fristText(k.fristMonate)}`,
+    zusatz: `Vertrag endet zum ${datumText(k.zum)}`,
     ton: k.dringend ? 'warnung' : 'ok',
   }),
   MONATLICH_KUENDBAR: (k) => ({
     text: 'Monatlich kündbar',
-    zusatz: `${fristText(k.fristMonate)}, nächstmöglich zum ${datumText(k.zum)}`,
+    zusatz: `Kündbar zum ${datumText(k.zum)}`,
     ton: 'ok',
   }),
   ENDET: (k) => ({
     text: `Endet am ${datumText(k.zum)}`,
-    zusatz: 'ohne Verlängerung',
+    zusatz: 'Verlängert sich nicht',
     ton: 'neutral',
   }),
-  KEINE_LAUFZEIT: () => ({ text: 'Kein Kündigungstermin bestimmbar', zusatz: '', ton: 'neutral' }),
+  KEINE_LAUFZEIT: () => ({ text: 'Kein Termin bekannt', zusatz: '', ton: 'neutral' }),
   NICHT_KUENDBAR: () => ({ text: 'Nicht kündbar', zusatz: 'Pflichtbeitrag', ton: 'neutral' }),
   GEKUENDIGT: (k) => ({
     text: `Gekündigt zum ${datumText(k.zum)}`,
-    zusatz: 'läuft noch aus',
+    zusatz: '',
     ton: 'info',
   }),
   BEENDET: () => ({ text: 'Beendet', zusatz: '', ton: 'neutral' }),
@@ -121,4 +121,10 @@ const KUENDIGUNG_ANZEIGE: Record<Kuendigungsart, (k: Kuendigung) => KuendigungAn
 /** Badge aus {@code berechnet.kuendigung}; Termine und Art kommen vom Backend (ADR 0010). */
 export function kuendigungAnzeige(kuendigung: Kuendigung): KuendigungAnzeige {
   return KUENDIGUNG_ANZEIGE[kuendigung.art](kuendigung);
+}
+
+/** Als Fließtext: „Kündbar bis 30.11.2026. Vertrag endet zum 31.12.2026“. */
+export function kuendigungText(kuendigung: Kuendigung): string {
+  const { text, zusatz } = kuendigungAnzeige(kuendigung);
+  return zusatz ? `${text}. ${zusatz}` : text;
 }
