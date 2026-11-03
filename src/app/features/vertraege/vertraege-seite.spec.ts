@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { LOCALE_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { NEVER, of, Subject, throwError } from 'rxjs';
 import { VertragAntwort, VertragsuebersichtAntwort } from '../../core/api/api';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
@@ -295,6 +295,59 @@ describe('VertraegeSeite', () => {
     expect(element.querySelector('.kennzahlen')).not.toBeNull();
   });
 
+  describe('nach dem Anlegen', () => {
+    const naviAus = (trigger: string, state: Record<string, unknown>) =>
+      vi
+        .spyOn(TestBed.inject(Router), 'currentNavigation')
+        .mockReturnValue({ trigger, extras: { state } } as never);
+    const STATE = { meldung: '„Neu“ wurde gespeichert.', vertragId: 'alt' };
+    const zeile = (element: HTMLElement, i: number) =>
+      element.querySelectorAll('app-vertrag-zeile')[i];
+
+    beforeEach(() => vi.mocked(Element.prototype.scrollIntoView).mockClear());
+
+    it('zeigt die Meldung an der Zeile, fokussiert sie und holt die Zeile ins Bild', async () => {
+      naviAus('imperative', STATE);
+      const { element } = await seite();
+      const meldung = zeile(element, 1).querySelector('.meldung');
+      expect(meldung?.textContent).toContain('„Neu“ wurde gespeichert.');
+      expect(element.querySelector(':scope > .meldung')).toBeNull();
+      expect(document.activeElement).toBe(meldung);
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toEqual([
+        zeile(element, 1).querySelector('.zeile'),
+      ]);
+    });
+
+    it('zeigt die Meldung oben, wenn die Zeile fehlt, und scrollt nicht', async () => {
+      naviAus('imperative', { ...STATE, vertragId: 'unbekannt' });
+      const { element } = await seite();
+      expect(element.querySelector(':scope > .meldung')?.textContent).toContain('„Neu“');
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('zeigt die Meldung oben, wenn das Laden scheitert; der neue Versuch holt die Zeile ins Bild', async () => {
+      naviAus('imperative', STATE);
+      auflisten.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      const { fixture, element } = await seite();
+      expect(element.querySelector(':scope > .meldung')?.textContent).toContain('„Neu“');
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+
+      auflisten.mockReturnValue(of([JAEHRLICH, BEENDET, PFLICHT]));
+      element.querySelector<HTMLButtonElement>('.fehler button')!.click();
+      await fixture.whenStable();
+      expect(element.querySelector(':scope > .meldung')).toBeNull();
+      expect(zeile(element, 1).querySelector('.meldung')?.textContent).toContain('„Neu“');
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
+    });
+
+    it('zeigt und scrollt nichts beim Zurückblättern', async () => {
+      naviAus('popstate', STATE);
+      const { element } = await seite();
+      expect(element.querySelector('.meldung')).toBeNull();
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Bearbeiten', () => {
     const knopf = (element: HTMLElement, name: string) =>
       element.querySelector<HTMLButtonElement>(`button[aria-label="${name}"]`)!;
@@ -461,6 +514,15 @@ describe('VertraegeSeite', () => {
       const meldung = zeile(element, 0).querySelector('.meldung');
       expect(meldung?.textContent).toContain('„Kfz-Versicherung“ wurde gespeichert.');
       expect(element.querySelector(':scope > .meldung')).toBeNull();
+    });
+
+    it('holt nach dem Speichern nur die Meldung in den Blick, nicht die Zeile', async () => {
+      aendern.mockReturnValue(of(JAEHRLICH));
+      const { fixture, absenden } = await geoeffnet();
+      vi.mocked(Element.prototype.scrollIntoView).mockClear();
+      await absenden();
+      await fixture.whenStable();
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
     });
 
     it('400: Formular bleibt offen, Fehler am Feld, keine Meldung an der Zeile', async () => {

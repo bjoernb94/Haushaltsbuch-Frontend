@@ -18,6 +18,7 @@ import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-
 import { BestaetigenDialog } from '../../shared/bestaetigen-dialog/bestaetigen-dialog';
 import { BetraegePipe } from '../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../shared/hinweis-box/hinweis-box';
+import { inDenBlick } from '../../shared/in-den-blick/in-den-blick';
 import { vertragName } from './vertrag-texte';
 import { VertragZeile, ZeilenMeldung } from './vertrag-zeile/vertrag-zeile';
 import { VertragService } from './vertrag.service';
@@ -37,6 +38,8 @@ interface Offen {
 /** Meldung an der Zeile dieses Vertrags; ohne {@code id} oben auf der Seite. */
 interface Meldung extends ZeilenMeldung {
   id: string | null;
+  /** Die ganze Zeile ins Bild holen, z. B. weil die Seite nach dem Anlegen oben beginnt. */
+  zeileZeigen?: boolean;
 }
 
 /** Kennzahlen und Liste der Verträge; lädt beim Öffnen und nach Änderungen. */
@@ -83,7 +86,7 @@ export class VertraegeSeite {
   private ladevorgang?: Subscription;
 
   constructor() {
-    this.laden();
+    this.laden(!!this.meldung());
   }
 
   protected laden(meldungZeigen = false): void {
@@ -114,16 +117,26 @@ export class VertraegeSeite {
   /** Nach dem Neuladen, denn die Zeile kann durch die Änderung in der Liste gewandert sein. */
   private meldungFokussieren(): void {
     afterNextRender(
-      () => this.element.nativeElement.querySelector<HTMLElement>('.meldung')?.focus(),
+      () => {
+        const meldung = this.element.nativeElement.querySelector<HTMLElement>('.meldung');
+        const zeile = this.meldung()?.zeileZeigen && meldung?.closest<HTMLElement>('.zeile');
+        meldung?.focus({ preventScroll: !!zeile });
+        if (zeile) {
+          inDenBlick(zeile);
+        }
+      },
       { injector: this.injector },
     );
   }
 
   private meldungDerNavigation(): Meldung | null {
     const navigation = inject(Router).currentNavigation();
-    const text: unknown =
-      navigation?.trigger === 'imperative' ? navigation.extras.state?.['meldung'] : null;
-    return typeof text === 'string' ? { id: null, text, art: 'info' } : null;
+    const state = navigation?.trigger === 'imperative' ? navigation.extras.state : null;
+    const text: unknown = state?.['meldung'];
+    const id: unknown = state?.['vertragId'];
+    return typeof text === 'string'
+      ? { id: typeof id === 'string' ? id : null, text, art: 'info', zeileZeigen: true }
+      : null;
   }
 
   protected zeilenMeldung(id: string): ZeilenMeldung | null {

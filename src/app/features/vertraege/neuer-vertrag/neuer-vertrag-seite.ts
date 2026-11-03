@@ -52,7 +52,10 @@ export class NeuerVertragSeite {
         next: (vertrag) => {
           this.ungespeichert.vergessen();
           void this.router.navigate(['/vertraege'], {
-            state: { meldung: `„${vertragName(vertrag)}“ wurde gespeichert.` },
+            state: {
+              meldung: `„${vertragName(vertrag)}“ wurde gespeichert.`,
+              vertragId: vertrag.id,
+            },
           });
         },
         error: (error: unknown) => {

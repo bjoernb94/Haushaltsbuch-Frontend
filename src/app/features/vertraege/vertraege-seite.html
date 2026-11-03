@@ -47,7 +47,9 @@
 @if (fehler()) {
   <div class="fehler">
     <app-hinweis-box text="Die Verträge konnten nicht geladen werden." />
-    <button type="button" class="knopf knopf-sekundaer" (click)="laden()">Erneut versuchen</button>
+    <button type="button" class="knopf knopf-sekundaer" (click)="laden(true)">
+      Erneut versuchen
+    </button>
   </div>
 } @else if (daten(); as stand) {
   <div class="kennzahlen">

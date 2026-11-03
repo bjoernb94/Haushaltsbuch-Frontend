@@ -54,7 +54,9 @@ describe('NeuerVertragSeite', () => {
   });
 
   it('kehrt nach dem Anlegen mit Meldung zur Liste zurück', async () => {
-    const anlegen = vi.fn().mockReturnValue(of({ anbieter: 'Anbieter', bezeichnung: null }));
+    const anlegen = vi
+      .fn()
+      .mockReturnValue(of({ id: 'v1', anbieter: 'Anbieter', bezeichnung: null }));
     const { navigieren, absenden } = await erstellen({
       kategorien: () => of([...KATEGORIEN]),
       anlegen,
@@ -62,18 +64,22 @@ describe('NeuerVertragSeite', () => {
     await absenden();
     expect(anlegen).toHaveBeenCalledOnce();
     expect(navigieren).toHaveBeenCalledWith(['/vertraege'], {
-      state: { meldung: '„Anbieter“ wurde gespeichert.' },
+      state: { meldung: '„Anbieter“ wurde gespeichert.', vertragId: 'v1' },
     });
   });
 
   it('nennt in der Meldung die Bezeichnung, wenn es eine gibt', async () => {
-    const anlegen = vi.fn().mockReturnValue(of({ anbieter: 'Anbieter', bezeichnung: 'Kfz' }));
+    const anlegen = vi
+      .fn()
+      .mockReturnValue(of({ id: 'v1', anbieter: 'Anbieter', bezeichnung: 'Kfz' }));
     const { navigieren, absenden } = await erstellen({
       kategorien: () => of([...KATEGORIEN]),
       anlegen,
     });
     await absenden();
-    expect(navigieren.mock.calls[0][1]).toEqual({ state: { meldung: '„Kfz“ wurde gespeichert.' } });
+    expect(navigieren.mock.calls[0][1]).toEqual({
+      state: { meldung: '„Kfz“ wurde gespeichert.', vertragId: 'v1' },
+    });
   });
 
   it('bleibt bei einem Fehler auf der Seite und zeigt ihn am Feld', async () => {

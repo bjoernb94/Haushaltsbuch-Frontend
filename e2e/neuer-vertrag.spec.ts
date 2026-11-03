@@ -124,7 +124,9 @@ test.describe('Neuer Vertrag', () => {
     ).toBeVisible();
     await expect(page.getByText('Laufende Verträge7')).toBeVisible();
     await expect(
-      page.getByRole('region', { name: 'Vertragsliste' }).getByText('Mein Vertrag'),
+      page
+        .getByRole('region', { name: 'Vertragsliste' })
+        .getByText('Mein Vertrag', { exact: true }),
     ).toBeVisible();
   });
 
@@ -137,6 +139,112 @@ test.describe('Neuer Vertrag', () => {
     await pflichtfelderFuellen(page);
     await speichernUndAnfrageLesen(page);
     await expect(page.getByText('„Neuer Anbieter“ wurde gespeichert.')).toBeInViewport();
+  });
+
+  test.describe('holt den neuen Vertrag in einer langen Liste ins Bild', () => {
+    const VIELE = Array.from({ length: 40 }, (_, i) => ({
+      ...BEISPIEL_VERTRAEGE[0],
+      id: `lang-${i}`,
+      anbieter: `Anbieter ${i}`,
+      bezeichnung: null,
+    }));
+    const scrollY = (page: Page) => page.evaluate(() => Math.round(window.scrollY));
+    const meldung = (page: Page) => page.getByText('„Neuer Anbieter“ wurde gespeichert.');
+
+    async function anlegen(page: Page) {
+      await backendSimulieren(page, { angemeldet: true, vertraege: VIELE });
+      await page.goto('/vertraege/neu');
+      await pflichtfelderFuellen(page);
+      await speichernUndAnfrageLesen(page);
+      await expect(page).toHaveURL(/\/vertraege$/);
+    }
+
+    test('Meldung an der Zeile im Bild, fokussiert, und das Router-Scrollen stört nicht', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 700 });
+      await anlegen(page);
+      await expect(meldung(page)).toBeInViewport();
+      const zeile = page.locator('app-vertrag-zeile').last();
+      await expect(zeile.getByText('Neuer Anbieter', { exact: true })).toBeInViewport();
+      await expect(zeile.locator('.meldung')).toBeFocused();
+      await expect.poll(() => scrollY(page)).toBeGreaterThan(500);
+      // Bleibt stehen, auch wenn der Router seine Position zuletzt gesetzt hätte.
+      await page.waitForTimeout(500);
+      await expect(zeile).toBeInViewport({ ratio: 1 });
+    });
+
+    test('mit reduzierter Bewegung ebenso', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.setViewportSize({ width: 1280, height: 700 });
+      await anlegen(page);
+      await expect(page.locator('app-vertrag-zeile').last()).toBeInViewport({ ratio: 1 });
+    });
+
+    test('Handy: Die feste Navigation verdeckt die Zeile nicht', async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 900 });
+      await anlegen(page);
+      const zeile = page.locator('app-vertrag-zeile').last();
+      await expect(zeile.locator('.meldung')).toBeFocused();
+      const navigation = await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox();
+      await expect
+        .poll(async () => {
+          const box = await zeile.boundingBox();
+          return box!.y + box!.height;
+        })
+        .toBeLessThanOrEqual(navigation!.y);
+      await expect(meldung(page)).toBeInViewport();
+    });
+
+    test('Zurückblättern scrollt nicht erneut', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.setViewportSize({ width: 1280, height: 700 });
+      await anlegen(page);
+      await expect(meldung(page)).toBeInViewport();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.getByRole('link', { name: 'Zur Übersicht' }).click();
+      await expect(page).toHaveURL(/\/start$/);
+      await page.goBack();
+      await expect(page.locator('app-vertrag-zeile').last()).toBeAttached();
+      await page.waitForTimeout(300);
+      expect(await scrollY(page)).toBe(0);
+      await expect(meldung(page)).toHaveCount(0);
+    });
+
+    test('Neuladen scrollt nicht erneut', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.setViewportSize({ width: 1280, height: 700 });
+      await anlegen(page);
+      await expect(meldung(page)).toBeInViewport();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.reload();
+      await expect(page.locator('app-vertrag-zeile').last()).toBeAttached();
+      await page.waitForTimeout(300);
+      expect(await scrollY(page)).toBe(0);
+      await expect(meldung(page)).toHaveCount(0);
+    });
+
+    test('Liste nicht ladbar: Meldung oben, der neue Versuch holt die Zeile ins Bild', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 700 });
+      await backendSimulieren(page, { angemeldet: true, vertraege: VIELE });
+      await page.goto('/vertraege/neu');
+      await pflichtfelderFuellen(page);
+      let sperren = true;
+      await page.route('**/api/vertraege/uebersicht', (route) =>
+        sperren ? route.fulfill({ status: 500, json: {} }) : route.fallback(),
+      );
+      await speichernUndAnfrageLesen(page);
+      await expect(page.getByText('Die Verträge konnten nicht geladen werden.')).toBeVisible();
+      await expect(meldung(page)).toBeInViewport();
+      expect(await scrollY(page)).toBe(0);
+
+      sperren = false;
+      await page.getByRole('button', { name: 'Erneut versuchen' }).click();
+      await expect(page.locator('app-vertrag-zeile').last()).toBeInViewport({ ratio: 1 });
+      await expect(meldung(page)).toBeInViewport();
+    });
   });
 
   test('die Meldung erscheint beim Zurückblättern nicht wieder', async ({ page }) => {
