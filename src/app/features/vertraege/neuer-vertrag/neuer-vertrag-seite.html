@@ -1,0 +1,41 @@
+<a class="zurueck" routerLink="/vertraege">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M15 18l-6-6 6-6"></path>
+  </svg>
+  Zurück zu Verträgen
+</a>
+
+<div class="kopf">
+  <h1>Neuer Vertrag</h1>
+  <p>
+    Felder mit * sind Pflichtfelder. Den nächsten Kündigungstermin berechnen wir aus Laufzeit,
+    Verlängerung und Frist.
+  </p>
+</div>
+
+@if (ladefehler()) {
+  <div class="fehler">
+    <app-hinweis-box text="Die Kategorien konnten nicht geladen werden." />
+    <button type="button" class="knopf knopf-sekundaer" (click)="laden()">Erneut versuchen</button>
+  </div>
+} @else if (kategorien(); as liste) {
+  <app-vertrag-formular
+    [kategorien]="liste"
+    [sendet]="sendet()"
+    [fehlerAntwort]="speicherfehler()"
+    (speichern)="speichern($event)"
+    (abbrechen)="zurueck()"
+  />
+} @else {
+  <p class="laedt" role="status">Wird geladen …</p>
+}

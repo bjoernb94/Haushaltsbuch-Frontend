@@ -1,0 +1,26 @@
+@use '../seite';
+
+@include seite.seite;
+
+:host {
+  gap: 20px;
+  width: 100%;
+  max-width: 728px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 32px;
+}
+
+.kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    color: var(--app-text-gedaempft);
+  }
+}

@@ -1,0 +1,130 @@
+@use '../../../shared/formular/formular';
+
+@include formular.felder($hoehe: 52px);
+@include formular.knoepfe;
+
+.formular {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 20px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 16px;
+  background: var(--app-flaeche);
+}
+
+.hinweis:focus {
+  outline: none;
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  & + fieldset {
+    padding-top: 20px;
+    border-top: 1px solid var(--app-trenner);
+  }
+}
+
+legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+}
+
+.feld {
+  min-width: 0;
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+  }
+}
+
+.optional {
+  font-weight: 500;
+  color: var(--app-text-gedaempft);
+}
+
+.feldfehler,
+.feldhinweis {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.feldfehler {
+  font-weight: 600;
+  color: var(--app-fehler-text);
+}
+
+.feldhinweis {
+  color: var(--app-text-gedaempft);
+}
+
+.ankreuzen {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  input {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin: 11px 0 0;
+    accent-color: var(--app-gruen);
+    cursor: pointer;
+  }
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  label {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}
+
+.aktionen {
+  flex-wrap: wrap-reverse;
+  padding-top: 4px;
+}
+
+.knopf {
+  flex-basis: 180px;
+  height: 52px;
+}
+
+.knopf-abbrechen {
+  border-color: var(--app-rand);
+  background: #fff;
+  color: var(--app-text);
+
+  &:hover {
+    border-color: var(--app-text-gedaempft);
+  }
+}
