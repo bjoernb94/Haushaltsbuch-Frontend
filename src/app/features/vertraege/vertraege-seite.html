@@ -22,7 +22,10 @@
 }
 
 <div class="kopf">
-  <h1>Verträge</h1>
+  <div class="titel">
+    <h1>Verträge</h1>
+    <p>Lege Verträge an, bearbeite sie oder entferne sie.</p>
+  </div>
   <a class="knopf knopf-primaer" routerLink="/vertraege/neu">
     <svg
       width="18"
@@ -66,7 +69,9 @@
         [ansicht]="ansicht(vertrag.id)"
         [meldung]="zeilenMeldung(vertrag.id)"
         [kategorien]="kategorien$"
+        [loescht]="loeschendId() === vertrag.id"
         (umschalten)="umschalten(vertrag.id, $event)"
+        (loeschen)="loeschFrage.set(vertrag)"
         (abgebrochen)="oeffnen(null)"
         (gespeichert)="gespeichert($event)"
         (konflikt)="konflikt(vertrag.id)"
@@ -82,3 +87,12 @@
 } @else {
   <p class="laedt" role="status">Wird geladen …</p>
 }
+
+<app-bestaetigen-dialog
+  [offen]="!!loeschFrage()"
+  [titel]="loeschTitel()"
+  text="Das lässt sich nicht rückgängig machen."
+  neinText="Abbrechen"
+  jaText="Ja, löschen"
+  (antwort)="loeschAntwort($event)"
+/>

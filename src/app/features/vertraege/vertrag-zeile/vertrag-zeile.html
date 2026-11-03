@@ -1,6 +1,11 @@
 <div #zeile class="zeile" [class.beendet]="beendet()" [class.bearbeitet]="bearbeitet()">
   @if (meldung(); as hinweis) {
-    <div class="meldung" tabindex="-1">
+    <div
+      class="meldung"
+      [class.abgesetzt]="hinweis.abgesetzt"
+      [class.unten]="hinweis.unten"
+      tabindex="-1"
+    >
       <app-hinweis-box [art]="hinweis.art" [text]="hinweis.text" />
     </div>
   }
@@ -69,6 +74,31 @@
         <path d="M14 6l4 4"></path>
       </svg>
       Bearbeiten
+    </button>
+    <button
+      type="button"
+      class="ansicht-knopf gefahr-knopf"
+      [disabled]="loescht()"
+      [attr.aria-busy]="loescht()"
+      [attr.aria-label]="name() + ' löschen'"
+      (click)="loeschen.emit()"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 7h16"></path>
+        <path d="M9 7V4h6v3"></path>
+        <path d="M6 7l1 13h10l1-13"></path>
+      </svg>
+      Löschen
     </button>
   </div>
 
