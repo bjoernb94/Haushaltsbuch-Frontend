@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { VertragKategorieAntwort } from '../../../core/api/api';
+import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import { VertragFormular } from '../vertrag-formular/vertrag-formular';
 import { vertragName } from '../vertrag-texte';
@@ -19,6 +20,7 @@ export class NeuerVertragSeite {
   private readonly vertraege = inject(VertragService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly ungespeichert = inject(UngespeicherteEingaben);
 
   protected readonly kategorien = signal<VertragKategorieAntwort[] | null>(null);
   protected readonly ladefehler = signal(false);
@@ -47,10 +49,12 @@ export class NeuerVertragSeite {
       .anlegen(eingabe)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (vertrag) =>
+        next: (vertrag) => {
+          this.ungespeichert.vergessen();
           void this.router.navigate(['/vertraege'], {
             state: { meldung: `„${vertragName(vertrag)}“ wurde gespeichert.` },
-          }),
+          });
+        },
         error: (error: unknown) => {
           this.sendet.set(false);
           this.speicherfehler.set(error);

@@ -138,6 +138,6 @@ describe('Shell', () => {
 
     element.querySelector<HTMLButtonElement>('header button')!.click();
 
-    expect(navigiert).toHaveBeenCalledWith('/login');
+    await vi.waitFor(() => expect(navigiert).toHaveBeenCalledWith('/login'));
   });
 });

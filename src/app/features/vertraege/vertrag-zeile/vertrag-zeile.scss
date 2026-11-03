@@ -14,6 +14,12 @@
   align-items: center;
   gap: 12px 20px;
   padding: 16px 0;
+  scroll-margin: 16px 0;
+
+  // Unten ist hier die Navigation fest eingeblendet.
+  @media (max-width: 900px) {
+    scroll-margin-bottom: 84px;
+  }
 }
 
 .angaben {
@@ -116,7 +122,36 @@
   line-height: 1.4;
 }
 
-.details-knopf {
+.bearbeitet {
+  margin: 0 -12px;
+  padding: 16px 12px;
+  border-radius: 10px;
+  background: var(--app-gruen-hell);
+}
+
+.meldung {
+  flex: 0 0 100%;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.formular-zeile {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.knoepfe {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ansicht-knopf {
   flex: none;
   min-height: 44px;
   padding: 0 14px;

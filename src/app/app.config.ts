@@ -5,7 +5,12 @@ import {
   LOCALE_ID,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
+import {
+  provideRouter,
+  withComponentInputBinding,
+  withInMemoryScrolling,
+  withRouterConfig,
+} from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
 
@@ -17,6 +22,8 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       // Eine neue Seite beginnt oben, sonst bleibt z. B. eine Meldung außerhalb des Blickfelds.
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
+      // Bricht die Rückfrage den Zurück-Button ab, muss der Browserverlauf stimmig bleiben.
+      withRouterConfig({ canceledNavigationResolution: 'computed' }),
     ),
     provideHttpClient(
       // Passt zu Spring Securitys csrf.spa(): Cookie XSRF-TOKEN, Header X-XSRF-TOKEN.

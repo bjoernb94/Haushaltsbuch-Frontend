@@ -8,6 +8,15 @@ export function betragText({ wert, waehrung }: Betrag, locale: string): string {
   return new Intl.NumberFormat(locale, { style: 'currency', currency: waehrung }).format(wert);
 }
 
+/** Zeichen der Währung, z. B. „€“ für eine Feldbezeichnung. */
+export function waehrungZeichen(waehrung: string, locale: string): string {
+  return (
+    new Intl.NumberFormat(locale, { style: 'currency', currency: waehrung })
+      .formatToParts(0)
+      .find(({ type }) => type === 'currency')?.value ?? waehrung
+  );
+}
+
 /** Betrag mit seiner Währung, z. B. „586,80 €“. */
 @Pipe({ name: 'betrag' })
 export class BetragPipe implements PipeTransform {

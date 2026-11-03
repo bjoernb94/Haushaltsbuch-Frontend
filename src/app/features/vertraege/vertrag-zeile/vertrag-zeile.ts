@@ -1,15 +1,25 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
+  ElementRef,
   inject,
+  Injector,
   input,
   LOCALE_ID,
   output,
+  viewChild,
 } from '@angular/core';
-import { VertragAntwort } from '../../../core/api/api';
+import { Observable } from 'rxjs';
+import { VertragAntwort, VertragKategorieAntwort } from '../../../core/api/api';
+import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
+import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import { inDenBlick } from '../../../shared/in-den-blick/in-den-blick';
 import { BetragPipe, betragText } from '../../../shared/format/betrag.pipe';
 import { datumText } from '../../../shared/format/datum.pipe';
+import { VertragBearbeiten } from '../vertrag-bearbeiten/vertrag-bearbeiten';
 import {
   fristDauerText,
   kategorieText,
@@ -24,10 +34,15 @@ import {
 const NICHT_HINTERLEGT = 'Nicht hinterlegt';
 const KEINE_ABBUCHUNG = 'Keine weiteren Abbuchungen';
 
-/** Eine Zeile der Vertragsliste mit aufklappbaren Details; alle Werte kommen vom Backend. */
+export interface ZeilenMeldung {
+  text: string;
+  art: 'info' | 'fehler';
+}
+
+/** Eine Zeile der Vertragsliste mit aufklappbaren Details und Formular; Werte kommen vom Backend. */
 @Component({
   selector: 'app-vertrag-zeile',
-  imports: [BetragPipe],
+  imports: [BetragPipe, HinweisBox, VertragBearbeiten],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-zeile.html',
   styleUrl: './vertrag-zeile.scss',
@@ -36,10 +51,45 @@ export class VertragZeile {
   private readonly locale = inject(LOCALE_ID);
 
   readonly vertrag = input.required<VertragAntwort>();
-  readonly offen = input(false);
-  readonly umschalten = output();
+  readonly ansicht = input<'details' | 'bearbeiten' | null>(null);
+  readonly meldung = input<ZeilenMeldung | null>(null);
+  readonly kategorien = input.required<Observable<VertragKategorieAntwort[]>>();
+
+  readonly umschalten = output<'details' | 'bearbeiten'>();
+  readonly abgebrochen = output();
+  readonly gespeichert = output<VertragAntwort>();
+  readonly konflikt = output();
+  readonly nichtGefunden = output();
+
+  private readonly ungespeichert = inject(UngespeicherteEingaben);
+  private readonly injector = inject(Injector);
+  private readonly bearbeitenKnopf = viewChild.required<ElementRef<HTMLElement>>('bearbeitenKnopf');
+  private readonly zeile = viewChild.required<ElementRef<HTMLElement>>('zeile');
+
+  constructor() {
+    // Nach dem Rendern, denn erst dann ist z. B. eine offene Zeile weiter oben zugeklappt. Das
+    // Formular meldet sich selbst, weil es erst nach den Kategorien dasteht.
+    effect(() => {
+      if (this.ansicht() === 'details') {
+        afterNextRender(() => this.zeigen(), { injector: this.injector });
+      }
+    });
+  }
+
+  protected zeigen(): void {
+    inDenBlick(this.zeile().nativeElement);
+  }
+
+  protected async abbrechen(): Promise<void> {
+    if (await this.ungespeichert.bestaetigen()) {
+      this.abgebrochen.emit();
+      this.bearbeitenKnopf().nativeElement.focus();
+    }
+  }
 
   protected readonly name = computed(() => vertragName(this.vertrag()));
+  protected readonly offen = computed(() => this.ansicht() === 'details');
+  protected readonly bearbeitet = computed(() => this.ansicht() === 'bearbeiten');
   protected readonly beendet = computed(() => this.vertrag().berechnet.status === 'BEENDET');
   protected readonly kuendigung = computed(() =>
     kuendigungAnzeige(this.vertrag().berechnet.kuendigung),

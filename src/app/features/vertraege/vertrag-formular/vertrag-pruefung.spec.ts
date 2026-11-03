@@ -1,9 +1,11 @@
+import { VertragAntwort } from '../../../core/api/api';
 import {
   anfrageAus,
   betragLesen,
   feldfehlerTexte,
   vertragPruefen,
   VertragWerte,
+  werteAus,
 } from './vertrag-pruefung';
 
 const LEER: VertragWerte = {
@@ -216,5 +218,128 @@ describe('feldfehlerTexte', () => {
       { feld: 'betrag.wert', code: 'Digits', parameter: { fraction: 2 } },
     ]);
     expect(texte.get('betrag')).toBe('Der Betrag muss größer als 0 sein.');
+  });
+});
+
+describe('Bearbeiten', () => {
+  const VERTRAG: VertragAntwort = {
+    id: 'v1',
+    version: 4,
+    anbieter: 'Anbieter',
+    bezeichnung: null,
+    kategorie: { id: 'k1', schluessel: 'VERSICHERUNG', name: null },
+    vertragsnummer: null,
+    betrag: { wert: 586.8, waehrung: 'USD' },
+    zahlweise: 'MONATLICH',
+    abbuchungAb: '2026-01-31',
+    zahlungsweg: null,
+    kuendbar: true,
+    beginn: null,
+    laufzeitende: null,
+    verlaengerung: null,
+    kuendigungsfristMonate: null,
+    gekuendigtZum: null,
+    notiz: null,
+    berechnet: {
+      status: 'AKTIV',
+      kostenProMonat: { wert: 586.8, waehrung: 'USD' },
+      kostenProJahr: { wert: 7041.6, waehrung: 'USD' },
+      naechsteAbbuchung: '2026-11-30',
+      kuendigung: {
+        art: 'KEINE_LAUFZEIT',
+        dringend: false,
+        fristMonate: null,
+        kuendigenBis: null,
+        zum: null,
+      },
+    },
+  };
+
+  describe('werteAus', () => {
+    it('belegt mit der nächsten Abbuchung vor, der Betrag steht mit Komma', () => {
+      expect(werteAus(VERTRAG)).toMatchObject({
+        abbuchungAb: '2026-11-30',
+        betrag: '586,80',
+        kategorieId: 'k1',
+        bezeichnung: '',
+        kuendigungsfristMonate: '',
+        nichtKuendbar: false,
+        gekuendigt: false,
+      });
+    });
+
+    it('nimmt abbuchungAb, wenn es keine nächste Abbuchung gibt', () => {
+      const beendet = {
+        ...VERTRAG,
+        berechnet: { ...VERTRAG.berechnet, naechsteAbbuchung: null },
+      };
+      expect(werteAus(beendet).abbuchungAb).toBe('2026-01-31');
+    });
+
+    it('leitet „Gekündigt“ und „Nicht kündbar“ ab, Frist 0 bleibt erhalten', () => {
+      const werte = werteAus({
+        ...VERTRAG,
+        kuendbar: false,
+        gekuendigtZum: '2027-06-30',
+        kuendigungsfristMonate: 0,
+      });
+      expect(werte).toMatchObject({
+        nichtKuendbar: true,
+        gekuendigt: true,
+        gekuendigtZum: '2027-06-30',
+        kuendigungsfristMonate: '0',
+      });
+    });
+  });
+
+  describe('anfrageAus mit gespeichertem Vertrag', () => {
+    it('schickt ohne Änderung alle Felder unverändert, auch den Anker', () => {
+      expect(anfrageAus(werteAus(VERTRAG), VERTRAG)).toEqual({
+        anbieter: 'Anbieter',
+        bezeichnung: null,
+        kategorieId: 'k1',
+        vertragsnummer: null,
+        betrag: { wert: 586.8, waehrung: 'USD' },
+        zahlweise: 'MONATLICH',
+        abbuchungAb: '2026-01-31',
+        zahlungsweg: null,
+        kuendbar: true,
+        beginn: null,
+        laufzeitende: null,
+        verlaengerung: null,
+        kuendigungsfristMonate: null,
+        gekuendigtZum: null,
+        notiz: null,
+      });
+    });
+
+    it('der Anker bleibt, wenn sich nur ein anderes Feld ändert', () => {
+      const werte = { ...werteAus(VERTRAG), notiz: 'Neu' };
+      expect(anfrageAus(werte, VERTRAG).abbuchungAb).toBe('2026-01-31');
+    });
+
+    it('ein geändertes Datum wird neuer Anker', () => {
+      const werte = { ...werteAus(VERTRAG), abbuchungAb: '2026-12-15' };
+      expect(anfrageAus(werte, VERTRAG).abbuchungAb).toBe('2026-12-15');
+    });
+
+    it('bei geänderter Zahlweise gilt das Feld als neuer Anker', () => {
+      const werte: VertragWerte = { ...werteAus(VERTRAG), zahlweise: 'JAEHRLICH' };
+      expect(anfrageAus(werte, VERTRAG).abbuchungAb).toBe('2026-11-30');
+    });
+
+    it('zurückgenommene Änderungen lassen den Anker unberührt', () => {
+      const werte = {
+        ...werteAus(VERTRAG),
+        abbuchungAb: '2026-11-30',
+        zahlweise: 'MONATLICH' as const,
+      };
+      expect(anfrageAus(werte, VERTRAG).abbuchungAb).toBe('2026-01-31');
+    });
+
+    it('übernimmt die Währung des Vertrags, nicht EUR', () => {
+      const werte = { ...werteAus(VERTRAG), betrag: '10,00' };
+      expect(anfrageAus(werte, VERTRAG).betrag).toEqual({ wert: 10, waehrung: 'USD' });
+    });
   });
 });

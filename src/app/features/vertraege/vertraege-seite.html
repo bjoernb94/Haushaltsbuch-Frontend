@@ -15,8 +15,10 @@
   Zur Übersicht
 </a>
 
-@if (meldung; as text) {
-  <app-hinweis-box art="info" [text]="text" />
+@if (meldungOben(); as oben) {
+  <div class="meldung" tabindex="-1">
+    <app-hinweis-box [art]="oben.art" [text]="oben.text" />
+  </div>
 }
 
 <div class="kopf">
@@ -61,8 +63,14 @@
     @for (vertrag of stand.vertraege; track vertrag.id) {
       <app-vertrag-zeile
         [vertrag]="vertrag"
-        [offen]="offeneId() === vertrag.id"
-        (umschalten)="umschalten(vertrag.id)"
+        [ansicht]="ansicht(vertrag.id)"
+        [meldung]="zeilenMeldung(vertrag.id)"
+        [kategorien]="kategorien$"
+        (umschalten)="umschalten(vertrag.id, $event)"
+        (abgebrochen)="oeffnen(null)"
+        (gespeichert)="gespeichert($event)"
+        (konflikt)="konflikt(vertrag.id)"
+        (nichtGefunden)="nichtGefunden()"
       />
     } @empty {
       <div class="leer">

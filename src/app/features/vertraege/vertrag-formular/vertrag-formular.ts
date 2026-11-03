@@ -1,35 +1,50 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
   Injector,
   input,
   linkedSignal,
+  LOCALE_ID,
+  OnInit,
   output,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { distinctUntilChanged, map } from 'rxjs';
 import {
   Verlaengerung,
+  VertragAntwort,
   VertragKategorieAntwort,
   Zahlungsweg,
   Zahlweise,
 } from '../../../core/api/api';
 import { problemFelder } from '../../../core/fehler/problem';
+import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
+import { waehrungZeichen } from '../../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import {
   kategorieText,
   VERLAENGERUNG_TEXT,
+  vertragName,
   ZAHLUNGSWEG_TEXT,
   ZAHLWEISE_TEXT,
 } from '../vertrag-texte';
 import { VertragEingabe } from '../vertrag.service';
-import { anfrageAus, feldfehlerTexte, VertragFeld, vertragPruefen } from './vertrag-pruefung';
+import {
+  anfrageAus,
+  feldfehlerTexte,
+  VertragFeld,
+  vertragPruefen,
+  werteAus,
+} from './vertrag-pruefung';
 
 const FEHLER_FELDER = 'Bitte prüfe die markierten Felder.';
 
@@ -42,6 +57,8 @@ const BLENDET_AUS: Partial<Record<VertragFeld, VertragFeld[]>> = {
   gekuendigt: ['gekuendigtZum'],
 };
 
+const HINWEIS_ZAHLWEISE = 'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.';
+
 const FRISTEN = [
   { wert: '0', text: 'Keine Frist' },
   { wert: '1', text: '1 Monat' },
@@ -49,6 +66,14 @@ const FRISTEN = [
   { wert: '3', text: '3 Monate' },
   { wert: '6', text: '6 Monate' },
 ];
+
+/** Das Backend erlaubt mehr Fristen, als die Auswahl bietet; eine gespeicherte darf nicht verloren gehen. */
+function fristenMit(gespeichert: number | null | undefined) {
+  const wert = gespeichert?.toString();
+  return wert === undefined || FRISTEN.some((frist) => frist.wert === wert)
+    ? FRISTEN
+    : [...FRISTEN, { wert, text: `${wert} Monate` }];
+}
 
 function optionen<T extends string>(texte: Record<T, string>): { wert: T; text: string }[] {
   return (Object.keys(texte) as T[]).map((wert) => ({ wert, text: texte[wert] }));
@@ -58,20 +83,25 @@ let letztesFormular = 0;
 
 /**
  * Felder eines Vertrags. Prüft nur Pflichtfelder und meldet dann {@link speichern}; das Speichern und
- * die Antwort darauf liegen bei der Seite, die Fehler zurückgibt über {@link fehlerAntwort}.
+ * die Antwort darauf liegen bei der Seite, die Fehler zurückgibt über {@link fehlerAntwort}. Mit
+ * {@link vertrag} bearbeitet es diesen Vertrag, sonst legt es einen neuen an.
  */
 @Component({
   selector: 'app-vertrag-formular',
-  imports: [ReactiveFormsModule, HinweisBox],
+  imports: [NgTemplateOutlet, ReactiveFormsModule, HinweisBox],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-formular.html',
   styleUrl: './vertrag-formular.scss',
 })
-export class VertragFormular {
+export class VertragFormular implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly injector = inject(Injector);
+  private readonly locale = inject(LOCALE_ID);
+  private readonly ungespeichert = inject(UngespeicherteEingaben);
 
   readonly kategorien = input.required<VertragKategorieAntwort[]>();
+  /** Der gespeicherte Stand; die Felder belegt er nur beim Öffnen vor. */
+  readonly vertrag = input<VertragAntwort | null>(null);
   readonly sendet = input(false);
   /** Fehler der letzten Anfrage, {@code null} wenn es keinen gibt. */
   readonly fehlerAntwort = input<unknown>(null);
@@ -92,7 +122,15 @@ export class VertragFormular {
     ...VERLAENGERUNG_TEXT,
     KEINE: 'Keine – Vertrag endet zum Laufzeitende',
   });
-  protected readonly fristen = FRISTEN;
+  protected readonly hinweisZahlweise = HINWEIS_ZAHLWEISE;
+  protected readonly fristen = computed(() => fristenMit(this.vertrag()?.kuendigungsfristMonate));
+  protected readonly waehrung = computed(() =>
+    waehrungZeichen(this.vertrag()?.betrag.waehrung ?? 'EUR', this.locale),
+  );
+  protected readonly name = computed(() => {
+    const vertrag = this.vertrag();
+    return vertrag && vertragName(vertrag);
+  });
 
   protected readonly formular = this.fb.group({
     anbieter: [''],
@@ -111,6 +149,16 @@ export class VertragFormular {
     gekuendigt: [false],
     gekuendigtZum: [''],
     notiz: [''],
+  });
+
+  private ausgangswerte = JSON.stringify(this.formular.getRawValue());
+
+  private readonly zahlweise = toSignal(this.formular.controls.zahlweise.valueChanges);
+
+  protected readonly zahlweiseGeaendert = computed(() => {
+    const zahlweise = this.zahlweise();
+    const vertrag = this.vertrag();
+    return !!vertrag && !!zahlweise && zahlweise !== vertrag.zahlweise;
   });
 
   protected readonly nichtKuendbar = toSignal(this.formular.controls.nichtKuendbar.valueChanges, {
@@ -142,11 +190,39 @@ export class VertragFormular {
       const control: AbstractControl = this.formular.controls[feld];
       control.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.fehlerEntfernen(feld));
     }
+    this.formular.valueChanges
+      .pipe(
+        map(() => JSON.stringify(this.formular.getRawValue()) !== this.ausgangswerte),
+        distinctUntilChanged(),
+        takeUntilDestroyed(),
+      )
+      .subscribe((geaendert) => this.ungespeichert.melden(geaendert));
+    inject(DestroyRef).onDestroy(() => this.ungespeichert.melden(false));
     effect(() => {
       if (this.fehlerAntwort()) {
         this.fehlerZeigen();
       }
     });
+  }
+
+  ngOnInit(): void {
+    const vertrag = this.vertrag();
+    if (!vertrag) {
+      return;
+    }
+    this.formular.setValue(werteAus(vertrag), { emitEvent: false });
+    this.ausgangswerte = JSON.stringify(this.formular.getRawValue());
+    // Die Signale folgen valueChanges, das setValue oben bewusst nicht auslöst.
+    this.formular.controls.nichtKuendbar.updateValueAndValidity({ onlySelf: true });
+    this.formular.controls.gekuendigt.updateValueAndValidity({ onlySelf: true });
+    afterNextRender(
+      // Ohne Scrollen: Wohin die Seite geht, entscheidet die Zeile, die das Formular zeigt.
+      () =>
+        this.formularElement()
+          .nativeElement.querySelector<HTMLElement>('input')
+          ?.focus({ preventScroll: true }),
+      { injector: this.injector },
+    );
   }
 
   protected id(feld: VertragFeld): string {
@@ -175,7 +251,7 @@ export class VertragFormular {
       this.fehlerZeigen();
       return;
     }
-    this.speichern.emit(anfrageAus(werte));
+    this.speichern.emit(anfrageAus(werte, this.vertrag()));
   }
 
   private fehlerEntfernen(feld: VertragFeld): void {

@@ -1,0 +1,20 @@
+@if (ladefehler()) {
+  <div class="fehler">
+    <app-hinweis-box text="Die Kategorien konnten nicht geladen werden." />
+    <button type="button" class="knopf knopf-sekundaer" (click)="laden()">Erneut versuchen</button>
+    <button type="button" class="knopf knopf-sekundaer" (click)="abgebrochen.emit()">
+      Abbrechen
+    </button>
+  </div>
+} @else if (geladen(); as liste) {
+  <app-vertrag-formular
+    [vertrag]="vertrag()"
+    [kategorien]="liste"
+    [sendet]="sendet()"
+    [fehlerAntwort]="speicherfehler()"
+    (speichern)="speichern($event)"
+    (abbrechen)="abgebrochen.emit()"
+  />
+} @else {
+  <p class="laedt" role="status">Wird geladen …</p>
+}

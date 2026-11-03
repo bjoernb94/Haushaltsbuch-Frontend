@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { problemCode } from '../fehler/problem';
+import { UngespeicherteEingaben } from '../ungespeichert/ungespeicherte-eingaben';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
 import { STARTSEITE } from './auth.guards';
 import { AuthService, KOMPONENTEN_URL } from './auth.service';
@@ -14,10 +15,13 @@ import { AuthService, KOMPONENTEN_URL } from './auth.service';
  *
  * 403 KEIN_ZUGRIFF heißt, die Komponente ist inzwischen abbestellt: Komponenten neu laden und zur
  * Startseite. Das gilt nicht für deren eigenen Abruf, sonst entstünde eine Schleife.
+ *
+ * Beide Umleitungen müssen passieren: Ungespeicherte Eingaben halten sie nicht mit einer Rückfrage auf.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
+  const ungespeichert = inject(UngespeicherteEingaben);
   return next(req).pipe(
     catchError((error: unknown) => {
       if (
@@ -28,11 +32,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       ) {
         auth.zuruecksetzen();
         if (router.url.split('?')[0] !== '/login') {
+          ungespeichert.vergessen();
           void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
         }
       }
       if (problemCode(error) === 'KEIN_ZUGRIFF' && req.url !== KOMPONENTEN_URL) {
-        auth.komponentenLaden().subscribe(() => void router.navigateByUrl(STARTSEITE));
+        auth.komponentenLaden().subscribe(() => {
+          ungespeichert.vergessen();
+          void router.navigateByUrl(STARTSEITE);
+        });
       }
       return throwError(() => error);
     }),
