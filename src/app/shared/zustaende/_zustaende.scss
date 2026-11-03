@@ -1,0 +1,23 @@
+// Lade- und Fehlerzustand einer Seite oder eines Bereichs mit Daten.
+
+@mixin laedt {
+  .laedt {
+    margin: 0;
+    font-size: 15px;
+    color: var(--app-text-gedaempft);
+  }
+}
+
+@mixin fehler {
+  .fehler {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+
+    .knopf {
+      flex: none;
+      padding: 0 18px;
+    }
+  }
+}

@@ -19,7 +19,7 @@
       padding: 0 14px;
       border-radius: 10px;
       border: 1.5px solid var(--app-rand);
-      background: #fff;
+      background: var(--app-flaeche);
       font: inherit;
       font-size: 16px;
       color: var(--app-text);
@@ -100,7 +100,7 @@
   }
 
   .knopf-sekundaer {
-    background: #fff;
+    background: var(--app-flaeche);
     color: var(--app-gruen);
 
     &:hover {

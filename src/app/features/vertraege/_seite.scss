@@ -1,6 +1,7 @@
 // Gemeinsamer Aufbau der Seiten im Bereich Verträge.
 
 @use '../../shared/formular/formular';
+@use '../../shared/zustaende/zustaende';
 
 @mixin seite {
   @include formular.knoepfe;
@@ -28,21 +29,6 @@
     letter-spacing: -0.02em;
   }
 
-  .fehler {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px 16px;
-
-    .knopf {
-      flex: none;
-      padding: 0 18px;
-    }
-  }
-
-  .laedt {
-    margin: 0;
-    font-size: 15px;
-    color: var(--app-text-gedaempft);
-  }
+  @include zustaende.fehler;
+  @include zustaende.laedt;
 }

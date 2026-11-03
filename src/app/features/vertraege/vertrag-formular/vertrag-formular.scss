@@ -32,7 +32,7 @@
   }
 }
 
-h3 {
+h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 800;
@@ -159,7 +159,7 @@ legend {
 
 .knopf-abbrechen {
   border-color: var(--app-rand);
-  background: #fff;
+  background: var(--app-flaeche);
   color: var(--app-text);
 
   &:hover {

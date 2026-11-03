@@ -1,6 +1,7 @@
 @use '../kennzahl';
 @use '../../../shared/format/kuerzen';
 @use '../../../shared/formular/formular';
+@use '../../../shared/zustaende/zustaende';
 
 @include kennzahl.kennzahl;
 @include formular.knoepfe;
@@ -88,11 +89,7 @@ a[kachelLink] {
   color: var(--app-text-gedaempft);
 }
 
-.laedt {
-  margin: 0;
-  font-size: 15px;
-  color: var(--app-text-gedaempft);
-}
+@include zustaende.laedt;
 
 .knopf {
   flex: none;

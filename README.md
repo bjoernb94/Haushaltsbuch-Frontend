@@ -70,6 +70,14 @@ Login, Registrierung und die Fußzeile der App fragen den Systemstatus beim Öff
 erreichbar. Fehlt ein Dienst, sind Login und Registrierung gesperrt; in der App wird der Status
 nur angezeigt.
 
+### Ungespeicherte Eingaben
+
+Ein Formular meldet Änderungen an `core/ungespeichert`. Wer es verlässt, wird im Dialog der Shell
+gefragt: `ungespeichertGuard` (`canDeactivate`) auf Routen mit Formular, `bestaetigen()` für alles andere,
+das ein Formular schließt oder verlässt, etwa das Abmelden. Umleitungen, die passieren müssen (401, 403),
+und erfolgreiches Speichern rufen vorher `vergessen()` auf. Beim Schließen des Tabs und beim Neuladen
+erscheint nur der Standarddialog des Browsers.
+
 ### Passwortregeln
 
 Die Registrierung prüft die Passwort-Richtlinie des Keycloak-Realms schon im Formular
@@ -141,12 +149,14 @@ TLS-Terminierung und folgt mit v1.0. Die Header greifen nur im Image, nicht bei 
 
 ```
 src/app/
-  core/        Dienste ohne eigene Oberfläche: auth/, fehler/, komponenten/, systemstatus/
+  core/        Dienste ohne eigene Oberfläche: api/, auth/, fehler/, komponenten/, systemstatus/,
+               ungespeichert/
   features/    Seiten, lazy geladen
     anmeldung/   login/, registrierung/ und ihr gemeinsamer anmelde-rahmen/
     start/       Startseite nach der Anmeldung
     vertraege/   je ein Backend-Modul; weitere kommen mit ihren Seiten dazu
-  shared/      Bausteine für mehrere Bereiche: format/, formular/, hinweis-box/, systemstatus-leiste/
+  shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, hinweis-box/,
+               in-den-blick/, logo/, systemstatus-leiste/, verwerfen-dialog/, zustaende/
   shell/       Rahmen der angemeldeten Bereiche (Kopfzeile, hauptmenue/, Fußzeile); die Startseite
                kommt ohne Navigation aus (Route-Data ohneNavigation)
 src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile
