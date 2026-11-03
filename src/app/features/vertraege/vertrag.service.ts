@@ -15,7 +15,9 @@ import {
  * Was ein Formular schickt: Fehlt eine Eingabe, ist der Wert {@code null}, und das Backend antwortet
  * mit einem Feldfehler (ADR 0010).
  */
-export type VertragEingabe = { [F in keyof VertragAnfrage]: VertragAnfrage[F] | null };
+export type Eingabe<T> = { [F in keyof T]: T[F] | null };
+
+export type VertragEingabe = Eingabe<VertragAnfrage>;
 
 const VERTRAEGE_URL = '/api/vertraege';
 
@@ -41,7 +43,7 @@ export class VertragService {
   }
 
   /** Veraltete {@code version}: 409 KONFLIKT. */
-  aendern(id: string, vertrag: VertragAenderung): Observable<VertragAntwort> {
+  aendern(id: string, vertrag: Eingabe<VertragAenderung>): Observable<VertragAntwort> {
     return this.http.put<VertragAntwort>(`${VERTRAEGE_URL}/${id}`, vertrag);
   }
 

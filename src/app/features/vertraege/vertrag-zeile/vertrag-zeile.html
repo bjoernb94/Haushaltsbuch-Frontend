@@ -1,4 +1,9 @@
-<div class="zeile" [class.beendet]="beendet()">
+<div #zeile class="zeile" [class.beendet]="beendet()" [class.bearbeitet]="bearbeitet()">
+  @if (meldung(); as hinweis) {
+    <div class="meldung" tabindex="-1">
+      <app-hinweis-box [art]="hinweis.art" [text]="hinweis.text" />
+    </div>
+  }
   <div class="angaben">
     <span class="name">{{ name() }}</span>
     <span class="meta">{{ meta() }}</span>
@@ -17,29 +22,69 @@
       <span class="zusatz">{{ zusatz }}</span>
     }
   </div>
-  <button
-    type="button"
-    class="details-knopf"
-    [attr.aria-expanded]="offen()"
-    [attr.aria-label]="'Details zu ' + name() + (offen() ? ' ausblenden' : ' anzeigen')"
-    (click)="umschalten.emit()"
-  >
-    <svg
-      [class.offen]="offen()"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
+  <div class="knoepfe">
+    <button
+      type="button"
+      class="ansicht-knopf"
+      [attr.aria-expanded]="offen()"
+      [attr.aria-label]="'Details zu ' + name() + (offen() ? ' ausblenden' : ' anzeigen')"
+      (click)="umschalten.emit('details')"
     >
-      <path d="M6 9l6 6 6-6"></path>
-    </svg>
-    Details
-  </button>
+      <svg
+        [class.offen]="offen()"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M6 9l6 6 6-6"></path>
+      </svg>
+      Details
+    </button>
+    <button
+      #bearbeitenKnopf
+      type="button"
+      class="ansicht-knopf"
+      [attr.aria-expanded]="bearbeitet()"
+      [attr.aria-label]="name() + ' bearbeiten'"
+      (click)="umschalten.emit('bearbeiten')"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 20h4L19 9l-4-4L4 16z"></path>
+        <path d="M14 6l4 4"></path>
+      </svg>
+      Bearbeiten
+    </button>
+  </div>
+
+  @if (bearbeitet()) {
+    <div class="formular-zeile">
+      <app-vertrag-bearbeiten
+        [vertrag]="vertrag()"
+        [kategorien]="kategorien()"
+        (angezeigt)="zeigen()"
+        (abgebrochen)="abbrechen()"
+        (gespeichert)="gespeichert.emit($event)"
+        (konflikt)="konflikt.emit()"
+        (nichtGefunden)="nichtGefunden.emit()"
+      />
+    </div>
+  }
 
   @if (offen()) {
     <div class="details" role="region" [attr.aria-label]="'Details zu ' + name()">

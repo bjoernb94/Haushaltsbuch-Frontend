@@ -36,6 +36,39 @@ test.describe('Neuer Vertrag', () => {
     ).toHaveAttribute('aria-current', 'page');
   });
 
+  test.describe('ungespeicherte Eingaben', () => {
+    const dialog = (page: Page) => page.getByRole('dialog', { name: 'Änderungen verwerfen?' });
+
+    for (const [name, rolle] of [
+      ['Abbrechen', 'button'],
+      ['Zurück zu Verträgen', 'link'],
+    ] as const) {
+      test(`${name} fragt nach, „Weiter bearbeiten“ bleibt`, async ({ page }) => {
+        await backendSimulieren(page, { angemeldet: true });
+        await page.goto('/vertraege/neu');
+        await page.getByLabel('Anbieter *').fill('Halb getippt');
+
+        await page.getByRole(rolle, { name }).click();
+        await dialog(page).getByRole('button', { name: 'Weiter bearbeiten' }).click();
+        await expect(page).toHaveURL(/\/vertraege\/neu$/);
+        await expect(page.getByLabel('Anbieter *')).toHaveValue('Halb getippt');
+
+        await page.getByRole(rolle, { name }).click();
+        await dialog(page).getByRole('button', { name: 'Verwerfen' }).click();
+        await expect(page).toHaveURL(/\/vertraege$/);
+      });
+    }
+
+    test('nach dem Speichern kein Dialog', async ({ page }) => {
+      await backendSimulieren(page, { angemeldet: true });
+      await page.goto('/vertraege/neu');
+      await pflichtfelderFuellen(page);
+      await speichernUndAnfrageLesen(page);
+      await expect(page).toHaveURL(/\/vertraege$/);
+      await expect(dialog(page)).toHaveCount(0);
+    });
+  });
+
   test.describe('verlässt das Formular ohne Anfrage', () => {
     for (const [name, rolle] of [
       ['Abbrechen', 'button'],

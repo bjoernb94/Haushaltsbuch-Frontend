@@ -1,4 +1,10 @@
-import { Feldfehler, Verlaengerung, Zahlungsweg, Zahlweise } from '../../../core/api/api';
+import {
+  Feldfehler,
+  Verlaengerung,
+  VertragAntwort,
+  Zahlungsweg,
+  Zahlweise,
+} from '../../../core/api/api';
 import { VertragEingabe } from '../vertrag.service';
 
 /** Werte der Formularfelder, unverändert wie eingegeben. */
@@ -60,20 +66,58 @@ function textOderNull(eingabe: string): string | null {
   return eingabe.trim() || null;
 }
 
+/** Vorbelegung zum Bearbeiten. „Nächste Abbuchung“ zeigt den nächsten Termin, nicht den Anker. */
+export function werteAus(v: VertragAntwort): VertragWerte {
+  return {
+    anbieter: v.anbieter,
+    bezeichnung: v.bezeichnung ?? '',
+    kategorieId: v.kategorie.id,
+    vertragsnummer: v.vertragsnummer ?? '',
+    betrag: v.betrag.wert.toFixed(2).replace('.', ','),
+    zahlweise: v.zahlweise,
+    abbuchungAb: v.berechnet.naechsteAbbuchung ?? v.abbuchungAb,
+    zahlungsweg: v.zahlungsweg ?? '',
+    nichtKuendbar: !v.kuendbar,
+    beginn: v.beginn ?? '',
+    laufzeitende: v.laufzeitende ?? '',
+    verlaengerung: v.verlaengerung ?? '',
+    kuendigungsfristMonate: v.kuendigungsfristMonate?.toString() ?? '',
+    gekuendigt: !!v.gekuendigtZum,
+    gekuendigtZum: v.gekuendigtZum ?? '',
+    notiz: v.notiz ?? '',
+  };
+}
+
+/**
+ * Das Backend zählt von diesem Anker aus. Der angezeigte Termin darf ihn nicht versehentlich ersetzen,
+ * sonst wandert der Abbuchungstag (31.01. monatlich: aus 30.11. folgt 30.12. statt 31.12.). Neuer
+ * Anker ist er also erst, wenn sich Datum oder Zahlweise geändert haben.
+ */
+function abbuchungAb(w: VertragWerte, gespeichert: VertragAntwort | null): string | null {
+  const unveraendert =
+    gespeichert &&
+    w.zahlweise === gespeichert.zahlweise &&
+    w.abbuchungAb === werteAus(gespeichert).abbuchungAb;
+  return unveraendert ? gespeichert.abbuchungAb : w.abbuchungAb || null;
+}
+
 /**
  * Anfrage aus den Formularwerten. Leere Felder gehen als {@code null}, denn {@code ""} wäre bei Enums
  * und Datum {@code ANFRAGE_UNGUELTIG} ohne Bezug zum Feld, ebenso {@code { wert: null }} beim Betrag.
  */
-export function anfrageAus(w: VertragWerte): Required<VertragEingabe> {
+export function anfrageAus(
+  w: VertragWerte,
+  gespeichert: VertragAntwort | null = null,
+): Required<VertragEingabe> {
   const wert = betragLesen(w.betrag);
   return {
     anbieter: textOderNull(w.anbieter),
     bezeichnung: textOderNull(w.bezeichnung),
     kategorieId: textOderNull(w.kategorieId),
     vertragsnummer: textOderNull(w.vertragsnummer),
-    betrag: wert === null ? null : { wert, waehrung: 'EUR' },
+    betrag: wert === null ? null : { wert, waehrung: gespeichert?.betrag.waehrung ?? 'EUR' },
     zahlweise: w.zahlweise || null,
-    abbuchungAb: w.abbuchungAb || null,
+    abbuchungAb: abbuchungAb(w, gespeichert),
     zahlungsweg: w.zahlungsweg || null,
     kuendbar: !w.nichtKuendbar,
     beginn: w.beginn || null,

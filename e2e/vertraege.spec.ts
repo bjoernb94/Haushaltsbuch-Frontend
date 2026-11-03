@@ -75,7 +75,7 @@ test.describe('Seite Verträge', () => {
       expect(sichtbar).toBeLessThanOrEqual(Math.ceil(zeilenhoehe * zeilen));
     }
 
-    await zeile.getByRole('button').click();
+    await zeile.getByRole('button', { name: /Details/ }).click();
     const details = zeile.getByRole('region');
     await expect(details.getByText(lang, { exact: true })).toHaveCount(3);
     const notiz = details.getByText(lang, { exact: true }).last();
@@ -91,7 +91,7 @@ test.describe('Seite Verträge', () => {
     });
     await page.goto('/vertraege');
     const zeile = page.locator('app-vertrag-zeile');
-    await zeile.getByRole('button').click();
+    await zeile.getByRole('button', { name: /Details/ }).click();
 
     const raster = zeile.locator('dl');
     const notiz = zeile.locator('.notiz-eintrag');

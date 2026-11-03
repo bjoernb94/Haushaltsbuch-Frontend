@@ -1,0 +1,25 @@
+@use '../../../shared/formular/formular';
+
+@include formular.knoepfe;
+
+:host {
+  display: block;
+}
+
+.fehler {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+
+  .knopf {
+    flex: none;
+    padding: 0 18px;
+  }
+}
+
+.laedt {
+  margin: 0;
+  font-size: 15px;
+  color: var(--app-text-gedaempft);
+}

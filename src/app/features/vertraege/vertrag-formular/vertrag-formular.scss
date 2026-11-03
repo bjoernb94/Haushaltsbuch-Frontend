@@ -1,6 +1,7 @@
 @use '../../../shared/formular/formular';
 
-@include formular.felder($hoehe: 52px);
+// Wie im Design: im Bearbeiten-Formular in der Zeile etwas niedriger.
+@include formular.felder($hoehe: var(--feld-hoehe, 52px));
 @include formular.knoepfe;
 
 .formular {
@@ -11,6 +12,30 @@
   border: 1px solid var(--app-trenner);
   border-radius: 16px;
   background: var(--app-flaeche);
+}
+
+.bearbeiten {
+  --feld-hoehe: 48px;
+
+  padding: 20px;
+  border: 1.5px solid var(--app-gruen);
+  border-radius: 12px;
+
+  .knopf {
+    flex: none;
+    height: 48px;
+    padding: 0 24px;
+  }
+
+  .aktionen {
+    flex-wrap: wrap;
+  }
+}
+
+h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .hinweis:focus {

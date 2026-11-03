@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { VertragKategorieAntwort } from '../../../core/api/api';
+import { VertragAntwort, VertragKategorieAntwort } from '../../../core/api/api';
+import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { VertragEingabe } from '../vertrag.service';
 import { VertragFormular } from './vertrag-formular';
 
@@ -263,5 +264,163 @@ describe('VertragFormular', () => {
     for (const label of labels) {
       expect(el.querySelector(`[id="${label.htmlFor}"]`)).not.toBeNull();
     }
+  });
+
+  describe('zum Bearbeiten', () => {
+    const VERTRAG: VertragAntwort = {
+      id: 'v1',
+      version: 4,
+      anbieter: 'Anbieter',
+      bezeichnung: 'Kfz',
+      kategorie: KATEGORIEN[1],
+      vertragsnummer: null,
+      betrag: { wert: 586.8, waehrung: 'USD' },
+      zahlweise: 'MONATLICH',
+      abbuchungAb: '2026-01-31',
+      zahlungsweg: 'PAYPAL',
+      kuendbar: true,
+      beginn: null,
+      laufzeitende: null,
+      verlaengerung: 'MONATLICH',
+      kuendigungsfristMonate: 4,
+      gekuendigtZum: '2027-06-30',
+      notiz: null,
+      berechnet: {
+        status: 'GEKUENDIGT',
+        kostenProMonat: { wert: 586.8, waehrung: 'USD' },
+        kostenProJahr: { wert: 7041.6, waehrung: 'USD' },
+        naechsteAbbuchung: '2026-11-30',
+        kuendigung: {
+          art: 'GEKUENDIGT',
+          dringend: false,
+          fristMonate: 4,
+          kuendigenBis: null,
+          zum: '2027-06-30',
+        },
+      },
+    };
+
+    @Component({
+      imports: [VertragFormular],
+      template: `<app-vertrag-formular
+        [vertrag]="vertrag()"
+        [kategorien]="kategorien"
+        (speichern)="gespeichert.push($event)"
+      />`,
+    })
+    class BearbeitenHost {
+      readonly kategorien = KATEGORIEN;
+      readonly vertrag = signal<VertragAntwort>(VERTRAG);
+      readonly gespeichert: Required<VertragEingabe>[] = [];
+    }
+
+    async function offen(vertrag: VertragAntwort = VERTRAG) {
+      const fixture = TestBed.createComponent(BearbeitenHost);
+      fixture.componentInstance.vertrag.set(vertrag);
+      document.body.appendChild(fixture.nativeElement);
+      await fixture.whenStable();
+      const el: HTMLElement = fixture.nativeElement;
+      const feld = (name: string) =>
+        el.querySelector<HTMLInputElement>(`[formcontrolname="${name}"]`)!;
+      const setzen = async (name: string, wert: string) => {
+        const control = feld(name);
+        control.value = wert;
+        control.dispatchEvent(new Event(control.tagName === 'SELECT' ? 'change' : 'input'));
+        await fixture.whenStable();
+      };
+      return { fixture, el, host: fixture.componentInstance, feld, setzen };
+    }
+
+    it('belegt alle Felder vor, auch Auswahlfelder und abhängige Felder', async () => {
+      const { feld, el } = await offen();
+      expect(feld('anbieter').value).toBe('Anbieter');
+      expect(feld('kategorieId').value).toBe('k2');
+      expect(feld('betrag').value).toBe('586,80');
+      expect(feld('zahlweise').value).toBe('MONATLICH');
+      expect(feld('abbuchungAb').value).toBe('2026-11-30');
+      expect(feld('zahlungsweg').value).toBe('PAYPAL');
+      expect(feld('verlaengerung').value).toBe('MONATLICH');
+      expect(feld('gekuendigt').checked).toBe(true);
+      expect(feld('gekuendigtZum').value).toBe('2027-06-30');
+      expect(el.querySelector('h3')?.textContent).toBe('Vertrag bearbeiten');
+      expect(el.querySelector('form')?.getAttribute('aria-label')).toBe('Kfz bearbeiten');
+    });
+
+    it('blendet bei nicht kündbaren Verträgen Verlängerung und Frist aus', async () => {
+      const { feld } = await offen({ ...VERTRAG, kuendbar: false });
+      expect(feld('nichtKuendbar').checked).toBe(true);
+      expect(feld('verlaengerung')).toBeNull();
+    });
+
+    it('fokussiert das erste Feld', async () => {
+      const { feld } = await offen();
+      expect(document.activeElement).toBe(feld('anbieter'));
+    });
+
+    it('nennt die Währung des Vertrags in der Bezeichnung', async () => {
+      const { el } = await offen();
+      expect(el.textContent).toContain('Betrag in $ *');
+    });
+
+    it('behält eine Frist außerhalb der Auswahl als eigene Option', async () => {
+      const { feld } = await offen();
+      const frist = feld('kuendigungsfristMonate') as unknown as HTMLSelectElement;
+      expect(frist.value).toBe('4');
+      expect(frist.selectedOptions[0].text).toBe('4 Monate');
+    });
+
+    it('bietet ohne ungewöhnliche Frist nur die Standardauswahl', async () => {
+      const { feld } = await offen({ ...VERTRAG, kuendigungsfristMonate: 3 });
+      const frist = feld('kuendigungsfristMonate') as unknown as HTMLSelectElement;
+      expect([...frist.options].map((o) => o.value)).toEqual(['', '0', '1', '2', '3', '6']);
+    });
+
+    it('schickt ohne Änderung den gespeicherten Anker', async () => {
+      const { fixture, el, host } = await offen();
+      el.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await fixture.whenStable();
+      expect(host.gespeichert[0]).toMatchObject({
+        abbuchungAb: '2026-01-31',
+        kuendigungsfristMonate: 4,
+        betrag: { wert: 586.8, waehrung: 'USD' },
+      });
+    });
+
+    it('zeigt den Hinweis nur, solange die Zahlweise geändert ist', async () => {
+      const { el, feld, setzen } = await offen();
+      const hinweis = 'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.';
+      expect(el.textContent).not.toContain(hinweis);
+
+      await setzen('zahlweise', 'JAEHRLICH');
+      expect(el.textContent).toContain(hinweis);
+      const ids = feld('abbuchungAb').getAttribute('aria-describedby')!;
+      expect(document.getElementById(ids)?.textContent).toBe(hinweis);
+
+      await setzen('zahlweise', 'MONATLICH');
+      expect(el.textContent).not.toContain(hinweis);
+    });
+
+    it('meldet ungespeicherte Eingaben, auch wenn sie zurückgenommen werden', async () => {
+      const { fixture, setzen } = await offen();
+      const eingaben = TestBed.inject(UngespeicherteEingaben);
+      expect(eingaben.vorhanden()).toBe(false);
+      await setzen('notiz', 'x');
+      expect(eingaben.vorhanden()).toBe(true);
+      await setzen('notiz', '');
+      expect(eingaben.vorhanden()).toBe(false);
+
+      await setzen('notiz', 'x');
+      fixture.destroy();
+      expect(eingaben.vorhanden()).toBe(false);
+    });
+
+    it('belegt nicht neu vor, wenn der Vertrag im offenen Formular neu geladen wird', async () => {
+      const { fixture, host, feld, setzen } = await offen();
+      await setzen('notiz', 'Eingabe');
+      host.vertrag.set({ ...VERTRAG, anbieter: 'Anderer Stand' });
+      await fixture.whenStable();
+      expect(feld('anbieter').value).toBe('Anbieter');
+      expect(feld('notiz').value).toBe('Eingabe');
+    });
   });
 });

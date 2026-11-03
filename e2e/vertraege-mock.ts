@@ -309,6 +309,28 @@ function feldfehler(anfrage: VertragAnfrage): Feldfehler[] {
   return fehler;
 }
 
+/** Antwort auf eine ungültige Eingabe, sonst `null`. */
+function eingabePruefen(route: Route, problem: FehlerAntwort): Promise<void> | null {
+  const anfrage = route.request().postDataJSON();
+  if (nichtLesbar(anfrage)) {
+    return problem(route, 400, 'ANFRAGE_UNGUELTIG', 'Request body is not readable.');
+  }
+  const felder = feldfehler(anfrage);
+  return felder.length
+    ? route.fulfill({
+        status: 400,
+        contentType: 'application/problem+json',
+        json: {
+          type: 'about:blank',
+          status: 400,
+          detail: 'Request contains invalid fields.',
+          code: 'VALIDIERUNG',
+          felder,
+        },
+      })
+    : null;
+}
+
 type FehlerAntwort = (route: Route, status: number, code: string, detail: string) => Promise<void>;
 
 /** Endpunkte unter /api/vertraege; Anlegen, Ändern und Löschen ändern den Stand im Test. */
@@ -344,22 +366,9 @@ export async function vertraegeSimulieren(
       return route.fulfill({ json: { kuendigung: vorschau(anfrage.postDataJSON()) } });
     }
     if (!pfad && anfrage.method() === 'POST') {
-      if (nichtLesbar(anfrage.postDataJSON())) {
-        return problem(route, 400, 'ANFRAGE_UNGUELTIG', 'Request body is not readable.');
-      }
-      const felder = feldfehler(anfrage.postDataJSON());
-      if (felder.length) {
-        return route.fulfill({
-          status: 400,
-          contentType: 'application/problem+json',
-          json: {
-            type: 'about:blank',
-            status: 400,
-            detail: 'Request contains invalid fields.',
-            code: 'VALIDIERUNG',
-            felder,
-          },
-        });
+      const ungueltig = eingabePruefen(route, problem);
+      if (ungueltig) {
+        return ungueltig;
       }
       const id = `neu-${naechsteId++}`;
       const neu = ausAnfrage(anfrage.postDataJSON(), id, 0);
@@ -384,6 +393,10 @@ export async function vertraegeSimulieren(
 
     const aenderung: VertragAenderung | null =
       anfrage.method() === 'PUT' ? anfrage.postDataJSON() : null;
+    const ungueltig = aenderung && eingabePruefen(route, problem);
+    if (ungueltig) {
+      return ungueltig;
+    }
     const version = aenderung?.version ?? Number(url.searchParams.get('version'));
     if (version !== vorhanden.version) {
       return problem(route, 409, 'KONFLIKT', 'Contract was changed in the meantime.');
