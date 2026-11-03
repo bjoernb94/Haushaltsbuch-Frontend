@@ -1,0 +1,17 @@
+<dialog
+  #dialog
+  [attr.aria-labelledby]="id + '-titel'"
+  [attr.aria-describedby]="id + '-text'"
+  (close)="antwort.emit(false)"
+>
+  <h2 [id]="id + '-titel'">{{ titel() }}</h2>
+  <p [id]="id + '-text'">{{ text() }}</p>
+  <div class="aktionen">
+    <button class="knopf knopf-sekundaer" type="button" (click)="beantworten(false)">
+      {{ neinText() }}
+    </button>
+    <button class="knopf knopf-gefahr" type="button" (click)="beantworten(true)">
+      {{ jaText() }}
+    </button>
+  </div>
+</dialog>

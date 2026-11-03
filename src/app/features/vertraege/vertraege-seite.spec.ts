@@ -107,12 +107,20 @@ describe('VertraegeSeite', () => {
   const uebersicht = vi.fn();
   const aendern = vi.fn();
   const kategorien = vi.fn();
+  const loeschen = vi.fn();
 
   beforeEach(async () => {
     // Beides gibt es in jsdom nicht; das Scrollen selbst prüfen die E2E-Tests.
     Element.prototype.scrollIntoView = vi.fn();
     window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+    HTMLDialogElement.prototype.showModal = function () {
+      this.open = true;
+    };
+    HTMLDialogElement.prototype.close = function () {
+      this.open = false;
+    };
     aendern.mockReset();
+    loeschen.mockReset();
     kategorien.mockReset();
     kategorien.mockReturnValue(of([LEER.kategorie]));
     auflisten.mockReset();
@@ -124,7 +132,10 @@ describe('VertraegeSeite', () => {
       providers: [
         provideRouter([]),
         { provide: LOCALE_ID, useValue: 'de-DE' },
-        { provide: VertragService, useValue: { auflisten, uebersicht, aendern, kategorien } },
+        {
+          provide: VertragService,
+          useValue: { auflisten, uebersicht, aendern, kategorien, loeschen },
+        },
       ],
     }).compileComponents();
   });
@@ -524,6 +535,133 @@ describe('VertraegeSeite', () => {
       langsam.complete();
       await fixture.whenStable();
       expect(element.querySelectorAll('app-vertrag-zeile')).toHaveLength(1);
+    });
+  });
+
+  describe('Löschen', () => {
+    const fehlerAntwort = (status: number, code?: string) =>
+      throwError(() => new HttpErrorResponse({ status, error: code ? { code } : null }));
+    const zeilen = (element: HTMLElement) =>
+      element.querySelectorAll<HTMLElement>('app-vertrag-zeile');
+    const schaltflaeche = (element: HTMLElement, text: string) =>
+      [...element.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)!;
+
+    async function gefragt(name = 'Kfz-Versicherung') {
+      const { fixture, element } = await seite();
+      element.querySelector<HTMLButtonElement>(`button[aria-label="${name} löschen"]`)!.click();
+      await fixture.whenStable();
+      return { fixture, element };
+    }
+
+    async function bestaetigt(name?: string) {
+      const { fixture, element } = await gefragt(name);
+      schaltflaeche(element, 'Ja, löschen').click();
+      await fixture.whenStable();
+      return { fixture, element };
+    }
+
+    it('fragt im Dialog und nennt den Vertrag', async () => {
+      const { element } = await gefragt();
+      const dialog = element.querySelector<HTMLDialogElement>(
+        ':scope > app-bestaetigen-dialog dialog',
+      )!;
+      expect(dialog.open).toBe(true);
+      expect(dialog.textContent).toContain('„Kfz-Versicherung“ löschen?');
+      expect(loeschen).not.toHaveBeenCalled();
+    });
+
+    it('„Abbrechen“ löscht nicht', async () => {
+      const { fixture, element } = await gefragt();
+      schaltflaeche(element, 'Abbrechen').click();
+      await fixture.whenStable();
+      expect(loeschen).not.toHaveBeenCalled();
+      expect(element.querySelector<HTMLDialogElement>('dialog')!.open).toBe(false);
+    });
+
+    it('schickt die Version und lädt danach neu', async () => {
+      loeschen.mockReturnValue(of(undefined));
+      await bestaetigt();
+      expect(loeschen).toHaveBeenCalledExactlyOnceWith('kfz', 0);
+      expect(auflisten).toHaveBeenCalledTimes(2);
+      expect(uebersicht).toHaveBeenCalledTimes(2);
+    });
+
+    it('zeigt die Meldung über dem nächsten Vertrag', async () => {
+      loeschen.mockReturnValue(of(undefined));
+      auflisten
+        .mockReturnValueOnce(of([JAEHRLICH, BEENDET, PFLICHT]))
+        .mockReturnValueOnce(of([BEENDET, PFLICHT]));
+      const { element } = await bestaetigt();
+      const meldung = zeilen(element)[0].querySelector('.meldung');
+      expect(meldung?.textContent).toContain('„Kfz-Versicherung“ wurde gelöscht.');
+      expect(meldung?.classList.contains('unten')).toBe(false);
+      expect(meldung?.classList.contains('abgesetzt')).toBe(true);
+    });
+
+    it('zeigt die Meldung beim letzten Vertrag unter dem davor', async () => {
+      loeschen.mockReturnValue(of(undefined));
+      auflisten
+        .mockReturnValueOnce(of([JAEHRLICH, BEENDET, PFLICHT]))
+        .mockReturnValueOnce(of([JAEHRLICH, BEENDET]));
+      const { element } = await bestaetigt('Beitragsservice');
+      const meldung = zeilen(element)[1].querySelector('.meldung');
+      expect(meldung?.textContent).toContain('„Beitragsservice“ wurde gelöscht.');
+      expect(meldung?.classList.contains('unten')).toBe(true);
+      expect(meldung?.classList.contains('abgesetzt')).toBe(true);
+    });
+
+    it('zeigt die Meldung oben, wenn die Liste danach leer ist', async () => {
+      loeschen.mockReturnValue(of(undefined));
+      auflisten.mockReturnValueOnce(of([JAEHRLICH])).mockReturnValueOnce(of([]));
+      const { element } = await bestaetigt();
+      expect(element.querySelector(':scope > .meldung')?.textContent).toContain('wurde gelöscht.');
+      expect(element.textContent).toContain('Noch keine Verträge');
+    });
+
+    it('404 gilt als gelöscht, ohne Fehlermeldung', async () => {
+      loeschen.mockReturnValue(fehlerAntwort(404, 'NICHT_GEFUNDEN'));
+      auflisten.mockReturnValueOnce(of([JAEHRLICH, BEENDET])).mockReturnValueOnce(of([BEENDET]));
+      const { element } = await bestaetigt();
+      expect(element.querySelector('.meldung')?.textContent).toContain('wurde gelöscht.');
+      expect(element.querySelector('.meldung [role="alert"]')).toBeNull();
+      expect(auflisten).toHaveBeenCalledTimes(2);
+    });
+
+    it('409: Hinweis an der Zeile, Vertrag bleibt, Liste neu geladen', async () => {
+      loeschen.mockReturnValue(fehlerAntwort(409, 'KONFLIKT'));
+      const { element } = await bestaetigt();
+      expect(zeilen(element)[0].querySelector('.meldung [role="alert"]')?.textContent).toContain(
+        'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut löschen.',
+      );
+      expect(zeilen(element)[0].querySelector('.meldung.abgesetzt')).toBeNull();
+      expect(auflisten).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      ['400', fehlerAntwort(400, 'ANFRAGE_UNGUELTIG')],
+      ['500', fehlerAntwort(500, 'INTERNER_FEHLER')],
+      ['keine Verbindung', fehlerAntwort(0)],
+    ])('%s: allgemeiner Text an der Zeile, ohne Neuladen', async (_, antwort) => {
+      loeschen.mockReturnValue(antwort);
+      const { element } = await bestaetigt();
+      expect(zeilen(element)[0].querySelector('.meldung [role="alert"]')?.textContent).toContain(
+        'Der Vertrag konnte nicht gelöscht werden.',
+      );
+      expect(auflisten).toHaveBeenCalledOnce();
+      expect(
+        element.querySelector<HTMLButtonElement>('button[aria-label="Kfz-Versicherung löschen"]')!
+          .disabled,
+      ).toBe(false);
+    });
+
+    it('sperrt den Knopf, solange die Anfrage läuft', async () => {
+      loeschen.mockReturnValue(NEVER);
+      const { element } = await bestaetigt();
+      const knopf = element.querySelector<HTMLButtonElement>(
+        'button[aria-label="Kfz-Versicherung löschen"]',
+      )!;
+      expect(knopf.disabled).toBe(true);
+      expect(knopf.getAttribute('aria-busy')).toBe('true');
     });
   });
 });

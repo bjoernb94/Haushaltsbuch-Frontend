@@ -10,6 +10,18 @@ h1 {
   font-size: 34px;
 }
 
+.titel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    color: var(--app-text-gedaempft);
+  }
+}
+
 .meldung:focus {
   outline: none;
 }

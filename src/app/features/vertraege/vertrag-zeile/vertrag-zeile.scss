@@ -132,6 +132,23 @@
 .meldung {
   flex: 0 0 100%;
 
+  &.unten {
+    order: 1;
+  }
+
+  // Zusammen mit dem Abstand der Zeile (12px) wie der Trenner zwischen zwei Verträgen.
+  &.abgesetzt:not(.unten) {
+    margin-bottom: 4px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--app-trenner);
+  }
+
+  &.abgesetzt.unten {
+    margin-top: 4px;
+    padding-top: 16px;
+    border-top: 1px solid var(--app-trenner);
+  }
+
   &:focus {
     outline: none;
   }
@@ -220,4 +237,14 @@ dd {
   margin: 0;
   font-size: 15px;
   font-weight: 700;
+}
+
+.gefahr-knopf {
+  border-color: var(--app-fehler-rand);
+  color: var(--app-fehler);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
 }

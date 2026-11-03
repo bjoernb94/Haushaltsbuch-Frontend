@@ -37,6 +37,10 @@ const KEINE_ABBUCHUNG = 'Keine weiteren Abbuchungen';
 export interface ZeilenMeldung {
   text: string;
   art: 'info' | 'fehler';
+  /** Betrifft nicht diese Zeile, sondern den gelöschten Vertrag daneben: mit Trenner abgesetzt. */
+  abgesetzt?: boolean;
+  /** Unter statt über der Zeile, wenn der gelöschte Vertrag der letzte war. */
+  unten?: boolean;
 }
 
 /** Eine Zeile der Vertragsliste mit aufklappbaren Details und Formular; Werte kommen vom Backend. */
@@ -54,8 +58,11 @@ export class VertragZeile {
   readonly ansicht = input<'details' | 'bearbeiten' | null>(null);
   readonly meldung = input<ZeilenMeldung | null>(null);
   readonly kategorien = input.required<Observable<VertragKategorieAntwort[]>>();
+  /** Die Anfrage zum Löschen läuft. */
+  readonly loescht = input(false);
 
   readonly umschalten = output<'details' | 'bearbeiten'>();
+  readonly loeschen = output();
   readonly abgebrochen = output();
   readonly gespeichert = output<VertragAntwort>();
   readonly konflikt = output();
