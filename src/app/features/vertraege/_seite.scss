@@ -1,0 +1,48 @@
+// Gemeinsamer Aufbau der Seiten im Bereich Verträge.
+
+@use '../../shared/formular/formular';
+
+@mixin seite {
+  @include formular.knoepfe;
+
+  :host {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .zurueck {
+    align-self: flex-start;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  h1 {
+    margin: 0;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .fehler {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+
+    .knopf {
+      flex: none;
+      padding: 0 18px;
+    }
+  }
+
+  .laedt {
+    margin: 0;
+    font-size: 15px;
+    color: var(--app-text-gedaempft);
+  }
+}

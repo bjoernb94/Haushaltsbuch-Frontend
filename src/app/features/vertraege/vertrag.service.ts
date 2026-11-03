@@ -11,6 +11,12 @@ import {
   VertragVorschauAntwort,
 } from '../../core/api/api';
 
+/**
+ * Was ein Formular schickt: Fehlt eine Eingabe, ist der Wert {@code null}, und das Backend antwortet
+ * mit einem Feldfehler (ADR 0010).
+ */
+export type VertragEingabe = { [F in keyof VertragAnfrage]: VertragAnfrage[F] | null };
+
 const VERTRAEGE_URL = '/api/vertraege';
 
 /**
@@ -30,7 +36,7 @@ export class VertragService {
     return this.http.get<VertragAntwort>(`${VERTRAEGE_URL}/${id}`);
   }
 
-  anlegen(vertrag: VertragAnfrage): Observable<VertragAntwort> {
+  anlegen(vertrag: VertragEingabe): Observable<VertragAntwort> {
     return this.http.post<VertragAntwort>(VERTRAEGE_URL, vertrag);
   }
 

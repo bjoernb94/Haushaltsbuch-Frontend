@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { VertragAntwort, VertragsuebersichtAntwort } from '../../core/api/api';
 import { BetraegePipe } from '../../shared/format/betrag.pipe';
@@ -25,6 +25,9 @@ export class VertraegeSeite {
   private readonly vertraege = inject(VertragService);
   private readonly destroyRef = inject(DestroyRef);
 
+  /** Meldung der Seite davor; nur beim Hinkommen, nicht beim Zurückblättern im Browser. */
+  protected readonly meldung = this.meldungDerNavigation();
+
   protected readonly daten = signal<Daten | null>(null);
   protected readonly fehler = signal(false);
   /** Höchstens ein Vertrag zeigt seine Details. */
@@ -42,6 +45,13 @@ export class VertraegeSeite {
         next: (daten) => this.daten.set(daten),
         error: () => this.fehler.set(true),
       });
+  }
+
+  private meldungDerNavigation(): string | null {
+    const navigation = inject(Router).currentNavigation();
+    return navigation?.trigger === 'imperative'
+      ? (navigation.extras.state?.['meldung'] ?? null)
+      : null;
   }
 
   protected umschalten(id: string): void {

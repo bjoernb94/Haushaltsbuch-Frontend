@@ -1,6 +1,6 @@
 // Formularbausteine gemäß Design: Felder, Aktionen und Knöpfe.
 
-@mixin felder {
+@mixin felder($hoehe: 48px) {
   .feld {
     display: flex;
     flex-direction: column;
@@ -11,8 +11,10 @@
       font-weight: 700;
     }
 
-    input {
-      height: 48px;
+    input,
+    select,
+    textarea {
+      height: $hoehe;
       box-sizing: border-box;
       padding: 0 14px;
       border-radius: 10px;
@@ -35,6 +37,18 @@
         border-color: var(--app-gruen);
         box-shadow: 0 0 0 3px var(--app-gruen-fokus);
       }
+    }
+
+    select {
+      padding: 0 12px;
+    }
+
+    textarea {
+      height: auto;
+      min-height: 96px;
+      padding: 12px 14px;
+      line-height: 1.45;
+      resize: vertical;
     }
   }
 }

@@ -1,6 +1,7 @@
 import { Page, Route } from '@playwright/test';
 import {
   Betrag,
+  Feldfehler,
   Kuendigung,
   VertragAenderung,
   VertragAnfrage,
@@ -274,6 +275,40 @@ function ausAnfrage(
   };
 }
 
+/** Wie das Backend: `""` bei Enum und Datum sowie `{ wert: null }` sind nicht lesbar. */
+function nichtLesbar(anfrage: Record<string, unknown>): boolean {
+  const betrag = anfrage['betrag'] as { wert: unknown } | null;
+  return (
+    betrag?.wert === null ||
+    ['kategorieId', 'zahlweise', 'abbuchungAb', 'zahlungsweg', 'beginn', 'laufzeitende'].some(
+      (feld) => anfrage[feld] === '',
+    )
+  );
+}
+
+function feldfehler(anfrage: VertragAnfrage): Feldfehler[] {
+  const fehler: Feldfehler[] = [];
+  const melden = (feld: string, code: string, parameter = {}) =>
+    fehler.push({ feld, code, parameter });
+  if (!anfrage.anbieter?.trim()) melden('anbieter', 'NotBlank');
+  if ((anfrage.bezeichnung?.length ?? 0) > 200) melden('bezeichnung', 'Size', { max: 200 });
+  if (!anfrage.kategorieId) melden('kategorieId', 'NotNull');
+  if (anfrage.kategorieId === 'unbekannt') melden('kategorieId', 'Unbekannt');
+  if (!anfrage.zahlweise) melden('zahlweise', 'NotNull');
+  if (!anfrage.abbuchungAb) melden('abbuchungAb', 'NotNull');
+  if (!anfrage.betrag) {
+    melden('betrag', 'NotNull');
+  } else if (anfrage.betrag.wert <= 0) {
+    melden('betrag', 'PositiverBetrag');
+  } else if (Math.round(anfrage.betrag.wert * 100) / 100 !== anfrage.betrag.wert) {
+    melden('betrag.wert', 'Digits', { integer: 17, fraction: 2 });
+  }
+  if (anfrage.beginn && anfrage.laufzeitende && anfrage.laufzeitende < anfrage.beginn) {
+    melden('laufzeitende', 'LaufzeitendeNachBeginn');
+  }
+  return fehler;
+}
+
 type FehlerAntwort = (route: Route, status: number, code: string, detail: string) => Promise<void>;
 
 /** Endpunkte unter /api/vertraege; Anlegen, Ändern und Löschen ändern den Stand im Test. */
@@ -309,6 +344,23 @@ export async function vertraegeSimulieren(
       return route.fulfill({ json: { kuendigung: vorschau(anfrage.postDataJSON()) } });
     }
     if (!pfad && anfrage.method() === 'POST') {
+      if (nichtLesbar(anfrage.postDataJSON())) {
+        return problem(route, 400, 'ANFRAGE_UNGUELTIG', 'Request body is not readable.');
+      }
+      const felder = feldfehler(anfrage.postDataJSON());
+      if (felder.length) {
+        return route.fulfill({
+          status: 400,
+          contentType: 'application/problem+json',
+          json: {
+            type: 'about:blank',
+            status: 400,
+            detail: 'Request contains invalid fields.',
+            code: 'VALIDIERUNG',
+            felder,
+          },
+        });
+      }
       const id = `neu-${naechsteId++}`;
       const neu = ausAnfrage(anfrage.postDataJSON(), id, 0);
       vertraege = [...vertraege, neu];

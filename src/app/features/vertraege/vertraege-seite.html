@@ -15,7 +15,29 @@
   Zur Übersicht
 </a>
 
-<h1>Verträge</h1>
+@if (meldung; as text) {
+  <app-hinweis-box art="info" [text]="text" />
+}
+
+<div class="kopf">
+  <h1>Verträge</h1>
+  <a class="knopf knopf-primaer" routerLink="/vertraege/neu">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.2"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <path d="M12 5v14"></path>
+      <path d="M5 12h14"></path>
+    </svg>
+    Neuer Vertrag
+  </a>
+</div>
 
 @if (fehler()) {
   <div class="fehler">
@@ -43,7 +65,10 @@
         (umschalten)="umschalten(vertrag.id)"
       />
     } @empty {
-      <p class="leer">Noch keine Verträge</p>
+      <div class="leer">
+        <b>Noch keine Verträge</b>
+        <span>Lege mit „Neuer Vertrag“ deinen ersten Vertrag an.</span>
+      </div>
     }
   </section>
 } @else {

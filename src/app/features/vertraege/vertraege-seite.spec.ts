@@ -243,7 +243,9 @@ describe('VertraegeSeite', () => {
 
   it('zeigt den Leerzustand', async () => {
     auflisten.mockReturnValue(of([]));
-    expect(text((await seite()).element.querySelector('.leer'))).toBe('Noch keine Verträge');
+    expect(text((await seite()).element.querySelector('.leer'))).toBe(
+      'Noch keine VerträgeLege mit „Neuer Vertrag“ deinen ersten Vertrag an.',
+    );
   });
 
   it('zeigt den Ladezustand', async () => {
