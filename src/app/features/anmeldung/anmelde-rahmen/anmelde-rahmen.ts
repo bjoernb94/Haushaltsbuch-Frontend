@@ -1,4 +1,5 @@
 import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Logo } from '../../../shared/logo/logo';
 
 /**
  * Seitenrahmen für Login und Registrierung: links die Markenfläche mit Überschrift, rechts
@@ -7,6 +8,7 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@an
  */
 @Component({
   selector: 'app-anmelde-rahmen',
+  imports: [Logo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './anmelde-rahmen.html',
   styleUrl: './anmelde-rahmen.scss',

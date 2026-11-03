@@ -27,6 +27,11 @@
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.01em;
+
+  app-logo {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .botschaft {
@@ -128,7 +133,7 @@
   .logo {
     font-size: 18px;
 
-    svg {
+    app-logo {
       width: 26px;
       height: 26px;
     }
