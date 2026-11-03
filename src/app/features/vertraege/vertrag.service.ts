@@ -34,10 +34,6 @@ export class VertragService {
     return this.http.get<VertragAntwort[]>(VERTRAEGE_URL);
   }
 
-  abrufen(id: string): Observable<VertragAntwort> {
-    return this.http.get<VertragAntwort>(`${VERTRAEGE_URL}/${id}`);
-  }
-
   anlegen(vertrag: VertragEingabe): Observable<VertragAntwort> {
     return this.http.post<VertragAntwort>(VERTRAEGE_URL, vertrag);
   }

@@ -32,11 +32,6 @@ describe('VertragService', () => {
     http.expectOne({ method: 'GET', url: '/api/vertraege' }).flush([]);
   });
 
-  it('ruft einen Vertrag ab', () => {
-    service.abrufen('v1').subscribe();
-    http.expectOne({ method: 'GET', url: '/api/vertraege/v1' }).flush({});
-  });
-
   it('legt an', () => {
     service.anlegen(ANFRAGE).subscribe();
     const req = http.expectOne({ method: 'POST', url: '/api/vertraege' });

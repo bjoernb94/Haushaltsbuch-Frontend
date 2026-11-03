@@ -93,7 +93,7 @@
   padding: 14px 16px;
   border-radius: 12px;
   cursor: pointer;
-  background: #fff;
+  background: var(--app-flaeche);
   border: 1.5px solid var(--app-rand);
 
   &.gewaehlt {

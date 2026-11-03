@@ -5,7 +5,7 @@
  * andere. Nutzername und E-Mail sind gleich (das Backend legt die E-Mail als Nutzernamen an).
  * Die Passwort-Historie betrifft nur Passwortänderungen, nicht die Registrierung.
  */
-export interface PasswortRegel {
+interface PasswortRegel {
   text: string;
   fehler: string;
   erfuellt(passwort: string, email: string): boolean;

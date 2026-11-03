@@ -529,7 +529,7 @@ describe('VertragFormular', () => {
       expect(feld('verlaengerung').value).toBe('MONATLICH');
       expect(feld('gekuendigt').checked).toBe(true);
       expect(feld('gekuendigtZum').value).toBe('2027-06-30');
-      expect(el.querySelector('h3')?.textContent).toBe('Vertrag bearbeiten');
+      expect(el.querySelector('h2')?.textContent).toBe('Vertrag bearbeiten');
       expect(el.querySelector('form')?.getAttribute('aria-label')).toBe('Kfz bearbeiten');
     });
 

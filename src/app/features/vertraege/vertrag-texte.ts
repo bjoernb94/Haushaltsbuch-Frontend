@@ -67,29 +67,27 @@ export function vertragName(vertrag: { bezeichnung: string | null; anbieter: str
   return vertrag.bezeichnung || vertrag.anbieter;
 }
 
-export type KuendigungTon = 'warnung' | 'ok' | 'info' | 'neutral';
+type KuendigungTon = 'warnung' | 'ok' | 'info' | 'neutral';
 
-export interface KuendigungAnzeige {
+interface KuendigungAnzeige {
   text: string;
   /** Zusatztext unter dem Badge, leer wenn es keinen gibt. */
   zusatz: string;
   ton: KuendigungTon;
 }
 
-function fristText(fristMonate: number | null): string {
-  switch (fristMonate ?? 0) {
-    case 0:
-      return 'ohne Frist';
-    case 1:
-      return '1 Monat Frist';
-    default:
-      return `${fristMonate} Monate Frist`;
-  }
-}
-
 /** Dauer der hinterlegten Frist für die Details, {@code null} ohne Angabe. */
 export function fristDauerText(fristMonate: number | null): string | null {
-  return fristMonate === null ? null : fristText(fristMonate).replace(' Frist', '');
+  switch (fristMonate) {
+    case null:
+      return null;
+    case 0:
+      return 'ohne';
+    case 1:
+      return '1 Monat';
+    default:
+      return `${fristMonate} Monate`;
+  }
 }
 
 const KUENDIGUNG_ANZEIGE: Record<Kuendigungsart, (k: Kuendigung) => KuendigungAnzeige> = {

@@ -13,7 +13,7 @@ export interface RegistrierungWerte {
   komponenten: Komponente[];
 }
 
-export interface Pruefung {
+interface Pruefung {
   /** Erstes Problem in der Reihenfolge des Designs, {@code null} wenn alles passt. */
   meldung: string | null;
   /** Alle Felder mit Problemen, für die rote Umrandung. */

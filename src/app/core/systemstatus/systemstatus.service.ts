@@ -15,7 +15,7 @@ interface HealthAntwort {
   components?: Record<string, { status?: string } | undefined>;
 }
 
-export const AKTUALISIERUNG_MS = 30_000;
+const AKTUALISIERUNG_MS = 30_000;
 
 /**
  * Längste Wartezeit auf eine Antwort. Hängt das Backend (z. B. beim DB-Check, der bis zum
