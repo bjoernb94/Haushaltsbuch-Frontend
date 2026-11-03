@@ -6,6 +6,7 @@ import { AuthService } from '../core/auth/auth.service';
 import { systemstatusBeobachten } from '../core/systemstatus/systemstatus.service';
 import { UngespeicherteEingaben } from '../core/ungespeichert/ungespeicherte-eingaben';
 import { HinweisBox } from '../shared/hinweis-box/hinweis-box';
+import { Logo } from '../shared/logo/logo';
 import { SystemstatusLeiste } from '../shared/systemstatus-leiste/systemstatus-leiste';
 import { VerwerfenDialog } from '../shared/verwerfen-dialog/verwerfen-dialog';
 import { Hauptmenue } from './hauptmenue/hauptmenue';
@@ -17,7 +18,7 @@ import { Hauptmenue } from './hauptmenue/hauptmenue';
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, Hauptmenue, HinweisBox, SystemstatusLeiste, VerwerfenDialog],
+  imports: [RouterOutlet, Hauptmenue, HinweisBox, Logo, SystemstatusLeiste, VerwerfenDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
