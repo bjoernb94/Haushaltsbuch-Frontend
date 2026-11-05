@@ -65,3 +65,35 @@ test('Fußzeile zeigt den Systemstatus', async ({ page }) => {
   await expect(page.getByRole('contentinfo')).toContainText('© Björn Bochmann');
   await expect(page.getByRole('status', { name: 'Systemstatus' })).toContainText('Datenbank');
 });
+
+test('alle Seiten haben dieselben Ränder wie die Übersicht', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 900 });
+  for (const pfad of ['/start', '/vertraege', '/vertraege/neu']) {
+    await page.goto(pfad);
+    const box = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
+    expect(box.x, pfad).toBe(384);
+    const inhalt = await page.locator('main').evaluate((main) => {
+      const { right } = main.getBoundingClientRect();
+      return right - parseFloat(getComputedStyle(main).paddingRight);
+    });
+    expect(inhalt, pfad).toBe(1536);
+  }
+});
+
+test('auf schmaleren Fenstern bleibt der rechte Rand gleich, die Navigation begrenzt links', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const raender = async (pfad: string) => {
+    await page.goto(pfad);
+    await page.getByRole('heading', { level: 1 }).waitFor();
+    return page.locator('main').evaluate((main) => {
+      const { left, right } = main.getBoundingClientRect();
+      const stil = getComputedStyle(main);
+      return [left + parseFloat(stil.paddingLeft), right - parseFloat(stil.paddingRight)];
+    });
+  };
+  expect(await raender('/start')).toEqual([64, 1216]);
+  expect(await raender('/vertraege')).toEqual([272, 1216]);
+  expect(await raender('/vertraege/neu')).toEqual([272, 1216]);
+});

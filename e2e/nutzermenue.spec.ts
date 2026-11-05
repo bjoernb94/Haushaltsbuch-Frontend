@@ -63,6 +63,17 @@ test('über 640 px hängt das Panel am Knopf, mit Vorname und Pfeil', async ({ p
   await expect(panel(page).locator('.griff')).toBeHidden();
 });
 
+test('der Knopf steht auf allen Seiten an derselben Stelle', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 800 });
+  const start = (await nutzerKnopf(page).boundingBox())!;
+  expect(1600 - (start.x + start.width)).toBeGreaterThan(24);
+
+  await page.goto('/vertraege');
+  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeVisible();
+
+  expect(await nutzerKnopf(page).boundingBox()).toEqual(start);
+});
+
 test('bis 640 px nur Initialen, das Panel als Bottom-Sheet', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await expect(nutzerKnopf(page).locator('.vorname')).toBeHidden();
