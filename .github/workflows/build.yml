@@ -61,8 +61,16 @@ jobs:
       - run: npm run test:ci
 
   e2e:
-    name: E2E-Tests
+    name: E2E-Tests (${{ matrix.browser }} ${{ matrix.teil }}/${{ matrix.teile }})
     runs-on: ubuntu-latest
+    # Jeder Job ist ein eigener Runner. Firefox ist am langsamsten, deshalb auf zwei Jobs verteilt.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { browser: chromium, teil: 1, teile: 1 }
+          - { browser: firefox, teil: 1, teile: 2 }
+          - { browser: firefox, teil: 2, teile: 2 }
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -70,11 +78,11 @@ jobs:
           node-version: 26
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium firefox
-      - run: npm run e2e
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run e2e -- --project=${{ matrix.browser }} --shard=${{ matrix.teil }}/${{ matrix.teile }}
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.browser }}-${{ matrix.teil }}
           path: playwright-report/
           retention-days: 14
