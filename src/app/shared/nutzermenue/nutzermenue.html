@@ -1,0 +1,77 @@
+@if (nutzer(); as profil) {
+  <button
+    #knopf
+    type="button"
+    class="nutzer-knopf"
+    aria-controls="nutzermenue"
+    [attr.aria-expanded]="offen()"
+    [attr.aria-label]="'Konto von ' + profil.vorname + ' ' + profil.name"
+    (click)="umschalten()"
+  >
+    <span class="initialen" aria-hidden="true">{{ initialen() }}</span>
+    <span class="vorname">{{ profil.vorname }}</span>
+    <svg
+      class="pfeil"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.4"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 9l6 6 6-6"></path>
+    </svg>
+  </button>
+
+  @if (offen()) {
+    <button
+      #hintergrund
+      type="button"
+      class="hintergrund"
+      tabindex="-1"
+      aria-label="Menü schließen"
+      (click)="schliessen()"
+    ></button>
+    <div
+      #panel
+      id="nutzermenue"
+      class="panel"
+      role="dialog"
+      aria-label="Dein Konto"
+      tabindex="-1"
+      (keydown.escape)="schliessen()"
+      (focusout)="fokusVerlassen($event)"
+    >
+      <div class="griff" aria-hidden="true"></div>
+      <div class="person">
+        <span class="initialen initialen-gross" aria-hidden="true">{{ initialen() }}</span>
+        <div class="angaben">
+          <span class="name">{{ profil.vorname }} {{ profil.name }}</span>
+          <span class="email">{{ profil.email }}</span>
+        </div>
+      </div>
+      <div class="trenner"></div>
+      <button type="button" class="knopf knopf-sekundaer abmelden" (click)="abmelden()">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path>
+          <path d="M10 16l-4-4 4-4"></path>
+          <path d="M6 12h10"></path>
+        </svg>
+        Abmelden
+      </button>
+    </div>
+  }
+}

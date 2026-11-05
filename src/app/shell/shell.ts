@@ -4,9 +4,9 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
 import { systemstatusBeobachten } from '../core/systemstatus/systemstatus.service';
-import { UngespeicherteEingaben } from '../core/ungespeichert/ungespeicherte-eingaben';
 import { HinweisBox } from '../shared/hinweis-box/hinweis-box';
 import { Logo } from '../shared/logo/logo';
+import { Nutzermenue } from '../shared/nutzermenue/nutzermenue';
 import { SystemstatusLeiste } from '../shared/systemstatus-leiste/systemstatus-leiste';
 import { VerwerfenDialog } from '../shared/verwerfen-dialog/verwerfen-dialog';
 import { Hauptmenue } from './hauptmenue/hauptmenue';
@@ -18,7 +18,15 @@ import { Hauptmenue } from './hauptmenue/hauptmenue';
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, Hauptmenue, HinweisBox, Logo, SystemstatusLeiste, VerwerfenDialog],
+  imports: [
+    RouterOutlet,
+    Hauptmenue,
+    HinweisBox,
+    Logo,
+    Nutzermenue,
+    SystemstatusLeiste,
+    VerwerfenDialog,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
@@ -26,7 +34,6 @@ import { Hauptmenue } from './hauptmenue/hauptmenue';
 export class Shell {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly ungespeichert = inject(UngespeicherteEingaben);
 
   /** Nur zur Anzeige in der Fußzeile; in der App wird nichts gesperrt. */
   protected readonly systemstatus = systemstatusBeobachten();
@@ -43,18 +50,6 @@ export class Shell {
 
   protected komponentenLaden(): void {
     this.auth.komponentenLaden().subscribe();
-  }
-
-  protected async abmelden(): Promise<void> {
-    // Vor dem Abmelden fragen: Danach wäre die Sitzung schon fort, wenn der Guard beim Seitenwechsel fragt.
-    if (!(await this.ungespeichert.bestaetigen())) {
-      return;
-    }
-    // Auch wenn das Backend nicht antwortet, ist der Nutzer im Frontend abgemeldet.
-    this.auth.abmelden().subscribe({
-      complete: () => void this.router.navigateByUrl('/login'),
-      error: () => void this.router.navigateByUrl('/login'),
-    });
   }
 
   private routeMitNavigation(): boolean {

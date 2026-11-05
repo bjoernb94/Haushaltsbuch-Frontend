@@ -32,7 +32,7 @@ describe('Shell', () => {
             komponenten,
             komponentenFehler,
             komponentenLaden,
-            abmelden: () => of(undefined),
+            nutzer: signal({ vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' }),
           },
         },
         {
@@ -54,10 +54,13 @@ describe('Shell', () => {
   const links = (element: HTMLElement) =>
     [...element.querySelectorAll('nav a')].map((a) => a.getAttribute('href'));
 
-  it('zeigt Kopfzeile, Abmelden und Navigation', async () => {
+  it('zeigt Kopfzeile, Nutzermenü und Navigation', async () => {
     komponenten.set(['VERTRAGSUEBERSICHT']);
     const element = await shell();
     expect(element.querySelector('header')?.textContent).toContain('Haushaltsbuch');
+    expect(element.querySelector('header button')?.getAttribute('aria-label')).toBe(
+      'Konto von Max Muster',
+    );
     expect(element.querySelector('nav')?.getAttribute('aria-label')).toBe('Hauptmenü');
     expect(element.querySelector('nav')?.textContent).toContain('Komponenten');
     expect(links(element)).toEqual(['/start', '/vertraege']);
@@ -130,14 +133,5 @@ describe('Shell', () => {
     const fusszeile = (await shell()).querySelector('footer');
     expect(fusszeile?.textContent).toContain('© Björn Bochmann');
     expect(fusszeile?.textContent).toContain('Datenbank nicht erreichbar');
-  });
-
-  it('meldet ab und geht zum Login', async () => {
-    const element = await shell();
-    const navigiert = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
-
-    element.querySelector<HTMLButtonElement>('header button')!.click();
-
-    await vi.waitFor(() => expect(navigiert).toHaveBeenCalledWith('/login'));
   });
 });

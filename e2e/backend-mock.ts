@@ -6,6 +6,20 @@ export { BEISPIEL_VERTRAEGE, KATEGORIEN } from './vertraege-mock';
 
 export const MAX = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
 
+/** Knopf des Nutzermenüs; zeigt zugleich, dass der Nutzer angemeldet ist. */
+export function nutzerKnopf(page: Page) {
+  return page.getByRole('button', { name: `Konto von ${MAX.vorname} ${MAX.name}` });
+}
+
+/** Öffnet das Nutzermenü und klickt „Abmelden“. */
+export async function abmelden(page: Page) {
+  await nutzerKnopf(page).click();
+  await page
+    .getByRole('dialog', { name: 'Dein Konto' })
+    .getByRole('button', { name: 'Abmelden' })
+    .click();
+}
+
 /** E-Mail-Adresse, für die die Registrierung mit 409 abgelehnt wird. */
 export const VERGEBEN = 'vergeben@beispiel.de';
 

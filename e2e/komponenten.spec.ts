@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { backendSimulieren } from './backend-mock';
+import { abmelden, backendSimulieren, nutzerKnopf } from './backend-mock';
 
 const KOMPONENTEN_URL = '/api/nutzer/ich/komponenten';
 
@@ -71,7 +71,7 @@ test('nach dem Abmelden sieht der nächste Nutzer nur seine Bereiche', async ({ 
   await page.goto('/vertraege');
   await expect(navigation(page).getByRole('link', { name: 'Verträge' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Abmelden' }).click();
+  await abmelden(page);
   await expect(page).toHaveURL(/\/login$/);
 
   await page.route(KOMPONENTEN_URL, (route) => route.fulfill({ json: ['PORTFOLIO'] }));
@@ -79,7 +79,7 @@ test('nach dem Abmelden sieht der nächste Nutzer nur seine Bereiche', async ({ 
   await page.getByLabel('Passwort').fill('geheim123');
   await page.getByRole('button', { name: 'Login' }).click();
 
-  await page.getByRole('button', { name: 'Abmelden' }).waitFor();
+  await nutzerKnopf(page).waitFor();
   await page.goto('/vertraege');
   await expect(page).toHaveURL(/\/start$/);
 });
