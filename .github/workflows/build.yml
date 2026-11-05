@@ -12,6 +12,7 @@ jobs:
   pruefung:
     name: Lint, Format und Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -29,6 +30,7 @@ jobs:
   image:
     name: Container-Image
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -36,7 +38,9 @@ jobs:
           node-version: 26
           cache: npm
       - run: npm ci
+      # Der Download der Systempakete hängt manchmal; dann lieber schnell neu starten.
       - run: npx playwright install --with-deps chromium firefox
+        timeout-minutes: 5
       # Podman, denn nur Podman liest .containerignore.
       - run: npm run image
       # CSP und nginx-Regeln greifen nur im Image, deshalb starten und prüfen.
@@ -51,6 +55,7 @@ jobs:
   unit:
     name: Unit-Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -63,6 +68,7 @@ jobs:
   e2e:
     name: E2E-Tests (${{ matrix.browser }} ${{ matrix.teil }}/${{ matrix.teile }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Jeder Job ist ein eigener Runner. Firefox ist am langsamsten, deshalb auf zwei Jobs verteilt.
     strategy:
       fail-fast: false
@@ -78,7 +84,9 @@ jobs:
           node-version: 26
           cache: npm
       - run: npm ci
+      # Der Download der Systempakete hängt manchmal; dann lieber schnell neu starten.
       - run: npx playwright install --with-deps ${{ matrix.browser }}
+        timeout-minutes: 5
       - run: npm run e2e -- --project=${{ matrix.browser }} --shard=${{ matrix.teil }}/${{ matrix.teile }}
       - uses: actions/upload-artifact@v7
         if: failure()
