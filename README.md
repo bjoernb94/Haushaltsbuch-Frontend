@@ -102,8 +102,9 @@ Backend noch Keycloak. Playwright startet den Dev-Server selbst oder nutzt einen
 laufenden auf Port 4200. Die Browser installiert einmalig `npx playwright install chromium firefox`.
 
 Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-Build,
-`npm audit` für die Laufzeit-Abhängigkeiten, Unit- und E2E-Tests aus. Außerdem baut sie das
-Container-Image, startet es und prüft es.
+`npm audit` für die Laufzeit-Abhängigkeiten, Unit- und E2E-Tests aus. Die E2E-Tests verteilt sie
+auf drei Jobs: Chromium und Firefox in zwei Teilen. Außerdem baut sie das Container-Image, startet
+es und prüft es.
 
 ### API-Typen
 
