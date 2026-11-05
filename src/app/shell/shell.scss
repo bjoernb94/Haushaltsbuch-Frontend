@@ -4,6 +4,16 @@
 
 $einspaltig: 640px;
 
+// Mit Seitennavigation (248 px) sollen Inhalt und Fußzeile dieselben Ränder haben wie ohne: 1152 px
+// breit und mittig im Fenster, solange das neben die Navigation passt. Prozent beziehen sich auf die
+// Spalte neben der Navigation; 50 % davon sind die halbe Fensterbreite minus 124 px.
+@mixin raender-wie-ohne-navigation {
+  @media (min-width: 901px) {
+    padding-left: max(24px, calc(50% - 700px));
+    padding-right: max(24px, calc(50% - 452px));
+  }
+}
+
 .seite {
   min-height: 100vh;
   display: flex;
@@ -25,10 +35,6 @@ $einspaltig: 640px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-
-  .mit-navigation & {
-    max-width: none;
-  }
 }
 
 .logo {
@@ -41,28 +47,6 @@ $einspaltig: 640px;
   app-logo {
     width: 30px;
     height: 30px;
-  }
-}
-
-.abmelden {
-  min-height: 44px;
-  box-sizing: border-box;
-  padding: 0 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 10px;
-  border: 1.5px solid var(--app-kopfzeile-rand);
-  background: transparent;
-  color: var(--app-flaeche);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 3px solid var(--app-gruen-fokus-rand);
-    outline-offset: 2px;
   }
 }
 
@@ -96,7 +80,9 @@ main {
   padding: 40px 24px 48px;
 
   .mit-navigation & {
+    max-width: none;
     padding-top: 28px;
+    @include raender-wie-ohne-navigation;
   }
 }
 
@@ -128,6 +114,7 @@ main {
     max-width: none;
     padding-top: 16px;
     border-top: 1px solid var(--app-trenner);
+    @include raender-wie-ohne-navigation;
 
     .copyright-fusszeile {
       display: none;

@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
+import { abmelden, backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
 
 const KFZ = 'Kfz-Versicherung';
 
@@ -287,13 +287,13 @@ test.describe('Vertrag bearbeiten', () => {
         if (new URL(r.url()).pathname === '/api/abmeldung') abgemeldet = true;
       });
       const formular = await mitAenderung(page);
-      await page.getByRole('button', { name: 'Abmelden' }).click();
+      await abmelden(page);
       await expect(dialog(page)).toBeVisible();
       await dialog(page).getByRole('button', { name: 'Weiter bearbeiten' }).click();
       await expect(formular.getByLabel('Notiz')).toHaveValue('Meine Eingabe');
       expect(abgemeldet).toBe(false);
 
-      await page.getByRole('button', { name: 'Abmelden' }).click();
+      await abmelden(page);
       await dialog(page).getByRole('button', { name: 'Verwerfen' }).click();
       await expect(page).toHaveURL(/\/login/);
       await expect(dialog(page)).toHaveCount(0);

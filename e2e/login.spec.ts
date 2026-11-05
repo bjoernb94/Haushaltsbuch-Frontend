@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { backendSimulieren, GESPERRT } from './backend-mock';
+import { abmelden, backendSimulieren, GESPERRT, nutzerKnopf } from './backend-mock';
 
 test.beforeEach(async ({ page }) => {
   await backendSimulieren(page);
@@ -15,7 +15,7 @@ test('ohne Anmeldung geht es zum Login und danach zurück', async ({ page }) => 
   await page.getByRole('button', { name: 'Login' }).click();
 
   await expect(page).toHaveURL(/\/vertraege$/);
-  await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible();
+  await expect(nutzerKnopf(page)).toBeVisible();
 });
 
 test('falsches Passwort zeigt eine Fehlermeldung', async ({ page }) => {
@@ -50,7 +50,7 @@ test('Abmelden führt zurück zum Login', async ({ page }) => {
   await page.getByRole('button', { name: 'Login' }).click();
   await expect(page).toHaveURL(/\/start$/);
 
-  await page.getByRole('button', { name: 'Abmelden' }).click();
+  await abmelden(page);
   await expect(page).toHaveURL(/\/login$/);
 });
 

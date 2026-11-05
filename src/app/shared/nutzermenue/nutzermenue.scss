@@ -1,0 +1,192 @@
+@use '../formular/formular';
+
+@include formular.knoepfe;
+
+$handy: 640px;
+
+:host {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.nutzer-knopf {
+  min-height: 44px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 14px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--app-kopfzeile-rand);
+  background: transparent;
+  color: var(--app-flaeche);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  // Auf dem Grün der Kopfzeile wäre der grüne Fokusrand der Formulare nicht zu sehen.
+  &:focus-visible {
+    outline: 3px solid var(--app-flaeche);
+    outline-offset: 2px;
+  }
+}
+
+.initialen {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--app-grund);
+  color: var(--app-gruen);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.initialen-gross {
+  width: 48px;
+  height: 48px;
+  background: var(--app-gruen);
+  color: var(--app-flaeche);
+  font-size: 17px;
+}
+
+.vorname {
+  min-width: 0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pfeil {
+  flex: none;
+}
+
+.hintergrund {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 31;
+  width: 300px;
+  box-sizing: border-box;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 14px;
+  background: var(--app-flaeche);
+  box-shadow: 0 12px 32px rgba(23, 32, 27, 0.18);
+  color: var(--app-text);
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.griff {
+  display: none;
+}
+
+.person {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.angaben {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.email {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--app-text-gedaempft);
+  overflow-wrap: anywhere;
+}
+
+.trenner {
+  height: 1px;
+  background: var(--app-trenner);
+}
+
+.abmelden {
+  flex: none;
+  gap: 8px;
+
+  &:hover {
+    background: var(--app-gruen-hell);
+  }
+}
+
+@media (max-width: $handy) {
+  .nutzer-knopf {
+    min-width: 44px;
+    padding: 3px;
+    justify-content: center;
+  }
+
+  .vorname,
+  .pfeil {
+    display: none;
+  }
+
+  .hintergrund {
+    background: rgba(23, 32, 27, 0.45);
+  }
+
+  .panel {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    padding: 12px 24px calc(24px + env(safe-area-inset-bottom));
+    border: 0;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 32px rgba(23, 32, 27, 0.22);
+  }
+
+  .griff {
+    display: block;
+    align-self: center;
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--app-rand);
+  }
+}

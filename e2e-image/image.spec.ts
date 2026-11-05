@@ -43,6 +43,20 @@ test.describe('CSP', () => {
     expect(fehler).toEqual([]);
   });
 
+  test('die App läuft ohne Verstoß: Nutzermenü', async ({ page }) => {
+    const fehler = await verstoesseSammeln(page);
+    await backendSimulieren(page, { angemeldet: true });
+    await page.goto('/start');
+    const panel = page.getByRole('dialog', { name: 'Dein Konto' });
+    await page.getByRole('button', { name: /^Konto von / }).click();
+    await expect(panel).toBeFocused();
+    // Bis 640 px als Bottom-Sheet.
+    await page.setViewportSize({ width: 390, height: 800 });
+    await panel.getByRole('button', { name: 'Abmelden' }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    expect(fehler).toEqual([]);
+  });
+
   test('die App läuft ohne Verstoß: Verträge mit Details und Formular', async ({ page }) => {
     const fehler = await verstoesseSammeln(page);
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
