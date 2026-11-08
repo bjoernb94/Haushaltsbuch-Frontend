@@ -1,5 +1,8 @@
 html {
   height: 100%;
+  // Scrollleiste immer zeigen, sonst springen Kopfzeile und Inhalt zwischen kurzen und langen Seiten zur
+  // Seite. Nicht scrollbar-gutter: Damit rechnet Chromium headless mit ausgeblendeter Scrollleiste falsch.
+  overflow-y: scroll;
 
   // Farben des Designs.
   --app-gruen: #1f5c45;
