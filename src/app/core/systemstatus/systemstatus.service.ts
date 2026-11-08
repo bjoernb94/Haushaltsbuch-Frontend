@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, Signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, map, Observable, of, switchMap, tap, timeout, timer } from 'rxjs';
+import { VersionService } from '../version/version.service';
 
 /** Erreichbarkeit der Dienste, die für die Anmeldung nötig sind. */
 export interface Systemstatus {
@@ -32,6 +33,7 @@ const NICHTS_ERREICHBAR: Systemstatus = { backend: false, datenbank: false, anme
 @Injectable({ providedIn: 'root' })
 export class SystemstatusService {
   private readonly http = inject(HttpClient);
+  private readonly version = inject(VersionService);
 
   /**
    * Letzter bekannter Status, damit z. B. der Wechsel zwischen Login und Registrierung die
@@ -39,11 +41,19 @@ export class SystemstatusService {
    */
   letzterStatus: Systemstatus | undefined;
 
-  /** Fragt den Status sofort und danach alle 30 s ab. */
+  /**
+   * Fragt den Status sofort und danach alle 30 s ab. Ist das Backend erreichbar, lädt es auch Version und
+   * Umgebung, solange die noch fehlen; so erscheinen sie auch, wenn das Backend erst nach dem Start da ist.
+   */
   beobachten(): Observable<Systemstatus> {
     return timer(0, AKTUALISIERUNG_MS).pipe(
       switchMap(() => this.abfragen()),
-      tap((status) => (this.letzterStatus = status)),
+      tap((status) => {
+        this.letzterStatus = status;
+        if (status.backend) {
+          this.version.laden();
+        }
+      }),
     );
   }
 

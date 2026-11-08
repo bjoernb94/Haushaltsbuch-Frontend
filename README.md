@@ -139,8 +139,10 @@ npm run image
 ```
 
 Das Image (`Containerfile`) baut die App und liefert sie mit nginx ohne Root-Rechte auf Port 8080
-aus. nginx leitet `/api` und `/actuator/health/systemstatus` an `BACKEND_URL` weiter (Standard
-`http://backend:8080`), damit die Cookies beim selben Origin bleiben.
+aus. nginx leitet `/api`, `/actuator/health/systemstatus` und `/actuator/info` an `BACKEND_URL` weiter
+(Standard `http://backend:8080`), damit die Cookies beim selben Origin bleiben. `npm run image` gibt
+Commit und Build-Zeit als `--build-arg` (`COMMIT`, `BUILD_ZEIT`) mit; sie stehen später im
+Impressum. Ohne diese Angaben fehlen sie dort, die Version aus der `package.json` steht immer.
 
 Die Sicherheits-Header stehen in `docker/nginx/sicherheits-header.conf`, darunter eine strenge
 Content Security Policy. `style-src` erlaubt `'unsafe-inline'`, weil Angular Komponenten-Styles zur
@@ -149,8 +151,8 @@ Production-Build aus, denn es schreibt ein Inline-Skript in `index.html`. HSTS g
 TLS-Terminierung und folgt mit v1.0. Die Header greifen nur im Image, nicht bei `npm start`.
 
 Deshalb prüft `npm run image:pruefen` (`e2e-image/`) das laufende Image: Die App läuft ohne
-CSP-Verstoß, die Header sind gesetzt, tiefe Links liefern `index.html`, und nur `/api` und der
-Systemstatus gehen ans Backend. Das Backend ist dabei eine Attrappe im selben Pod. Vorher muss
+CSP-Verstoß, die Header sind gesetzt, tiefe Links liefern `index.html`, und nur `/api`, der
+Systemstatus sowie Version und Umgebung gehen ans Backend. Das Backend ist dabei eine Attrappe im selben Pod. Vorher muss
 `npm run image` gelaufen sein.
 
 ## Projektstruktur

@@ -53,6 +53,12 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   30 s. No answer within 5 s (e.g. while the DB check waits for the pool) → all three services count as
   unreachable (reveals nothing about the setup); a 503 still carries the component status. The last known
   status survives page changes. Login and registration lock while anything is down; the shell only displays it.
+- Version and stage: the footer (login, registration, shell) shows the frontend version from `package.json`
+  (never missing) and the backend's stage from `/actuator/info` (public, see backend `docs/api.md`); outside
+  `PROD` a stripe sits above every page, its height in `--app-streifen-hoehe`. `core/version` loads the info
+  once the system status reaches the backend and retries until it gets an answer; without one only the
+  badge and stripe are missing. Commit and build time (frontend via `--define` in the image build, backend
+  from the info) are for the imprint only.
 - Unsaved input: a form reports changes to `core/ungespeichert`. Leaving asks via the dialog in the shell:
   `ungespeichertGuard` (`canDeactivate`) on routes with a form, `bestaetigen()` for anything else that leaves or
   closes one (logout must ask before the session ends). Redirects that must happen (401, 403) and a successful save

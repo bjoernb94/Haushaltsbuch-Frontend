@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { VersionService } from '../version/version.service';
 import {
   allesErreichbar,
   ANTWORT_TIMEOUT_MS,
@@ -13,10 +14,16 @@ const URL = '/actuator/health/systemstatus';
 describe('SystemstatusService', () => {
   let service: SystemstatusService;
   let http: HttpTestingController;
+  const versionLaden = vi.fn();
 
   beforeEach(() => {
+    versionLaden.mockClear();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: VersionService, useValue: { laden: versionLaden } },
+      ],
     });
     service = TestBed.inject(SystemstatusService);
     http = TestBed.inject(HttpTestingController);
@@ -111,6 +118,22 @@ describe('SystemstatusService', () => {
         datenbank: true,
         anmeldeserver: false,
       });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('lädt Version und Umgebung, sobald das Backend erreichbar ist', () => {
+    vi.useFakeTimers();
+    try {
+      const sub = service.beobachten().subscribe();
+      vi.advanceTimersByTime(0);
+      http.expectOne(URL).flush('Bad Gateway', { status: 502, statusText: 'Bad Gateway' });
+      expect(versionLaden).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(30_000);
+      http.expectOne(URL).flush({ components: { db: { status: 'UP' } } });
+      expect(versionLaden).toHaveBeenCalledOnce();
+      sub.unsubscribe();
     } finally {
       vi.useRealTimers();
     }

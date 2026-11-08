@@ -1,5 +1,5 @@
 .rahmen {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--app-streifen-hoehe, 0px));
   box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
@@ -73,6 +73,11 @@
   flex-direction: column;
   align-items: center;
   gap: 32px;
+}
+
+// Wie im Design dicht unter dem Systemstatus.
+.version {
+  margin-top: -16px;
 }
 
 // Auf schmalen Bildschirmen unter dem Systemstatus statt in der Markenfläche.
