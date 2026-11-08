@@ -1,7 +1,8 @@
 name: Release
 
 # Ein Tag v<Version> auf main veröffentlicht das Image und legt das GitHub Release an, aber nur mit
-# grünen Tests und geprüftem Image. Vor 1.0 ist jedes Release eine Vorabversion ohne Image-Tag latest.
+# grünen Tests und geprüftem Image und wenn der Milestone mit genau diesem Namen keine offenen Issues
+# mehr hat; danach wird er geschlossen. Vor 1.0 ist jedes Release eine Vorabversion ohne Image-Tag latest.
 on:
   push:
     tags: ['v*']
@@ -11,11 +12,15 @@ permissions:
 
 jobs:
   version:
-    name: Tag und Version
+    name: Tag, Version und Milestone
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
     outputs:
       version: ${{ steps.pruefen.outputs.version }}
+      milestone: ${{ steps.milestone.outputs.nummer }}
     steps:
       - uses: actions/checkout@v7
       - id: pruefen
@@ -26,6 +31,30 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      - id: milestone
+        name: Milestone prüfen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          milestone=$(gh api "repos/$GITHUB_REPOSITORY/milestones?state=all&per_page=100" \
+            --jq '.[] | select(.title == env.GITHUB_REF_NAME) | "\(.number) \(.state)"')
+          if [ -z "$milestone" ]; then
+            echo "::error::Es gibt keinen Milestone $GITHUB_REF_NAME."
+            exit 1
+          fi
+          read -r nummer zustand <<< "$milestone"
+          if [ "$zustand" != open ]; then
+            echo "::error::Der Milestone $GITHUB_REF_NAME ist schon geschlossen."
+            exit 1
+          fi
+          offen=$(gh issue list --repo "$GITHUB_REPOSITORY" --milestone "$GITHUB_REF_NAME" --state open \
+            --limit 100 --json number,title --jq '.[] | "#\(.number) \(.title)"')
+          if [ -n "$offen" ]; then
+            echo "::error::Im Milestone $GITHUB_REF_NAME sind noch Issues offen:"
+            echo "$offen"
+            exit 1
+          fi
+          echo "nummer=$nummer" >> "$GITHUB_OUTPUT"
 
   tests:
     name: Tests
@@ -42,9 +71,11 @@ jobs:
     permissions:
       contents: write
       packages: write
+      issues: write
     env:
       IMAGE: ghcr.io/bjoernb94/haushaltsbuch-frontend
       VERSION: ${{ needs.version.outputs.version }}
+      MILESTONE: ${{ needs.version.outputs.milestone }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -76,6 +107,10 @@ jobs:
           vorab=""
           if [ "${VERSION%%.*}" = 0 ]; then vorab="--prerelease"; fi
           gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes $vorab
+      - name: Milestone schließen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PATCH "repos/$GITHUB_REPOSITORY/milestones/$MILESTONE" -f state=closed --silent
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

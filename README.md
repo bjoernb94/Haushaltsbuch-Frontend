@@ -191,6 +191,10 @@ prüft es mit `npm run image:pruefen` und veröffentlicht genau dieses Image als
 `ghcr.io/bjoernb94/haushaltsbuch-frontend`. Danach legt er das GitHub Release mit generierten Notes an
 (gruppiert nach den Labels der Pull Requests, siehe `.github/release.yml`).
 
+Zu jeder Version gehört ein Milestone mit genau ihrem Namen, auch für Bugfix-Releases (z.&nbsp;B. `v0.2.1`).
+Der Workflow bricht ab, wenn es ihn nicht gibt, er schon geschlossen ist oder noch Issues darin offen sind,
+und nennt die offenen Issues. Nach einem erfolgreichen Release schließt er ihn.
+
 1. Version per Pull Request anheben: `npm version 0.2.0 --no-git-tag-version` ändert `package.json` und
    `package-lock.json`.
 2. Nach dem Merge auf `main` taggen: `git tag v0.2.0 && git push origin v0.2.0`.
