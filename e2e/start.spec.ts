@@ -19,7 +19,7 @@ test('zeigt verfügbare Kacheln mit Link und die übrigen ausgegraut', async ({ 
     'Portfolio',
   ]);
   await expect(page.getByText('Demnächst verfügbar')).toHaveCount(3);
-  await expect(page.getByRole('link')).toHaveCount(1);
+  await expect(page.getByRole('main').getByRole('link')).toHaveCount(1);
   expect(aufrufe).toEqual([]);
 
   await page.getByRole('link', { name: 'Alle Verträge' }).click();
@@ -50,7 +50,7 @@ test('passt auf dem Handy in die Breite', async ({ page }) => {
 
   await expect(page.getByRole('heading', { level: 2 })).toHaveCount(4);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-  await expect(page.getByRole('navigation')).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toHaveCount(0);
 });
 
 test.describe('Vertragskachel', () => {

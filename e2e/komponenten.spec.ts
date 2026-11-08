@@ -4,7 +4,7 @@ import { abmelden, backendSimulieren, nutzerKnopf } from './backend-mock';
 const KOMPONENTEN_URL = '/api/nutzer/ich/komponenten';
 
 function navigation(page: Page) {
-  return page.getByRole('navigation');
+  return page.getByRole('navigation', { name: 'Hauptmenü' });
 }
 
 test('Navigation zeigt nur gebuchte Bereiche, noch nicht verfügbare ohne Link', async ({

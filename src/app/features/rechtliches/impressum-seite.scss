@@ -1,0 +1,42 @@
+@use 'text';
+
+@include text.text;
+
+dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 24px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+dt {
+  font-weight: 700;
+}
+
+dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.technisch {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+.umbrechen {
+  overflow-wrap: anywhere;
+}
+
+// Auf dem Handy untereinander, sonst bleibt für Commit und Build-Zeit zu wenig Platz.
+@media (max-width: 640px) {
+  dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  dd + dt {
+    margin-top: 8px;
+  }
+}

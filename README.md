@@ -144,6 +144,33 @@ aus. nginx leitet `/api`, `/actuator/health/systemstatus` und `/actuator/info` a
 Commit und Build-Zeit als `--build-arg` (`COMMIT`, `BUILD_ZEIT`) mit; sie stehen später im
 Impressum. Ohne diese Angaben fehlen sie dort, die Version aus der `package.json` steht immer.
 
+Impressum und Datenschutzerklärung brauchen die Angaben des Betreibers. Sie stehen nicht im Image,
+sondern in einer Datei `instanz.json`, die beim Start eingehängt wird, z.&nbsp;B.
+`-v ./instanz.json:/usr/share/nginx/html/instanz.json:ro`. Fehlt die Datei oder ist sie
+unvollständig, zeigen beide Seiten einen Hinweis statt der Angaben. `lizenz` und `quellcode` (nur
+http(s)) sind optional:
+
+```json
+{
+  "betreiber": {
+    "name": "Erika Beispiel",
+    "anschrift": ["Beispielstraße 1", "12345 Beispielstadt"],
+    "email": "betrieb@example.org"
+  },
+  "rechtsgrundlage": "Art. 6 Abs. 1 lit. b DSGVO",
+  "speicherort": "Beispiel-Rechenzentrum (Platzhalter)",
+  "logAufbewahrungTage": 14,
+  "stand": "2026-11-08",
+  "lizenz": "Beispiel-Lizenz (Platzhalter)",
+  "quellcode": "https://example.org/haushaltsbuch"
+}
+```
+
+Das sind Platzhalter aus `beispiel/instanz.json`. Der Dev-Server (`npm start`) liefert sie als
+`/instanz.json` aus, E2E-Tests und Image-Prüfung nutzen sie ebenfalls; im Produktions-Build und im
+Image stehen sie nicht. Für eine echte Instanz eine eigene Datei mit den Angaben des Betreibers
+einhängen, nie die Beispieldatei.
+
 Die Sicherheits-Header stehen in `docker/nginx/sicherheits-header.conf`, darunter eine strenge
 Content Security Policy. `style-src` erlaubt `'unsafe-inline'`, weil Angular Komponenten-Styles zur
 Laufzeit anlegt. Damit `script-src 'self'` ohne Hashes reicht, ist `inlineCritical` im
@@ -151,22 +178,25 @@ Production-Build aus, denn es schreibt ein Inline-Skript in `index.html`. HSTS g
 TLS-Terminierung und folgt mit v1.0. Die Header greifen nur im Image, nicht bei `npm start`.
 
 Deshalb prüft `npm run image:pruefen` (`e2e-image/`) das laufende Image: Die App läuft ohne
-CSP-Verstoß, die Header sind gesetzt, tiefe Links liefern `index.html`, und nur `/api`, der
-Systemstatus sowie Version und Umgebung gehen ans Backend. Das Backend ist dabei eine Attrappe im selben Pod. Vorher muss
+CSP-Verstoß, die Header sind gesetzt, tiefe Links liefern `index.html`, die eingehängte
+`instanz.json` kommt an, und nur `/api`, der Systemstatus sowie Version und Umgebung gehen ans
+Backend. Das Backend ist dabei eine Attrappe im selben Pod. Vorher muss
 `npm run image` gelaufen sein.
 
 ## Projektstruktur
 
 ```
 src/app/
-  core/        Dienste ohne eigene Oberfläche: api/, auth/, fehler/, komponenten/, systemstatus/,
-               ungespeichert/
+  core/        Dienste ohne eigene Oberfläche: api/, auth/, fehler/, instanz/, komponenten/,
+               systemstatus/, ungespeichert/, version/
   features/    Seiten, lazy geladen
     anmeldung/   login/, registrierung/ und ihr gemeinsamer anmelde-rahmen/
+    rechtliches/ Impressum und Datenschutz, mit und ohne Session erreichbar
     start/       Startseite nach der Anmeldung
     vertraege/   je ein Backend-Modul; weitere kommen mit ihren Seiten dazu
   shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, hinweis-box/,
-               in-den-blick/, logo/, systemstatus-leiste/, verwerfen-dialog/, zustaende/
+               in-den-blick/, kopfzeile/, logo/, nutzermenue/, rechtliche-links/, systemstatus-leiste/,
+               version-anzeige/, verwerfen-dialog/, zustaende/
   shell/       Rahmen der angemeldeten Bereiche (Kopfzeile, hauptmenue/, Fußzeile); die Startseite
                kommt ohne Navigation aus (Route-Data ohneNavigation)
 src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile

@@ -20,36 +20,6 @@ $einspaltig: 640px;
   flex-direction: column;
 }
 
-.kopfzeile {
-  background: var(--app-gruen);
-  color: var(--app-grund);
-}
-
-.kopfzeile-innen {
-  max-width: 1200px;
-  margin: 0 auto;
-  box-sizing: border-box;
-  padding: 16px 24px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 20px;
-  font-weight: 800;
-
-  app-logo {
-    width: 30px;
-    height: 30px;
-  }
-}
-
 .rumpf {
   flex: 1 0 auto;
   width: 100%;
@@ -126,6 +96,12 @@ main {
   grid-column: 2;
 }
 
+// Unter dem Systemstatus.
+.recht {
+  grid-column: 2;
+  grid-row: 2;
+}
+
 .version {
   grid-column: 3;
   justify-self: end;
@@ -153,7 +129,8 @@ main {
     text-align: center;
   }
 
-  .status {
+  .status,
+  .recht {
     order: 1;
   }
 

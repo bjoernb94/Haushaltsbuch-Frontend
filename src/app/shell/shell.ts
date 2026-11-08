@@ -5,8 +5,8 @@ import { filter, map } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
 import { systemstatusBeobachten } from '../core/systemstatus/systemstatus.service';
 import { HinweisBox } from '../shared/hinweis-box/hinweis-box';
-import { Logo } from '../shared/logo/logo';
-import { Nutzermenue } from '../shared/nutzermenue/nutzermenue';
+import { Kopfzeile } from '../shared/kopfzeile/kopfzeile';
+import { RechtlicheLinks } from '../shared/rechtliche-links/rechtliche-links';
 import { SystemstatusLeiste } from '../shared/systemstatus-leiste/systemstatus-leiste';
 import { VersionAnzeige } from '../shared/version-anzeige/version-anzeige';
 import { VerwerfenDialog } from '../shared/verwerfen-dialog/verwerfen-dialog';
@@ -23,8 +23,8 @@ import { Hauptmenue } from './hauptmenue/hauptmenue';
     RouterOutlet,
     Hauptmenue,
     HinweisBox,
-    Logo,
-    Nutzermenue,
+    Kopfzeile,
+    RechtlicheLinks,
     SystemstatusLeiste,
     VersionAnzeige,
     VerwerfenDialog,

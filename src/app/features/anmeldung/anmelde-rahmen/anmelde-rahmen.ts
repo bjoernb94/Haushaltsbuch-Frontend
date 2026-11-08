@@ -1,5 +1,6 @@
 import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Logo } from '../../../shared/logo/logo';
+import { RechtlicheLinks } from '../../../shared/rechtliche-links/rechtliche-links';
 import { VersionAnzeige } from '../../../shared/version-anzeige/version-anzeige';
 
 /**
@@ -9,7 +10,7 @@ import { VersionAnzeige } from '../../../shared/version-anzeige/version-anzeige'
  */
 @Component({
   selector: 'app-anmelde-rahmen',
-  imports: [Logo, VersionAnzeige],
+  imports: [Logo, RechtlicheLinks, VersionAnzeige],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './anmelde-rahmen.html',
   styleUrl: './anmelde-rahmen.scss',

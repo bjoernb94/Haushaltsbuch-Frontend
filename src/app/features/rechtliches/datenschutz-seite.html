@@ -1,0 +1,100 @@
+<app-rechtlicher-rahmen>
+  @let stand = instanz.stand();
+  <div class="titel">
+    <h1>Datenschutzerklärung</h1>
+    @if (stand.zustand === 'da') {
+      <p class="stand">Stand: {{ stand.angaben.stand | datum }}</p>
+    }
+  </div>
+
+  @switch (stand.zustand) {
+    @case ('laedt') {
+      <p class="laedt" role="status">Wird geladen …</p>
+    }
+    @case ('fehler') {
+      <div class="fehler">
+        <app-hinweis-box text="Die Angaben zum Betreiber konnten nicht geladen werden." />
+        <button type="button" class="knopf knopf-sekundaer" (click)="instanz.laden()">
+          Erneut versuchen
+        </button>
+      </div>
+    }
+    @case ('fehlt') {
+      <app-hinweis-box text="Für diese Instanz sind keine Angaben zum Betreiber hinterlegt." />
+    }
+    @case ('da') {
+      @let angaben = stand.angaben;
+      <section>
+        <h2>1. Verantwortlicher</h2>
+        <p>
+          {{ angaben.betreiber.name }}<br />{{ angaben.betreiber.anschrift.join(', ')
+          }}<br />E-Mail:
+          <a [href]="'mailto:' + angaben.betreiber.email">{{ angaben.betreiber.email }}</a>
+        </p>
+      </section>
+      <section>
+        <h2>2. Welche Daten wir verarbeiten</h2>
+        <ul>
+          <li>
+            <strong>Kontodaten:</strong> Name, Vorname, E-Mail-Adresse. Das Passwort wird nur als
+            Hash gespeichert.
+          </li>
+          <li>
+            <strong>Finanzdaten:</strong> Verträge, Buchungen, Kategorien und weitere Angaben, die
+            du selbst einträgst.
+          </li>
+          <li>
+            <strong>Technische Daten:</strong> IP-Adresse und Zeitpunkt des Zugriffs in den
+            Server-Logs.
+          </li>
+        </ul>
+      </section>
+      <section>
+        <h2>3. Zweck und Rechtsgrundlage</h2>
+        <p>
+          Die Daten werden ausschließlich verarbeitet, um dir die Anwendung bereitzustellen.
+          Rechtsgrundlage: {{ angaben.rechtsgrundlage }}.
+        </p>
+      </section>
+      <section>
+        <h2>4. Speicherort und Weitergabe</h2>
+        <p>
+          Alle Daten liegen auf dem Server des Betreibers: {{ angaben.speicherort }}. Es findet
+          keine Weitergabe an Dritte und kein Tracking statt.
+        </p>
+      </section>
+      <section>
+        <h2>5. Cookies</h2>
+        <p>
+          Es wird nur ein technisch notwendiges Session-Cookie für die Anmeldung gesetzt. Analyse-
+          oder Werbe-Cookies gibt es nicht.
+        </p>
+      </section>
+      <section>
+        <h2>6. Externe Ressourcen</h2>
+        <p>
+          Schriften und Skripte werden vom eigenen Server ausgeliefert. Es werden keine Inhalte von
+          externen Diensten nachgeladen.
+        </p>
+      </section>
+      <section>
+        <h2>7. Speicherdauer und Löschung</h2>
+        <p>
+          Deine Daten bleiben gespeichert, solange dein Konto besteht. Den Export deiner Daten und
+          das Löschen deines Kontos gibt es erst ab der Vollversion; bis dahin wende dich dafür per
+          E-Mail an den Betreiber. Server-Logs werden nach {{ tage(angaben.logAufbewahrungTage) }}
+          gelöscht.
+        </p>
+      </section>
+      <section>
+        <h2>8. Deine Rechte</h2>
+        <p>
+          Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und
+          Datenübertragbarkeit sowie auf Widerspruch. Außerdem kannst du dich bei einer
+          Datenschutz-Aufsichtsbehörde beschweren. Wende dich dazu an die oben genannte
+          E-Mail-Adresse.
+        </p>
+      </section>
+    }
+  }
+</app-rechtlicher-rahmen>

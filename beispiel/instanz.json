@@ -1,0 +1,13 @@
+{
+  "betreiber": {
+    "name": "Erika Beispiel",
+    "anschrift": ["Beispielstraße 1", "12345 Beispielstadt"],
+    "email": "betrieb@example.org"
+  },
+  "rechtsgrundlage": "Art. 6 Abs. 1 lit. b DSGVO",
+  "speicherort": "Beispiel-Rechenzentrum (Platzhalter)",
+  "logAufbewahrungTage": 14,
+  "stand": "2026-11-08",
+  "lizenz": "Beispiel-Lizenz (Platzhalter)",
+  "quellcode": "https://example.org/haushaltsbuch"
+}

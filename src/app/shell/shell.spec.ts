@@ -52,7 +52,9 @@ describe('Shell', () => {
   }
 
   const links = (element: HTMLElement) =>
-    [...element.querySelectorAll('nav a')].map((a) => a.getAttribute('href'));
+    [...element.querySelectorAll('nav[aria-label="Hauptmenü"] a')].map((a) =>
+      a.getAttribute('href'),
+    );
 
   it('zeigt Kopfzeile, Nutzermenü und Navigation', async () => {
     komponenten.set(['VERTRAGSUEBERSICHT']);
@@ -61,16 +63,23 @@ describe('Shell', () => {
     expect(element.querySelector('header button')?.getAttribute('aria-label')).toBe(
       'Konto von Max Muster',
     );
-    expect(element.querySelector('nav')?.getAttribute('aria-label')).toBe('Hauptmenü');
-    expect(element.querySelector('nav')?.textContent).toContain('Komponenten');
+    expect(element.querySelector('nav[aria-label="Hauptmenü"]')).not.toBeNull();
+    expect(element.querySelector('footer nav')?.getAttribute('aria-label')).toBe('Rechtliches');
+    expect(element.querySelector('nav[aria-label="Hauptmenü"]')?.textContent).toContain(
+      'Komponenten',
+    );
     expect(links(element)).toEqual(['/start', '/vertraege']);
   });
 
   it('blendet nicht gebuchte Bereiche und den leeren Abschnitt aus', async () => {
     const element = await shell();
     expect(links(element)).toEqual(['/start']);
-    expect(element.querySelector('nav')?.textContent).not.toContain('Komponenten');
-    expect(element.querySelector('nav')?.textContent).not.toContain('Demnächst');
+    expect(element.querySelector('nav[aria-label="Hauptmenü"]')?.textContent).not.toContain(
+      'Komponenten',
+    );
+    expect(element.querySelector('nav[aria-label="Hauptmenü"]')?.textContent).not.toContain(
+      'Demnächst',
+    );
   });
 
   it('zeigt gebuchte, noch nicht verfügbare Bereiche ohne Link', async () => {
@@ -96,11 +105,11 @@ describe('Shell', () => {
 
     await harness.navigateByUrl('/start');
     await fixture.whenStable();
-    expect(shellElement.querySelector('nav')).toBeNull();
+    expect(shellElement.querySelector('nav[aria-label="Hauptmenü"]')).toBeNull();
 
     await harness.navigateByUrl('/vertraege');
     await fixture.whenStable();
-    expect(shellElement.querySelector('nav')).not.toBeNull();
+    expect(shellElement.querySelector('nav[aria-label="Hauptmenü"]')).not.toBeNull();
   });
 
   it('markiert den aktiven Eintrag', async () => {

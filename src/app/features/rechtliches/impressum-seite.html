@@ -1,0 +1,74 @@
+<app-rechtlicher-rahmen>
+  @let stand = instanz.stand();
+  <div class="titel">
+    <h1>Impressum</h1>
+    @if (stand.zustand === 'da') {
+      <p class="stand">Stand: {{ stand.angaben.stand | datum }}</p>
+    }
+  </div>
+
+  @switch (stand.zustand) {
+    @case ('laedt') {
+      <p class="laedt" role="status">Wird geladen …</p>
+    }
+    @case ('fehler') {
+      <div class="fehler">
+        <app-hinweis-box text="Die Angaben zum Betreiber konnten nicht geladen werden." />
+        <button type="button" class="knopf knopf-sekundaer" (click)="instanz.laden()">
+          Erneut versuchen
+        </button>
+      </div>
+    }
+    @case ('fehlt') {
+      <app-hinweis-box text="Für diese Instanz sind keine Angaben zum Betreiber hinterlegt." />
+    }
+    @case ('da') {
+      <section>
+        <h2>Betreiber dieser Instanz</h2>
+        <p>
+          {{ stand.angaben.betreiber.name }}
+          @for (zeile of stand.angaben.betreiber.anschrift; track $index) {
+            <br />{{ zeile }}
+          }
+        </p>
+      </section>
+      <section>
+        <h2>Kontakt</h2>
+        <p>
+          E-Mail:
+          <a [href]="'mailto:' + stand.angaben.betreiber.email">{{
+            stand.angaben.betreiber.email
+          }}</a>
+        </p>
+      </section>
+    }
+  }
+
+  <section>
+    <h2>Über das Projekt</h2>
+    <p>
+      Haushaltsbuch ist eine selbst gehostete Anwendung zur Verwaltung von Finanzen, Verträgen und
+      Geldanlagen.
+    </p>
+    <dl>
+      <dt>Version Frontend</dt>
+      <dd class="technisch">{{ frontend }}</dd>
+      <dt>Version Backend</dt>
+      <dd class="technisch">{{ backend() }}</dd>
+      @if (stand.zustand === 'da') {
+        @if (stand.angaben.lizenz; as lizenz) {
+          <dt>Lizenz</dt>
+          <dd>{{ lizenz }}</dd>
+        }
+        @if (stand.angaben.quellcode; as quellcode) {
+          <dt>Quellcode</dt>
+          <dd class="umbrechen">
+            <a [href]="quellcode">{{ quellcode }}</a>
+          </dd>
+        }
+      }
+      <dt>Urheber</dt>
+      <dd>© Björn Bochmann</dd>
+    </dl>
+  </section>
+</app-rechtlicher-rahmen>
