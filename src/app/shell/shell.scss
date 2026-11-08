@@ -1,18 +1,7 @@
 @use '../shared/formular/formular';
+@use '../shared/layout/raender';
 
 @include formular.knoepfe;
-
-$einspaltig: 640px;
-
-// Mit Seitennavigation (248 px) sollen Inhalt und Fußzeile dieselben Ränder haben wie ohne: 1152 px
-// breit und mittig im Fenster, solange das neben die Navigation passt. Prozent beziehen sich auf die
-// Spalte neben der Navigation; 50 % davon sind die halbe Fensterbreite minus 124 px.
-@mixin raender-wie-ohne-navigation {
-  @media (min-width: 901px) {
-    padding-left: max(24px, calc(50% - 700px));
-    padding-right: max(24px, calc(50% - 452px));
-  }
-}
 
 .seite {
   min-height: calc(100vh - var(--app-streifen-hoehe, 0px));
@@ -25,13 +14,6 @@ $einspaltig: 640px;
   width: 100%;
   display: flex;
   align-items: stretch;
-}
-
-.copyright {
-  margin: 0;
-  font-size: 13px;
-  line-height: 16px;
-  color: var(--app-text-gedaempft);
 }
 
 .spalte {
@@ -52,7 +34,7 @@ main {
   .mit-navigation & {
     max-width: none;
     padding-top: 28px;
-    @include raender-wie-ohne-navigation;
+    @include raender.wie-ohne-navigation;
   }
 }
 
@@ -69,77 +51,8 @@ main {
   }
 }
 
-.fusszeile {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  box-sizing: border-box;
-  padding: 0 24px 32px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 8px 16px;
-
-  .mit-navigation & {
-    max-width: none;
-    padding-top: 16px;
-    border-top: 1px solid var(--app-trenner);
-    @include raender-wie-ohne-navigation;
-
-    .copyright-fusszeile {
-      display: none;
-    }
-  }
-}
-
-.status {
-  grid-column: 2;
-}
-
-// Unter dem Systemstatus.
-.recht {
-  grid-column: 2;
-  grid-row: 2;
-}
-
-.version {
-  grid-column: 3;
-  justify-self: end;
-}
-
 @media (max-width: 900px) {
   .mit-navigation {
     padding-bottom: 84px;
-
-    .fusszeile .copyright-fusszeile {
-      display: block;
-    }
-  }
-}
-
-@media (max-width: $einspaltig) {
-  .fusszeile,
-  .mit-navigation .fusszeile {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 6px;
-    padding-top: 24px;
-    border-top: 0;
-    text-align: center;
-  }
-
-  .status,
-  .recht {
-    order: 1;
-  }
-
-  .copyright-fusszeile {
-    order: 2;
-    font-size: 12px;
-  }
-
-  .version {
-    order: 3;
   }
 }

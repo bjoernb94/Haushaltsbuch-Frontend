@@ -84,6 +84,24 @@ test('Logo und Nutzer-Button stehen wie in der Shell', async ({ page }) => {
   expect(await nutzerKnopf(page).boundingBox()).toEqual(knopf);
 });
 
+test('Inhalt beginnt am selben Rand wie auf der Startseite', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await backendSimulieren(page, { angemeldet: true });
+  await page.goto('/start');
+  const start = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
+  for (const pfad of ['/impressum', '/datenschutz']) {
+    await page.goto(pfad);
+    const zurueckBox = (await zurueck(page).boundingBox())!;
+    const titel = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
+    expect(zurueckBox.x, pfad).toBe(start.x);
+    expect(titel.x, pfad).toBe(start.x);
+    expect(titel.y, pfad).toBeGreaterThan(zurueckBox.y);
+    // Fließtext bleibt schmal.
+    const absatz = (await page.locator('main section').first().boundingBox())!;
+    expect(absatz.width, pfad).toBeLessThanOrEqual(768);
+  }
+});
+
 test('das Impressum nennt Frontend- und Backend-Version getrennt', async ({ page }) => {
   await backendSimulieren(page);
   await page.goto('/impressum');

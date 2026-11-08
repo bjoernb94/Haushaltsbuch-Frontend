@@ -4,10 +4,9 @@ import { Router, RouterLink } from '@angular/router';
 import { STARTSEITE } from '../../../core/auth/auth.guards';
 import { AuthService } from '../../../core/auth/auth.service';
 import { InstanzService } from '../../../core/instanz/instanz.service';
-import { VersionService } from '../../../core/version/version.service';
+import { Fusszeile } from '../../../shared/fusszeile/fusszeile';
 import { Kopfzeile } from '../../../shared/kopfzeile/kopfzeile';
-import { herkunftAus, RechtlicheLinks } from '../../../shared/rechtliche-links/rechtliche-links';
-import { VersionAnzeige } from '../../../shared/version-anzeige/version-anzeige';
+import { herkunftAus } from '../../../shared/rechtliche-links/rechtliche-links';
 
 /** Namen der Seiten, zu denen „Zurück“ führen kann. */
 const SEITEN: Record<string, string> = {
@@ -24,7 +23,7 @@ const SEITEN: Record<string, string> = {
  */
 @Component({
   selector: 'app-rechtlicher-rahmen',
-  imports: [Kopfzeile, RechtlicheLinks, RouterLink, VersionAnzeige],
+  imports: [Fusszeile, Kopfzeile, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './rechtlicher-rahmen.html',
   styleUrl: './rechtlicher-rahmen.scss',
@@ -48,8 +47,6 @@ export class RechtlicherRahmen {
   constructor() {
     // Ohne Guard: Die Session entscheidet nur über Nutzermenü und Ziel von „Zurück“.
     this.auth.sitzungPruefen().subscribe();
-    // Ohne Systemstatus auf diesen Seiten lädt sonst niemand Version und Umgebung.
-    inject(VersionService).laden();
     inject(InstanzService).laden();
   }
 }

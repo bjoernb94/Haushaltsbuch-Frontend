@@ -5,14 +5,19 @@
   color: var(--app-text);
 }
 
-// Fließtext, deshalb schmaler als die übrigen Seiten.
+// Ränder wie auf den übrigen Seiten (Startseite), damit beim Wechsel nichts springt.
 .inhalt {
   flex: 1 0 auto;
   width: 100%;
-  max-width: 768px;
+  max-width: 1200px;
   margin: 0 auto;
   box-sizing: border-box;
-  padding: 48px 24px 32px;
+  padding: 40px 24px 48px;
+}
+
+// Fließtext: linksbündig und schmaler, lange Zeilen wären schlecht zu lesen.
+.text {
+  max-width: 768px;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -27,27 +32,4 @@
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
-}
-
-.fusszeile {
-  box-sizing: border-box;
-  padding: 16px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  border-top: 1px solid var(--app-trenner);
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--app-text-gedaempft);
-
-  p {
-    margin: 0;
-  }
-}
-
-@media (max-width: 640px) {
-  .inhalt {
-    padding: 32px 20px 24px;
-  }
 }
