@@ -18,6 +18,7 @@ podman run -d --pod "$POD" --name "$POD-backend" \
   docker.io/library/node:26-alpine node /attrappe.mjs >/dev/null
 podman run -d --pod "$POD" --name "$POD-app" \
   -e BACKEND_URL=http://127.0.0.1:9000 \
+  -v "$ORDNER/../beispiel/instanz.json:/usr/share/nginx/html/instanz.json:ro,Z" \
   localhost/haushaltsbuch-frontend:latest >/dev/null
 
 for _ in $(seq 1 30); do

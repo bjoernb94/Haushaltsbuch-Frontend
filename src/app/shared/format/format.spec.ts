@@ -2,6 +2,7 @@ import { LOCALE_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BetraegePipe, BetragPipe } from './betrag.pipe';
 import { datumText, DatumPipe } from './datum.pipe';
+import { zeitpunktText } from './zeitpunkt';
 
 describe('Formatierung', () => {
   beforeEach(() => {
@@ -54,6 +55,20 @@ describe('Formatierung', () => {
 
     it('lässt ein fehlendes Datum leer', () => {
       expect(datumText(null)).toBe('');
+    });
+  });
+
+  describe('zeitpunktText', () => {
+    it('zeigt Datum und Uhrzeit des Browsers', () => {
+      expect(zeitpunktText('2026-11-08T15:26:00Z', 'de-DE')).toBe(
+        new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(
+          new Date('2026-11-08T15:26:00Z'),
+        ),
+      );
+    });
+
+    it('gibt einen ungültigen Wert unverändert zurück', () => {
+      expect(zeitpunktText('kein Datum', 'de-DE')).toBe('kein Datum');
     });
   });
 });

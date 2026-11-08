@@ -1,0 +1,66 @@
+@use '../../shared/formular/formular';
+@use '../../shared/zustaende/zustaende';
+
+// Text von Impressum und Datenschutz.
+@mixin text {
+  @include formular.knoepfe;
+  @include zustaende.laedt;
+  @include zustaende.fehler;
+
+  :host {
+    display: contents;
+  }
+
+  .titel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 36px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .stand {
+    margin: 0;
+    font-size: 14px;
+    color: var(--app-text-gedaempft);
+  }
+
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.3;
+    font-weight: 800;
+  }
+
+  p,
+  ul {
+    margin: 0;
+  }
+
+  ul {
+    padding-left: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  @media (max-width: 640px) {
+    h1 {
+      font-size: 30px;
+    }
+  }
+}

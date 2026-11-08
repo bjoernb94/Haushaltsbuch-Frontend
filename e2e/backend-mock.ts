@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Page, Route } from '@playwright/test';
 import { VertragAntwort } from '../src/app/core/api/api';
 import { vertraegeSimulieren } from './vertraege-mock';
@@ -19,6 +20,11 @@ export async function abmelden(page: Page) {
     .getByRole('button', { name: 'Abmelden' })
     .click();
 }
+
+/** Beispielangaben des Betreibers, dieselben wie bei `npm start` und im README. */
+export const INSTANZ = JSON.parse(readFileSync('beispiel/instanz.json', 'utf-8')) as {
+  betreiber: { name: string; anschrift: string[]; email: string };
+};
 
 /** E-Mail-Adresse, für die die Registrierung mit 409 abgelehnt wird. */
 export const VERGEBEN = 'vergeben@beispiel.de';
@@ -46,7 +52,8 @@ const ALLE_KOMPONENTEN = [
 ];
 
 /**
- * Simuliert die Anmelde-Endpunkte, den Systemstatus sowie Version und Umgebung des Backends im Browser, damit die Tests ohne Backend und
+ * Simuliert die Anmelde-Endpunkte, den Systemstatus, Version und Umgebung des Backends sowie die
+ * `instanz.json` im Browser, damit die Tests ohne Backend und
  * Keycloak laufen. Gültig ist nur max@beispiel.de / geheim123; die Registrierung klappt für
  * jede E-Mail-Adresse außer {@link VERGEBEN} und {@link ABGELEHNT}.
  */
@@ -59,6 +66,7 @@ export async function backendSimulieren(
     komponenten = ALLE_KOMPONENTEN,
     vertraege = [] as VertragAntwort[],
     stage = 'PROD',
+    instanz = INSTANZ as object | null,
   } = {},
 ) {
   let session = angemeldet;
@@ -80,6 +88,9 @@ export async function backendSimulieren(
         app: { stage },
       },
     }),
+  );
+  await page.route('/instanz.json', (route) =>
+    instanz ? route.fulfill({ json: instanz }) : route.fulfill({ status: 404, body: '' }),
   );
   await page.route('/api/nutzer/ich', (route) =>
     session

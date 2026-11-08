@@ -35,7 +35,8 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - Standalone components, signals, `OnPush`, zoneless; `strict` and `strictTemplates` are on.
 - `core/` services without UI, `features/` lazy-loaded pages (one folder per backend module, plus
   `anmeldung/` for login/registration and `start/`), `shared/` components used by several areas,
-  `shell/` layout of the logged-in area (lazy, so login and registration do not load it). `/start` has no
+  `shell/` layout of the logged-in area (lazy, so login and registration do not load it), header in
+  `shared/kopfzeile` (also used by imprint and privacy policy). `/start` has no
   navigation (route data `ohneNavigation`), its tiles navigate; all other areas use `shell/hauptmenue`.
 - API types come from the backend's OpenAPI description: `core/api/api.generated.ts` (checked in, never edit by
   hand), named aliases in `core/api/api.ts`. After an API change in the backend, run `npm run api:typen` and commit
@@ -59,6 +60,12 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   once the system status reaches the backend and retries until it gets an answer; without one only the
   badge and stripe are missing. Commit and build time (frontend via `--define` in the image build, backend
   from the info) are for the imprint only.
+- Imprint and privacy policy (`/impressum`, `/datenschutz`, `features/rechtliches`): reachable with and without
+  a session, no guard; they check the session themselves (user menu, target of "Zurück"). The links
+  (`shared/rechtliche-links`) pass the current page as `herkunft` in the navigation state, kept when switching
+  between the two. Operator details come from `instanz.json`, mounted into the image (`core/instanz`), never from
+  code; missing or incomplete → a hint instead of the details. Placeholder data in `beispiel/instanz.json` is served
+  by the dev server only (development build assets) and used by the E2E mock, the image check and the README.
 - Unsaved input: a form reports changes to `core/ungespeichert`. Leaving asks via the dialog in the shell:
   `ungespeichertGuard` (`canDeactivate`) on routes with a form, `bestaetigen()` for anything else that leaves or
   closes one (logout must ask before the session ends). Redirects that must happen (401, 403) and a successful save

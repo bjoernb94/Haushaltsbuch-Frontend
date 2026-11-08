@@ -14,7 +14,7 @@ test('Wurzel leitet auf die Startseite um', async ({ page }) => {
 test('Startseite hat keine Navigation', async ({ page }) => {
   await page.goto('/start');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expect(page.getByRole('navigation')).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toHaveCount(0);
 });
 
 test('Navigation führt zur Übersicht und markiert den aktiven Bereich', async ({ page }) => {
@@ -29,7 +29,7 @@ test('Navigation führt zur Übersicht und markiert den aktiven Bereich', async 
   await hauptmenue.getByRole('link', { name: 'Übersicht' }).click();
 
   await expect(page).toHaveURL(/\/start$/);
-  await expect(page.getByRole('navigation')).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toHaveCount(0);
 });
 
 test('auf dem Desktop steht das Copyright in der Navigation', async ({ page }) => {

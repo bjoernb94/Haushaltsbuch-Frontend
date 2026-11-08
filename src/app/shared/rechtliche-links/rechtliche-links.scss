@@ -1,0 +1,17 @@
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+a {
+  color: var(--app-text-gedaempft);
+
+  &.aktiv {
+    color: var(--app-text);
+    font-weight: 800;
+  }
+}

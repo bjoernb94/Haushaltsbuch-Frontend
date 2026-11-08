@@ -56,6 +56,16 @@
               "outputHashing": "all"
             },
             "development": {
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public"
+                },
+                {
+                  "glob": "instanz.json",
+                  "input": "beispiel"
+                }
+              ],
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true

@@ -76,8 +76,12 @@
 }
 
 // Wie im Design dicht unter dem Systemstatus.
-.version {
+.fuss {
   margin-top: -16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 // Auf schmalen Bildschirmen unter dem Systemstatus statt in der Markenfläche.

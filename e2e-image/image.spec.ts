@@ -1,5 +1,5 @@
 import { APIResponse, expect, Page, test } from '@playwright/test';
-import { backendSimulieren, BEISPIEL_VERTRAEGE } from '../e2e/backend-mock';
+import { backendSimulieren, BEISPIEL_VERTRAEGE, INSTANZ } from '../e2e/backend-mock';
 
 const SICHERHEITS_HEADER = {
   'content-security-policy':
@@ -54,6 +54,19 @@ test.describe('CSP', () => {
     await page.setViewportSize({ width: 390, height: 800 });
     await panel.getByRole('button', { name: 'Abmelden' }).click();
     await expect(page).toHaveURL(/\/login$/);
+    expect(fehler).toEqual([]);
+  });
+
+  test('die App läuft ohne Verstoß: Impressum und Datenschutz', async ({ page }) => {
+    const fehler = await verstoesseSammeln(page);
+    await backendSimulieren(page);
+    // Die eingehängte Datei des Images statt der simulierten.
+    await page.unroute('/instanz.json');
+    await page.goto('/login');
+    await page.getByRole('link', { name: 'Impressum' }).click();
+    await expect(page.getByRole('heading', { name: 'Betreiber dieser Instanz' })).toBeVisible();
+    await page.getByRole('link', { name: 'Datenschutz' }).click();
+    await expect(page.getByRole('heading', { name: '1. Verantwortlicher' })).toBeVisible();
     expect(fehler).toEqual([]);
   });
 
@@ -113,6 +126,14 @@ test.describe('Auslieferung', () => {
     expect(antwort.status()).toBe(200);
     sicherheitsHeaderPruefen(antwort);
     expect(antwort.headers()['cache-control']).toContain('immutable');
+  });
+
+  test('die eingehängte instanz.json kommt als JSON, nicht lange gecacht', async ({ request }) => {
+    const antwort = await request.get('/instanz.json');
+    expect(antwort.status()).toBe(200);
+    sicherheitsHeaderPruefen(antwort);
+    expect(antwort.headers()['cache-control']).toBe('no-cache');
+    expect((await antwort.json()).betreiber.name).toBe(INSTANZ.betreiber.name);
   });
 
   test('ein fehlendes Bundle ist 404 und nicht index.html', async ({ request }) => {

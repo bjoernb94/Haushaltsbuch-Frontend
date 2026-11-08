@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { abgemeldetGuard, angemeldetGuard, bereichGuard } from './core/auth/auth.guards';
 
-// Anmeldung (Login, Registrierung) ohne Navigation. Start und die Fachbereiche (ein Feature-Ordner
+// Anmeldung (Login, Registrierung) sowie Impressum und Datenschutz ohne Navigation. Start und die Fachbereiche (ein Feature-Ordner
 // je Backend-Modul) liegen in der Shell und brauchen eine Session. Alles lazy geladen.
 export const routes: Routes = [
   {
@@ -18,6 +18,19 @@ export const routes: Routes = [
         (m) => m.RegistrierungSeite,
       ),
     title: 'Registrieren – Haushaltsbuch',
+  },
+  // Mit und ohne Session erreichbar, deshalb ohne Guard und außerhalb der Shell.
+  {
+    path: 'impressum',
+    loadComponent: () =>
+      import('./features/rechtliches/impressum-seite').then((m) => m.ImpressumSeite),
+    title: 'Impressum – Haushaltsbuch',
+  },
+  {
+    path: 'datenschutz',
+    loadComponent: () =>
+      import('./features/rechtliches/datenschutz-seite').then((m) => m.DatenschutzSeite),
+    title: 'Datenschutz – Haushaltsbuch',
   },
   {
     path: '',

@@ -18,6 +18,13 @@ server {
         proxy_set_header X-Forwarded-Port $server_port;
     }
 
+    # Angaben des Betreibers (README, Abschnitt Container); fehlt die Datei, 404 statt index.html.
+    location = /instanz.json {
+        try_files $uri =404;
+        include /etc/nginx/snippets/sicherheits-header.conf;
+        add_header Cache-Control "no-cache";
+    }
+
     # Nur gehashte Bundles dürfen lange gecacht werden; index.html und public/ haben keinen Hash.
     location ~ "-[A-Za-z0-9_-]{8}\.(js|css|woff2?)$" {
         include /etc/nginx/snippets/sicherheits-header.conf;

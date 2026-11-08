@@ -1,13 +1,5 @@
 <div class="seite" [class.mit-navigation]="mitNavigation()">
-  <header class="kopfzeile">
-    <div class="kopfzeile-innen">
-      <div class="logo">
-        <app-logo />
-        <span>Haushaltsbuch</span>
-      </div>
-      <app-nutzermenue />
-    </div>
-  </header>
+  <app-kopfzeile />
 
   <div class="rumpf">
     @if (mitNavigation()) {
@@ -31,6 +23,7 @@
         @if (systemstatus.status(); as status) {
           <app-systemstatus-leiste class="status" [status]="status" />
         }
+        <app-rechtliche-links class="recht" />
         <app-version-anzeige class="version" />
       </footer>
     </div>
