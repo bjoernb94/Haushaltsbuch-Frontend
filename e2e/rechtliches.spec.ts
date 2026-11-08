@@ -84,21 +84,17 @@ test('Logo und Nutzer-Button stehen wie in der Shell', async ({ page }) => {
   expect(await nutzerKnopf(page).boundingBox()).toEqual(knopf);
 });
 
-test('Inhalt beginnt am selben Rand wie auf der Startseite', async ({ page }) => {
+test('„Zurück“ steht am Rand der Startseite, der Text mittig', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await backendSimulieren(page, { angemeldet: true });
   await page.goto('/start');
   const start = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
   for (const pfad of ['/impressum', '/datenschutz']) {
     await page.goto(pfad);
-    const zurueckBox = (await zurueck(page).boundingBox())!;
-    const titel = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
-    expect(zurueckBox.x, pfad).toBe(start.x);
-    expect(titel.x, pfad).toBe(start.x);
-    expect(titel.y, pfad).toBeGreaterThan(zurueckBox.y);
-    // Fließtext bleibt schmal.
-    const absatz = (await page.locator('main section').first().boundingBox())!;
-    expect(absatz.width, pfad).toBeLessThanOrEqual(768);
+    expect((await zurueck(page).boundingBox())!.x, pfad).toBe(start.x);
+    const text = (await page.locator('main section').first().boundingBox())!;
+    expect(text.width, pfad).toBeLessThanOrEqual(768);
+    expect(Math.abs(text.x + text.width / 2 - 800), pfad).toBeLessThan(2);
   }
 });
 
