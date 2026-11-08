@@ -15,7 +15,7 @@ $einspaltig: 640px;
 }
 
 .seite {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--app-streifen-hoehe, 0px));
   display: flex;
   flex-direction: column;
 }
@@ -126,6 +126,11 @@ main {
   grid-column: 2;
 }
 
+.version {
+  grid-column: 3;
+  justify-self: end;
+}
+
 @media (max-width: 900px) {
   .mit-navigation {
     padding-bottom: 84px;
@@ -155,5 +160,9 @@ main {
   .copyright-fusszeile {
     order: 2;
     font-size: 12px;
+  }
+
+  .version {
+    order: 3;
   }
 }

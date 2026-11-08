@@ -4,7 +4,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npx ng build
+# Commit und Build-Zeit fürs Impressum; ohne Angabe fehlen sie dort.
+ARG COMMIT=""
+ARG BUILD_ZEIT=""
+RUN npx ng build --define "HAUSHALTSBUCH_COMMIT='${COMMIT}'" --define "HAUSHALTSBUCH_BUILD_ZEIT='${BUILD_ZEIT}'"
 
 # Laufzeit: nginx liefert die SPA aus und leitet Backend-Pfade weiter (gleicher Origin für BFF-Cookies)
 FROM docker.io/nginxinc/nginx-unprivileged:1.31-alpine

@@ -8,6 +8,7 @@ import { HinweisBox } from '../shared/hinweis-box/hinweis-box';
 import { Logo } from '../shared/logo/logo';
 import { Nutzermenue } from '../shared/nutzermenue/nutzermenue';
 import { SystemstatusLeiste } from '../shared/systemstatus-leiste/systemstatus-leiste';
+import { VersionAnzeige } from '../shared/version-anzeige/version-anzeige';
 import { VerwerfenDialog } from '../shared/verwerfen-dialog/verwerfen-dialog';
 import { Hauptmenue } from './hauptmenue/hauptmenue';
 
@@ -25,6 +26,7 @@ import { Hauptmenue } from './hauptmenue/hauptmenue';
     Logo,
     Nutzermenue,
     SystemstatusLeiste,
+    VersionAnzeige,
     VerwerfenDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

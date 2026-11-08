@@ -1,0 +1,21 @@
+:host {
+  display: block;
+}
+
+// Feste Höhe (--app-streifen-hoehe), deshalb einzeilig.
+.streifen {
+  height: 24px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 16px;
+  overflow: hidden;
+  background: var(--app-umgebung-streifen);
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

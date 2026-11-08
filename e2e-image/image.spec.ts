@@ -144,6 +144,12 @@ test.describe('Weiterleitung ans Backend', () => {
     expect((await antwort.json()).pfad).toBe('/actuator/health/systemstatus');
   });
 
+  test('Version und Umgebung gehen ans Backend', async ({ request }) => {
+    const antwort = await request.get('/actuator/info');
+    expect(antwort.headers()['x-backend-attrappe']).toBe('ja');
+    expect((await antwort.json()).pfad).toBe('/actuator/info');
+  });
+
   for (const pfad of ['/actuator/health', '/actuator/env', '/apifoo', '/v3/api-docs']) {
     test(`${pfad} bleibt beim Frontend`, async ({ request }) => {
       const antwort = await request.get(pfad);

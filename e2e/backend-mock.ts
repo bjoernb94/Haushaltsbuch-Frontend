@@ -46,7 +46,7 @@ const ALLE_KOMPONENTEN = [
 ];
 
 /**
- * Simuliert die Anmelde-Endpunkte und den Systemstatus des Backends im Browser, damit die Tests ohne Backend und
+ * Simuliert die Anmelde-Endpunkte, den Systemstatus sowie Version und Umgebung des Backends im Browser, damit die Tests ohne Backend und
  * Keycloak laufen. Gültig ist nur max@beispiel.de / geheim123; die Registrierung klappt für
  * jede E-Mail-Adresse außer {@link VERGEBEN} und {@link ABGELEHNT}.
  */
@@ -58,6 +58,7 @@ export async function backendSimulieren(
     keycloak = true,
     komponenten = ALLE_KOMPONENTEN,
     vertraege = [] as VertragAntwort[],
+    stage = 'PROD',
   } = {},
 ) {
   let session = angemeldet;
@@ -68,6 +69,15 @@ export async function backendSimulieren(
       json: {
         status: datenbank && keycloak ? 'UP' : 'DOWN',
         components: { db: komponente(datenbank), keycloak: komponente(keycloak) },
+      },
+    }),
+  );
+  await page.route('/actuator/info', (route) =>
+    route.fulfill({
+      json: {
+        build: { version: '0.1.0', time: '2026-11-05T17:00:00Z' },
+        git: { commit: { id: '48eaea5' } },
+        app: { stage },
       },
     }),
   );
