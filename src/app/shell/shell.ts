@@ -3,12 +3,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
-import { systemstatusBeobachten } from '../core/systemstatus/systemstatus.service';
+import { Fusszeile } from '../shared/fusszeile/fusszeile';
 import { HinweisBox } from '../shared/hinweis-box/hinweis-box';
 import { Kopfzeile } from '../shared/kopfzeile/kopfzeile';
-import { RechtlicheLinks } from '../shared/rechtliche-links/rechtliche-links';
-import { SystemstatusLeiste } from '../shared/systemstatus-leiste/systemstatus-leiste';
-import { VersionAnzeige } from '../shared/version-anzeige/version-anzeige';
 import { VerwerfenDialog } from '../shared/verwerfen-dialog/verwerfen-dialog';
 import { Hauptmenue } from './hauptmenue/hauptmenue';
 
@@ -19,16 +16,7 @@ import { Hauptmenue } from './hauptmenue/hauptmenue';
  */
 @Component({
   selector: 'app-shell',
-  imports: [
-    RouterOutlet,
-    Hauptmenue,
-    HinweisBox,
-    Kopfzeile,
-    RechtlicheLinks,
-    SystemstatusLeiste,
-    VersionAnzeige,
-    VerwerfenDialog,
-  ],
+  imports: [RouterOutlet, Hauptmenue, Fusszeile, HinweisBox, Kopfzeile, VerwerfenDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
@@ -36,9 +24,6 @@ import { Hauptmenue } from './hauptmenue/hauptmenue';
 export class Shell {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-
-  /** Nur zur Anzeige in der Fußzeile; in der App wird nichts gesperrt. */
-  protected readonly systemstatus = systemstatusBeobachten();
 
   protected readonly komponentenFehler = this.auth.komponentenFehler;
 

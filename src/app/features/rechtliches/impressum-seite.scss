@@ -20,8 +20,8 @@ dd {
   min-width: 0;
 }
 
+// Commit und Build-Zeit dürfen auf schmalen Bildschirmen umbrechen.
 .technisch {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   overflow-wrap: anywhere;
 }
 

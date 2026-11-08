@@ -1,0 +1,9 @@
+// Mit Seitennavigation (248 px) sollen Inhalt und Fußzeile dieselben Ränder haben wie ohne: 1152 px
+// breit und mittig im Fenster, solange das neben die Navigation passt. Prozent beziehen sich auf die
+// Spalte neben der Navigation; 50 % davon sind die halbe Fensterbreite minus 124 px.
+@mixin wie-ohne-navigation {
+  @media (min-width: 901px) {
+    padding-left: max(24px, calc(50% - 700px));
+    padding-right: max(24px, calc(50% - 452px));
+  }
+}

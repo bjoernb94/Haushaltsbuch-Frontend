@@ -18,14 +18,7 @@
         }
         <router-outlet />
       </main>
-      <footer class="fusszeile">
-        <p class="copyright copyright-fusszeile">© Björn Bochmann</p>
-        @if (systemstatus.status(); as status) {
-          <app-systemstatus-leiste class="status" [status]="status" />
-        }
-        <app-rechtliche-links class="recht" />
-        <app-version-anzeige class="version" />
-      </footer>
+      <app-fusszeile [mitNavigation]="mitNavigation()" />
     </div>
   </div>
 </div>

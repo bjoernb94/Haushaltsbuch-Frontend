@@ -194,9 +194,9 @@ src/app/
     rechtliches/ Impressum und Datenschutz, mit und ohne Session erreichbar
     start/       Startseite nach der Anmeldung
     vertraege/   je ein Backend-Modul; weitere kommen mit ihren Seiten dazu
-  shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, hinweis-box/,
-               in-den-blick/, kopfzeile/, logo/, nutzermenue/, rechtliche-links/, systemstatus-leiste/,
-               version-anzeige/, verwerfen-dialog/, zustaende/
+  shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, fusszeile/,
+               hinweis-box/, in-den-blick/, kopfzeile/, layout/, logo/, nutzermenue/, rechtliche-links/,
+               systemstatus-leiste/, version-anzeige/, verwerfen-dialog/, zustaende/
   shell/       Rahmen der angemeldeten Bereiche (Kopfzeile, hauptmenue/, Fußzeile); die Startseite
                kommt ohne Navigation aus (Route-Data ohneNavigation)
 src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile

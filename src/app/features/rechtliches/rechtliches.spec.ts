@@ -5,6 +5,7 @@ import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { Instanzangaben, Instanzstand, InstanzService } from '../../core/instanz/instanz.service';
+import { SystemstatusService } from '../../core/systemstatus/systemstatus.service';
 import { Stand, VersionService } from '../../core/version/version.service';
 import { zeitpunktText } from '../../shared/format/zeitpunkt';
 import { DatenschutzSeite } from './datenschutz-seite';
@@ -27,7 +28,6 @@ describe('Impressum und Datenschutz', () => {
   const stand = signal<Instanzstand>({ zustand: 'da', angaben: ANGABEN });
   const backend = signal<Stand | undefined>(undefined);
   const instanzLaden = vi.fn();
-  const versionLaden = vi.fn();
   const sitzungPruefen = vi.fn(() => of(false));
 
   beforeEach(async () => {
@@ -45,12 +45,17 @@ describe('Impressum und Datenschutz', () => {
         },
         { provide: InstanzService, useValue: { stand, laden: instanzLaden } },
         {
+          provide: SystemstatusService,
+          useValue: {
+            beobachten: () => of({ backend: true, datenbank: true, anmeldeserver: true }),
+          },
+        },
+        {
           provide: VersionService,
           useValue: {
             frontend: { version: '0.1.0', commit: 'abc1234', buildZeit: '2026-11-08T15:26:00Z' },
             backend,
             stage: signal(undefined),
-            laden: versionLaden,
           },
         },
       ],
@@ -66,11 +71,10 @@ describe('Impressum und Datenschutz', () => {
   const zurueck = (element: HTMLElement) => element.querySelector<HTMLAnchorElement>('a.zurueck')!;
 
   describe('Rahmen', () => {
-    it('prüft die Session und lädt Angaben und Version', async () => {
+    it('prüft die Session und lädt die Angaben', async () => {
       await seite(ImpressumSeite);
       expect(sitzungPruefen).toHaveBeenCalledOnce();
       expect(instanzLaden).toHaveBeenCalledOnce();
-      expect(versionLaden).toHaveBeenCalledOnce();
     });
 
     it('führt ohne Herkunft zum Login, mit Session zur Startseite', async () => {
@@ -95,8 +99,9 @@ describe('Impressum und Datenschutz', () => {
       expect(zurueck(element).getAttribute('aria-label')).toBe('Zurück zu Neuer Vertrag');
     });
 
-    it('zeigt Links, Version und Copyright im Footer', async () => {
-      const footer = (await seite(ImpressumSeite)).querySelector('footer')!;
+    it('hat denselben Footer wie die Shell: Status, Links, Version und Copyright', async () => {
+      const footer = (await seite(ImpressumSeite)).querySelector('app-fusszeile footer')!;
+      expect(footer.querySelector('app-systemstatus-leiste')?.textContent).toContain('Datenbank');
       expect(footer.querySelector('nav')?.textContent).toContain('Datenschutz');
       expect(footer.querySelector('app-version-anzeige')?.textContent).toContain('v0.1.0');
       expect(footer.textContent).toContain('© Björn Bochmann');

@@ -35,8 +35,8 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - Standalone components, signals, `OnPush`, zoneless; `strict` and `strictTemplates` are on.
 - `core/` services without UI, `features/` lazy-loaded pages (one folder per backend module, plus
   `anmeldung/` for login/registration and `start/`), `shared/` components used by several areas,
-  `shell/` layout of the logged-in area (lazy, so login and registration do not load it), header in
-  `shared/kopfzeile` (also used by imprint and privacy policy). `/start` has no
+  `shell/` layout of the logged-in area (lazy, so login and registration do not load it), header and footer in
+  `shared/kopfzeile` and `shared/fusszeile` (also used by imprint and privacy policy). `/start` has no
   navigation (route data `ohneNavigation`), its tiles navigate; all other areas use `shell/hauptmenue`.
 - API types come from the backend's OpenAPI description: `core/api/api.generated.ts` (checked in, never edit by
   hand), named aliases in `core/api/api.ts`. After an API change in the backend, run `npm run api:typen` and commit
