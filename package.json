@@ -1,6 +1,6 @@
 {
   "name": "haushaltsbuch-frontend",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -15,7 +15,7 @@
     "api:typen": "openapi-typescript ../Haushaltsbuch-Backend/docs/openapi.json -o src/app/core/api/api.generated.ts",
     "outdated": "ng update",
     "audit": "npm audit",
-    "image": "podman build --build-arg COMMIT=$(git rev-parse --short HEAD 2>/dev/null) --build-arg BUILD_ZEIT=$(date -u +%Y-%m-%dT%H:%M:%SZ) -t haushaltsbuch-frontend:latest -f Containerfile .",
+    "image": "podman build --build-arg VERSION=$npm_package_version --build-arg COMMIT=$(git rev-parse --short HEAD 2>/dev/null) --build-arg BUILD_ZEIT=$(date -u +%Y-%m-%dT%H:%M:%SZ) -t haushaltsbuch-frontend:latest -f Containerfile .",
     "image:pruefen": "e2e-image/pruefen.sh"
   },
   "private": true,

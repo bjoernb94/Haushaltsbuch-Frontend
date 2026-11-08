@@ -1,0 +1,84 @@
+name: Release
+
+# Ein Tag v<Version> auf main veröffentlicht das Image und legt das GitHub Release an, aber nur mit
+# grünen Tests und geprüftem Image. Vor 1.0 ist jedes Release eine Vorabversion ohne Image-Tag latest.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Tag und Version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.pruefen.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: pruefen
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Der Tag $GITHUB_REF_NAME passt nicht zur Version $version in der package.json."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  tests:
+    name: Tests
+    needs: version
+    uses: ./.github/workflows/build.yml
+    with:
+      ohne_image: true
+
+  veroeffentlichen:
+    name: Image und Release
+    needs: [version, tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      packages: write
+    env:
+      IMAGE: ghcr.io/bjoernb94/haushaltsbuch-frontend
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      # Der Download der Systempakete hängt manchmal; dann lieber schnell neu starten.
+      - run: npx playwright install --with-deps chromium firefox
+        timeout-minutes: 5
+      # Podman, denn nur Podman liest .containerignore. Veröffentlicht wird genau das geprüfte Image.
+      - run: npm run image
+      - run: npm run image:pruefen
+      - name: Image veröffentlichen
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$TOKEN" | podman login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          tags="$VERSION ${VERSION%.*}"
+          if [ "${VERSION%%.*}" -ge 1 ]; then tags="$tags latest"; fi
+          for tag in $tags; do
+            podman tag haushaltsbuch-frontend:latest "$IMAGE:$tag"
+            podman push "$IMAGE:$tag"
+          done
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          vorab=""
+          if [ "${VERSION%%.*}" = 0 ]; then vorab="--prerelease"; fi
+          gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes $vorab
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-image
+          path: playwright-report/image/
+          retention-days: 14

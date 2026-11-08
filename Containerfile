@@ -17,3 +17,16 @@ COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.templa
 COPY docker/nginx/sicherheits-header.conf /etc/nginx/snippets/sicherheits-header.conf
 COPY --from=build /app/dist/Haushaltsbuch-Frontend/browser /usr/share/nginx/html
 EXPOSE 8080
+# Version aus der package.json, Commit und Build-Zeit wie oben; npm run image gibt alle drei mit.
+# Beschreibung, URL und Lizenz überschreiben die geerbten Angaben des nginx-Images.
+ARG VERSION=""
+ARG COMMIT=""
+ARG BUILD_ZEIT=""
+LABEL org.opencontainers.image.title="Haushaltsbuch Frontend" \
+      org.opencontainers.image.description="Haushaltsbuch: Angular-SPA, ausgeliefert mit nginx" \
+      org.opencontainers.image.url="https://github.com/bjoernb94/Haushaltsbuch-Frontend" \
+      org.opencontainers.image.licenses="" \
+      org.opencontainers.image.source="https://github.com/bjoernb94/Haushaltsbuch-Frontend" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${COMMIT}" \
+      org.opencontainers.image.created="${BUILD_ZEIT}"
