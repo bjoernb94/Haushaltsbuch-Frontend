@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { Instanzangaben, Instanzstand, InstanzService } from '../../core/instanz/instanz.service';
 import { Stand, VersionService } from '../../core/version/version.service';
+import { zeitpunktText } from '../../shared/format/zeitpunkt';
 import { DatenschutzSeite } from './datenschutz-seite';
 import { ImpressumSeite } from './impressum-seite';
 
@@ -120,7 +121,10 @@ describe('Impressum und Datenschutz', () => {
     it('nennt beide Versionen getrennt, fehlendes als nicht bekannt', async () => {
       const element = await seite(ImpressumSeite);
       const werte = [...element.querySelectorAll('dd.technisch')].map((dd) => dd.textContent);
-      expect(werte[0]).toBe('v0.1.0 · Commit abc1234 · Build 08.11.2026, 16:26');
+      // Die Uhrzeit hängt von der Zeitzone ab (lokal Europe/Berlin, in der CI UTC).
+      expect(werte[0]).toBe(
+        `v0.1.0 · Commit abc1234 · Build ${zeitpunktText('2026-11-08T15:26:00Z', 'de-DE')}`,
+      );
       expect(werte[1]).toBe('nicht bekannt');
     });
 
