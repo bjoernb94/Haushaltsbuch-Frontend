@@ -29,6 +29,9 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   `Closes #<n>`.
 - Before starting work, create the branch from an up-to-date `main` if you are still on `main`.
 - PR descriptions follow `.github/pull_request_template.md`.
+- Releases come only from a tag `v<version>` on `main` that matches `package.json` (`.github/workflows/release.yml`,
+  README section "Veröffentlichen"); it requires an open milestone named exactly like the tag without open issues
+  and closes it at the end. Release notes are grouped by PR labels, so label PRs.
 
 ## Architecture
 

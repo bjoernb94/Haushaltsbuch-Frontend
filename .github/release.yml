@@ -1,0 +1,14 @@
+# Gruppiert die generierten Release Notes nach den Labels der Pull Requests.
+changelog:
+  exclude:
+    labels: [dependencies]
+    authors: [dependabot]
+  categories:
+    - title: Neu
+      labels: [enhancement]
+    - title: Fehlerbehebungen
+      labels: [bug]
+    - title: Dokumentation
+      labels: [documentation]
+    - title: Sonstiges
+      labels: ['*']

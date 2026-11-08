@@ -183,6 +183,27 @@ CSP-Verstoß, die Header sind gesetzt, tiefe Links liefern `index.html`, die ein
 Backend. Das Backend ist dabei eine Attrappe im selben Pod. Vorher muss
 `npm run image` gelaufen sein.
 
+## Veröffentlichen
+
+Ein Release entsteht aus einem Tag auf `main`, nicht von Hand. Der Workflow `.github/workflows/release.yml`
+prüft, dass der Tag zur Version in der `package.json` passt, führt die CI aus (`build.yml`), baut das Image,
+prüft es mit `npm run image:pruefen` und veröffentlicht genau dieses Image als
+`ghcr.io/bjoernb94/haushaltsbuch-frontend`. Danach legt er das GitHub Release mit generierten Notes an
+(gruppiert nach den Labels der Pull Requests, siehe `.github/release.yml`).
+
+Zu jeder Version gehört ein Milestone mit genau ihrem Namen, auch für Bugfix-Releases (z.&nbsp;B. `v0.2.1`).
+Der Workflow bricht ab, wenn es ihn nicht gibt, er schon geschlossen ist oder noch Issues darin offen sind,
+und nennt die offenen Issues. Nach einem erfolgreichen Release schließt er ihn.
+
+1. Version per Pull Request anheben: `npm version 0.2.0 --no-git-tag-version` ändert `package.json` und
+   `package-lock.json`.
+2. Nach dem Merge auf `main` taggen: `git tag v0.2.0 && git push origin v0.2.0`.
+
+Frontend und Backend zählen gleich hoch; das Backend wird zuerst veröffentlicht. Solange die Hauptversion 0
+ist, ist jedes Release eine Vorabversion (Pre-release) und das Image bekommt nur die Tags `0.2.0` und `0.2`;
+ab 1.0 kommt `latest` dazu. Das Image ist privat wie das Repo: Zum Herunterladen vorher
+`podman login ghcr.io` mit einem Token mit `read:packages`. Es gibt nur ein Image für amd64.
+
 ## Projektstruktur
 
 ```
