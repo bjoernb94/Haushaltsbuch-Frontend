@@ -67,8 +67,8 @@ Backend, die Gründe in den
 
 Login, Registrierung und die Fußzeile der App fragen den Systemstatus beim Öffnen und dann alle
 30&nbsp;s ab. Ist das Backend nicht erreichbar, gelten auch Datenbank und Anmeldeserver als nicht
-erreichbar. Fehlt ein Dienst, sind Login und Registrierung gesperrt; in der App wird der Status
-nur angezeigt.
+erreichbar. Fehlt ein Dienst, sind Login und Registrierung gesperrt; in der App zeigen ihn nur die
+Einstellungen (Kontomenü), Impressum und Datenschutz in der Fußzeile.
 
 ### Ungespeicherte Eingaben
 
@@ -212,14 +212,15 @@ src/app/
                systemstatus/, ungespeichert/, version/
   features/    Seiten, lazy geladen
     anmeldung/   login/, registrierung/ und ihr gemeinsamer anmelde-rahmen/
+    einstellungen/ Systemstatus, Version und Umgebung, rechtliche Links (über das Kontomenü)
     rechtliches/ Impressum und Datenschutz, mit und ohne Session erreichbar
     start/       Startseite nach der Anmeldung
     vertraege/   je ein Backend-Modul; weitere kommen mit ihren Seiten dazu
   shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, fusszeile/,
-               hinweis-box/, in-den-blick/, kopfzeile/, layout/, logo/, nutzermenue/, rechtliche-links/,
-               systemstatus-leiste/, version-anzeige/, verwerfen-dialog/, zustaende/
-  shell/       Rahmen der angemeldeten Bereiche (Kopfzeile, hauptmenue/, Fußzeile); die Startseite
-               kommt ohne Navigation aus (Route-Data ohneNavigation)
+               herkunft/, hinweis-box/, in-den-blick/, kopfzeile/, layout/, logo/, nutzermenue/,
+               rechtliche-links/, systemstatus-leiste/, version-anzeige/, verwerfen-dialog/, zustaende/
+  shell/       Rahmen der angemeldeten Bereiche (hauptmenue/ als Seitenleiste, Fußzeile); die Startseite
+               kommt ohne Navigation aus (Route-Data ohneNavigation) und behält die Kopfzeile
 src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile
 ```
 

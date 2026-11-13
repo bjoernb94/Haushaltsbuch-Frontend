@@ -1,27 +1,51 @@
 :host {
   display: flex;
-  flex: 0 0 248px;
+  flex: 0 0 232px;
+  box-sizing: border-box;
+  background: var(--app-seitenleiste);
+  border-right: 1px solid var(--app-trenner);
 }
 
+// Bleibt beim Scrollen stehen. Unten Platz für das Kontomenü, das die Kopfzeile hierher setzt. Die Höhe
+// ohne den Streifen der Umgebung, sonst ragt die Leiste oben am Seitenanfang unten aus dem Fenster.
 .seitennavigation {
-  flex: 1;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  width: 100%;
+  height: calc(100vh - var(--app-streifen-hoehe, 0px));
+  overflow-y: auto;
   box-sizing: border-box;
-  padding: 24px 16px 32px;
+  padding: 16px 10px 84px;
   display: flex;
   flex-direction: column;
-  background: var(--app-flaeche);
-  border-right: 1px solid var(--app-trenner);
+}
+
+.marke {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 18px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+
+  app-logo {
+    width: 26px;
+    height: 26px;
+    color: var(--app-gruen);
+  }
 }
 
 .navliste {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .abschnitt {
-  padding: 16px 12px 6px;
-  font-size: 12px;
+  padding: 14px 10px 4px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -31,17 +55,19 @@
 .naveintrag {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: 10px;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
   color: var(--app-text);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
 
   svg {
     flex: none;
+    width: 18px;
+    height: 18px;
     color: var(--app-text-gedaempft);
   }
 }
@@ -49,7 +75,7 @@
 .navlink {
   &:hover {
     color: var(--app-text);
-    background: var(--app-grund);
+    background: var(--app-seitenleiste-hover);
   }
 
   &:focus-visible {
@@ -58,7 +84,7 @@
   }
 
   &[aria-current='page'] {
-    background: var(--app-gruen-hell);
+    background: var(--app-seitenleiste-aktiv);
     color: var(--app-gruen);
     font-weight: 800;
 
@@ -87,34 +113,29 @@
 
 .demnaechst-text {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 16px;
   font-weight: 500;
-}
-
-.copyright {
-  margin: 0;
-  margin-top: auto;
-  padding-top: 24px;
-  font-size: 13px;
-  line-height: 16px;
-  text-align: center;
-  color: var(--app-text-gedaempft);
 }
 
 @media (max-width: 900px) {
   :host {
     flex: none;
+    background: none;
+    border-right: 0;
   }
 
   .seitennavigation {
     position: fixed;
+    top: auto;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 20;
+    width: auto;
+    height: auto;
+    overflow-y: visible;
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-    border-right: 0;
     border-top: 1px solid var(--app-trenner);
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(14px);
@@ -126,8 +147,8 @@
     gap: 0;
   }
 
-  .abschnitt,
-  .copyright {
+  .marke,
+  .abschnitt {
     display: none;
   }
 

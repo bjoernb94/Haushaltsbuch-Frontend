@@ -128,10 +128,10 @@ test('Handy: alles passt in die Breite', async ({ page }) => {
   }
 });
 
-test('Shell: Links mittig unter dem Systemstatus', async ({ page }) => {
+test('Impressum: Links mittig unter dem Systemstatus', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await backendSimulieren(page, { angemeldet: true });
-  await page.goto('/vertraege');
+  await page.goto('/impressum');
   const status = (await page.getByRole('status', { name: 'Systemstatus' }).boundingBox())!;
   const links = (await page.getByRole('navigation', { name: 'Rechtliches' }).boundingBox())!;
   expect(links.y).toBeGreaterThan(status.y);

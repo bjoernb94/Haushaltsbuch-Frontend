@@ -35,6 +35,8 @@ test('per Tastatur bedienbar', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(panel(page)).toBeFocused();
   await page.keyboard.press('Tab');
+  await expect(panel(page).getByRole('link', { name: 'Einstellungen' })).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(panel(page).getByRole('button', { name: 'Abmelden' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(panel(page)).toHaveCount(0);
@@ -63,15 +65,40 @@ test('über 640 px hängt das Panel am Knopf, mit Vorname und Pfeil', async ({ p
   await expect(panel(page).locator('.griff')).toBeHidden();
 });
 
-test('der Knopf steht auf allen Seiten an derselben Stelle', async ({ page }) => {
+test('der Knopf steht auf Seiten mit Kopfzeile an derselben Stelle', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 800 });
   const start = (await nutzerKnopf(page).boundingBox())!;
   expect(1600 - (start.x + start.width)).toBeGreaterThan(24);
 
-  await page.goto('/vertraege');
-  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeVisible();
+  await page.goto('/impressum');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
   expect(await nutzerKnopf(page).boundingBox()).toEqual(start);
+});
+
+test('mit Seitenleiste sitzt der Knopf unten in ihr, das Panel öffnet nach oben', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/vertraege');
+  const leiste = (await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox())!;
+  const knopf = (await nutzerKnopf(page).boundingBox())!;
+  expect(knopf.x).toBe(10);
+  expect(knopf.width).toBe(212);
+  expect(knopf.x + knopf.width).toBeLessThan(leiste.width);
+  expect(Math.round(knopf.y + knopf.height)).toBe(800 - 12);
+  await expect(nutzerKnopf(page).locator('.vorname')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeVisible();
+  await expect(page.locator('app-nutzermenue')).toHaveCount(1);
+
+  await nutzerKnopf(page).click();
+
+  const box = (await panel(page).boundingBox())!;
+  expect(box.x).toBe(knopf.x);
+  expect(box.y + box.height).toBeLessThan(knopf.y);
+  await expect(panel(page)).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(nutzerKnopf(page)).toBeFocused();
 });
 
 test('bis 640 px nur Initialen, das Panel als Bottom-Sheet', async ({ page }) => {

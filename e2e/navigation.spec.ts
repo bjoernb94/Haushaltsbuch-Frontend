@@ -32,13 +32,32 @@ test('Navigation führt zur Übersicht und markiert den aktiven Bereich', async 
   await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toHaveCount(0);
 });
 
-test('auf dem Desktop steht das Copyright in der Navigation', async ({ page }) => {
+test('auf dem Desktop: Seitenleiste mit Logo statt Kopfzeile, Copyright in der Fußzeile', async ({
+  page,
+}) => {
   await page.goto('/vertraege');
   const hauptmenue = page.getByRole('navigation', { name: 'Hauptmenü' });
-  await expect(hauptmenue.getByText('© Björn Bochmann')).toBeVisible();
-  await expect(page.getByRole('contentinfo').getByText('© Björn Bochmann')).toBeHidden();
+  await expect(hauptmenue.getByText('Haushaltsbuch')).toBeVisible();
+  await expect(page.getByRole('banner').getByText('Haushaltsbuch')).toBeHidden();
+  await expect(page.getByRole('contentinfo').getByText('© Björn Bochmann')).toBeVisible();
   await expect(hauptmenue.getByText('Finanzübersicht')).toBeVisible();
   await expect(hauptmenue.getByText('Demnächst verfügbar').first()).toBeVisible();
+
+  expect(await page.locator('app-hauptmenue').boundingBox()).toMatchObject({ x: 0, width: 232 });
+  const leiste = (await hauptmenue.boundingBox())!;
+  expect(leiste.y).toBe(0);
+  expect(Math.round(leiste.height)).toBe(720);
+  const eintrag = (await hauptmenue.getByRole('link', { name: 'Verträge' }).boundingBox())!;
+  expect(eintrag.height).toBe(34);
+
+  // Bleibt beim Scrollen stehen.
+  await page.mouse.wheel(0, 2000);
+  await expect.poll(async () => (await hauptmenue.boundingBox())!.y).toBe(0);
+});
+
+test('die Startseite behält am Desktop die Kopfzeile', async ({ page }) => {
+  await page.goto('/start');
+  await expect(page.getByRole('banner').getByText('Haushaltsbuch')).toBeVisible();
 });
 
 test('auf dem Handy wird die Navigation zur Leiste mit Kurzbezeichnungen', async ({ page }) => {
@@ -60,10 +79,22 @@ test('auf dem Handy wird die Navigation zur Leiste mit Kurzbezeichnungen', async
   expect(breite).toBe(390);
 });
 
-test('Fußzeile zeigt den Systemstatus', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByRole('contentinfo')).toContainText('© Björn Bochmann');
-  await expect(page.getByRole('status', { name: 'Systemstatus' })).toContainText('Datenbank');
+test('Fußzeile der Shell ohne Systemstatus, als flache Zeile', async ({ page }) => {
+  for (const pfad of ['/start', '/vertraege']) {
+    await page.goto(pfad);
+    const fusszeile = page.getByRole('contentinfo');
+    await expect(fusszeile, pfad).toContainText('© Björn Bochmann');
+    await expect(fusszeile, pfad).toContainText('Impressum');
+    await expect(page.getByRole('status', { name: 'Systemstatus' }), pfad).toHaveCount(0);
+    // Copyright, Links und Version in einer Zeile.
+    const hoehen = await Promise.all(
+      [
+        fusszeile.getByText('© Björn Bochmann'),
+        fusszeile.getByRole('link', { name: 'Impressum' }),
+      ].map(async (l) => (await l.boundingBox())!.y),
+    );
+    expect(Math.abs(hoehen[0] - hoehen[1]), pfad).toBeLessThan(4);
+  }
 });
 
 test('alle Seiten haben dieselben Ränder wie die Übersicht', async ({ page }) => {
@@ -94,6 +125,6 @@ test('auf schmaleren Fenstern bleibt der rechte Rand gleich, die Navigation begr
     });
   };
   expect(await raender('/start')).toEqual([64, 1216]);
-  expect(await raender('/vertraege')).toEqual([272, 1216]);
-  expect(await raender('/vertraege/neu')).toEqual([272, 1216]);
+  expect(await raender('/vertraege')).toEqual([256, 1216]);
+  expect(await raender('/vertraege/neu')).toEqual([256, 1216]);
 });

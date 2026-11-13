@@ -3,7 +3,8 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { herkunftAus, istRechtlich, RechtlicheLinks } from './rechtliche-links';
+import { herkunftAus } from '../herkunft/herkunft';
+import { istRechtlich, RechtlicheLinks } from './rechtliche-links';
 
 @Component({ template: '<app-rechtliche-links />', imports: [RechtlicheLinks] })
 class Seite {}
@@ -63,6 +64,6 @@ describe('RechtlicheLinks', () => {
     [{ herkunft: 42 }, undefined],
     [null, undefined],
   ])('nimmt aus %o nur eigene Pfade: %s', (state, erwartet) => {
-    expect(herkunftAus(state)).toBe(erwartet);
+    expect(herkunftAus(state, istRechtlich)).toBe(erwartet);
   });
 });

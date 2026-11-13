@@ -11,8 +11,8 @@ import { Hauptmenue } from './hauptmenue/hauptmenue';
 
 /**
  * Rahmen der angemeldeten Bereiche, gemäß Design in zwei Layouts: Die Startseite (Route-Data
- * {@code ohneNavigation}) navigiert über ihre Kacheln, die übrigen Bereiche über die
- * Seitennavigation.
+ * {@code ohneNavigation}) navigiert über ihre Kacheln und hat die Kopfzeile, die übrigen Bereiche
+ * die Seitenleiste mit dem Kontomenü. Den Systemstatus zeigen hier nur die Einstellungen.
  */
 @Component({
   selector: 'app-shell',

@@ -37,6 +37,16 @@ test('die Shell zeigt Version und Streifen', async ({ page }) => {
   await expect(streifen(page)).toBeVisible();
 });
 
+test('die Seitenleiste beginnt unter dem Streifen und passt ins Fenster', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await backendSimulieren(page, { angemeldet: true, stage: 'DEV' });
+  await page.goto('/vertraege');
+  await expect(streifen(page)).toBeVisible();
+  const leiste = (await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox())!;
+  expect(leiste.y).toBe(24);
+  expect(leiste.y + leiste.height).toBe(720);
+});
+
 test('ohne Antwort des Backends steht die Version trotzdem, ohne Badge und Streifen', async ({
   page,
 }) => {

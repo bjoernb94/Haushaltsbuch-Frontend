@@ -37,10 +37,12 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 
 - Standalone components, signals, `OnPush`, zoneless; `strict` and `strictTemplates` are on.
 - `core/` services without UI, `features/` lazy-loaded pages (one folder per backend module, plus
-  `anmeldung/` for login/registration and `start/`), `shared/` components used by several areas,
+  `anmeldung/` for login/registration, `start/` and `einstellungen/`), `shared/` components used by several areas,
   `shell/` layout of the logged-in area (lazy, so login and registration do not load it), header and footer in
   `shared/kopfzeile` and `shared/fusszeile` (also used by imprint and privacy policy). `/start` has no
-  navigation (route data `ohneNavigation`), its tiles navigate; all other areas use `shell/hauptmenue`.
+  navigation (route data `ohneNavigation`), its tiles navigate, and keeps the green header; all other areas use
+  `shell/hauptmenue`, from 901 px a sticky sidebar with logo. There the header collapses and only the user menu
+  (`shared/nutzermenue`, one instance) moves to the bottom of the sidebar; below 901 px the header stays.
 - API types come from the backend's OpenAPI description: `core/api/api.generated.ts` (checked in, never edit by
   hand), named aliases in `core/api/api.ts`. After an API change in the backend, run `npm run api:typen` and commit
   the result. HTTP stays `HttpClient` with interceptors, no generated client.
@@ -56,7 +58,9 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - System status: `systemstatusBeobachten()` (injection context) polls `/actuator/health/systemstatus` every
   30 s. No answer within 5 s (e.g. while the DB check waits for the pool) → all three services count as
   unreachable (reveals nothing about the setup); a 503 still carries the component status. The last known
-  status survives page changes. Login and registration lock while anything is down; the shell only displays it.
+  status survives page changes. Login and registration lock while anything is down; in the shell only the
+  settings page (`/einstellungen`, via the user menu) shows it, imprint and privacy policy in their footer. The
+  shell footer still polls (without showing it) because version loading depends on it.
 - Version and stage: the footer (login, registration, shell) shows the frontend version from `package.json`
   (never missing) and the backend's stage from `/actuator/info` (public, see backend `docs/api.md`); outside
   `PROD` a stripe sits above every page, its height in `--app-streifen-hoehe`. `core/version` loads the info
@@ -65,9 +69,10 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   from the info) are for the imprint only.
 - Imprint and privacy policy (`/impressum`, `/datenschutz`, `features/rechtliches`): reachable with and without
   a session, no guard; they check the session themselves (user menu, target of "Zurück"). The links
-  (`shared/rechtliche-links`) pass the current page as `herkunft` in the navigation state, kept when switching
-  between the two. Operator details come from `instanz.json`, mounted into the image (`core/instanz`), never from
-  code; missing or incomplete → a hint instead of the details. Placeholder data in `beispiel/instanz.json` is served
+  (`shared/rechtliche-links`) pass the current page as `herkunft` in the navigation state (`shared/herkunft`),
+  kept when switching between the two. The settings link in the user menu does the same. Operator details come
+  from `instanz.json`, mounted into the image (`core/instanz`), never from code; missing or incomplete → a hint
+  instead of the details. Placeholder data in `beispiel/instanz.json` is served
   by the dev server only (development build assets) and used by the E2E mock, the image check and the README.
 - Unsaved input: a form reports changes to `core/ungespeichert`. Leaving asks via the dialog in the shell:
   `ungespeichertGuard` (`canDeactivate`) on routes with a form, `bestaetigen()` for anything else that leaves or

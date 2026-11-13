@@ -5,17 +5,9 @@ import { STARTSEITE } from '../../../core/auth/auth.guards';
 import { AuthService } from '../../../core/auth/auth.service';
 import { InstanzService } from '../../../core/instanz/instanz.service';
 import { Fusszeile } from '../../../shared/fusszeile/fusszeile';
+import { herkunftAus, zurueckLabel } from '../../../shared/herkunft/herkunft';
 import { Kopfzeile } from '../../../shared/kopfzeile/kopfzeile';
-import { herkunftAus } from '../../../shared/rechtliche-links/rechtliche-links';
-
-/** Namen der Seiten, zu denen „Zurück“ führen kann. */
-const SEITEN: Record<string, string> = {
-  '/login': 'Login',
-  '/registrierung': 'Registrierung',
-  '/start': 'Startseite',
-  '/vertraege': 'Verträge',
-  '/vertraege/neu': 'Neuer Vertrag',
-};
+import { istRechtlich } from '../../../shared/rechtliche-links/rechtliche-links';
 
 /**
  * Rahmen für Impressum und Datenschutz: erreichbar mit und ohne Session. Mit Session zeigt die
@@ -33,16 +25,15 @@ export class RechtlicherRahmen {
   private readonly router = inject(Router);
 
   /** Bleibt auch beim Neuladen im Verlauf des Browsers erhalten. */
-  private readonly herkunft = herkunftAus(inject(Location).getState());
+  private readonly herkunft = herkunftAus(inject(Location).getState(), istRechtlich);
 
   protected readonly zurueck = computed(() =>
     this.router.parseUrl(this.herkunft ?? (this.auth.angemeldet() ? STARTSEITE : '/login')),
   );
 
-  protected readonly zurueckLabel = computed(() => {
-    const seite = SEITEN[this.router.serializeUrl(this.zurueck()).split(/[?#]/)[0]];
-    return seite ? `Zurück zu ${seite}` : null;
-  });
+  protected readonly zurueckLabel = computed(() =>
+    zurueckLabel(this.router.serializeUrl(this.zurueck())),
+  );
 
   constructor() {
     // Ohne Guard: Die Session entscheidet nur über Nutzermenü und Ziel von „Zurück“.

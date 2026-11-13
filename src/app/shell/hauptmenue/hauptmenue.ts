@@ -4,6 +4,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Komponente } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { istVerfuegbar, KOMPONENTE_ICON } from '../../core/komponenten/komponente';
+import { Logo } from '../../shared/logo/logo';
 
 interface NavEintrag {
   pfad: string;
@@ -49,10 +50,13 @@ const BEREICHE: readonly (NavEintrag & { komponente: Komponente })[] = [
   },
 ];
 
-/** Seitennavigation der Bereiche, unter 900 px als Leiste unten. */
+/**
+ * Seitenleiste mit Logo und den Bereichen, unter 900 px als Leiste unten. Das Kontomenü unten in der
+ * Leiste gehört zur Kopfzeile und wird dort nur hierher gesetzt (siehe {@code Kopfzeile}).
+ */
 @Component({
   selector: 'app-hauptmenue',
-  imports: [NgTemplateOutlet, RouterLink, RouterLinkActive],
+  imports: [Logo, NgTemplateOutlet, RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './hauptmenue.html',
   styleUrl: './hauptmenue.scss',
