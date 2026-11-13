@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -5,14 +6,22 @@ import {
   effect,
   ElementRef,
   inject,
+  input,
   signal,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
+import { HERKUNFT, herkunftAus } from '../herkunft/herkunft';
+
+export const EINSTELLUNGEN = '/einstellungen';
+
+export function istEinstellungen(url: string): boolean {
+  return /^\/einstellungen(?=[?#]|$)/.test(url);
+}
 
 /** Nutzt Graphem-Cluster, damit Akzente in zerlegter Form und Emojis ganz bleiben. */
 const ZEICHEN = new Intl.Segmenter('de', { granularity: 'grapheme' });
@@ -23,21 +32,27 @@ function erstesZeichen(text: string): string {
 }
 
 /**
- * Knopf mit den Initialen des Nutzers, öffnet Name, E-Mail und „Abmelden“; bis 640 px als
- * Bottom-Sheet. Nicht modal wie im Design, daher schließt auch das Verlassen per Tab. Liegt nicht in
+ * Knopf mit den Initialen des Nutzers, öffnet Name, E-Mail, „Einstellungen“ und „Abmelden“; bis 640 px
+ * als Bottom-Sheet, in der Seitenleiste nach oben. Nicht modal wie im Design, daher schließt auch das Verlassen per Tab. Liegt nicht in
  * der Shell, weil auch Seiten außerhalb sie zeigen. Eine Rückfrage zum Abmelden stellt der
  * {@code VerwerfenDialog} der Shell; außerhalb gibt es keine Formulare, die fragen müssten.
  */
 @Component({
   selector: 'app-nutzermenue',
+  imports: [RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './nutzermenue.html',
   styleUrl: './nutzermenue.scss',
+  host: { '[class.seitenleiste]': 'seitenleiste()' },
 })
 export class Nutzermenue {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly ungespeichert = inject(UngespeicherteEingaben);
+  private readonly location = inject(Location);
+
+  /** Ab 901 px unten in der Seitenleiste statt in der Kopfzeile. */
+  readonly seitenleiste = input(false);
 
   private readonly knopf = viewChild<ElementRef<HTMLButtonElement>>('knopf');
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
@@ -45,6 +60,26 @@ export class Nutzermenue {
 
   protected readonly nutzer = this.auth.nutzer;
   protected readonly offen = signal(false);
+
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  protected readonly einstellungen = EINSTELLUNGEN;
+
+  /** Wie bei den rechtlichen Links: Auf den Einstellungen selbst bleibt die ursprüngliche Herkunft. */
+  protected readonly einstellungenState = computed(() => {
+    const url = this.url();
+    return {
+      [HERKUNFT]: istEinstellungen(url)
+        ? herkunftAus(this.location.getState(), istEinstellungen)
+        : url,
+    };
+  });
 
   protected readonly initialen = computed(() => {
     const nutzer = this.nutzer();

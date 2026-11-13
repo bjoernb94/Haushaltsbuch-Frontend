@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
 import { abgemeldetGuard, angemeldetGuard, bereichGuard } from './core/auth/auth.guards';
 
-// Anmeldung (Login, Registrierung) sowie Impressum und Datenschutz ohne Navigation. Start und die Fachbereiche (ein Feature-Ordner
-// je Backend-Modul) liegen in der Shell und brauchen eine Session. Alles lazy geladen.
+// Anmeldung (Login, Registrierung) sowie Impressum und Datenschutz ohne Navigation. Start, Einstellungen und die Fachbereiche (ein
+// Feature-Ordner je Backend-Modul) liegen in der Shell und brauchen eine Session. Alles lazy geladen.
 export const routes: Routes = [
   {
     path: 'login',
@@ -49,6 +49,12 @@ export const routes: Routes = [
         canActivate: [bereichGuard('VERTRAGSUEBERSICHT')],
         loadChildren: () =>
           import('./features/vertraege/vertraege.routes').then((m) => m.VERTRAEGE_ROUTES),
+      },
+      {
+        path: 'einstellungen',
+        loadComponent: () =>
+          import('./features/einstellungen/einstellungen-seite').then((m) => m.EinstellungenSeite),
+        title: 'Einstellungen – Haushaltsbuch',
       },
     ],
   },

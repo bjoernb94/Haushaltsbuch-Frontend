@@ -1,11 +1,12 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { Location } from '@angular/common';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { Profil } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
-import { Nutzermenue } from './nutzermenue';
+import { istEinstellungen, Nutzermenue } from './nutzermenue';
 
 const MAX: Profil = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
 
@@ -20,7 +21,10 @@ describe('Nutzermenue', () => {
     await TestBed.configureTestingModule({
       imports: [Nutzermenue],
       providers: [
-        provideRouter([{ path: 'andere', children: [] }]),
+        provideRouter([
+          { path: 'andere', children: [] },
+          { path: 'einstellungen', children: [] },
+        ]),
         { provide: AuthService, useValue: { nutzer, abmelden } },
       ],
     }).compileComponents();
@@ -171,6 +175,46 @@ describe('Nutzermenue', () => {
     element.querySelector<HTMLButtonElement>('.abmelden')!.click();
     eingaben.antworten(true);
     await vi.waitFor(() => expect(abmelden).toHaveBeenCalledOnce());
+  });
+
+  it('führt zu den Einstellungen und gibt die aktuelle Seite als Herkunft mit', async () => {
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/andere');
+    const { element, fixture, panel, oeffnen } = await menue();
+    await oeffnen();
+    const link = element.querySelector<HTMLAnchorElement>('a.einstellungen')!;
+    expect(link.getAttribute('href')).toBe('/einstellungen');
+    expect(link.hasAttribute('aria-current')).toBe(false);
+
+    link.click();
+    await fixture.whenStable();
+
+    expect(router.url).toBe('/einstellungen');
+    expect(TestBed.inject(Location).getState()).toMatchObject({ herkunft: '/andere' });
+    expect(panel()).toBeNull();
+
+    // Auf den Einstellungen selbst bleibt die ursprüngliche Herkunft, der Link ist markiert.
+    await oeffnen();
+    const erneut = element.querySelector<HTMLAnchorElement>('a.einstellungen')!;
+    expect(erneut.getAttribute('aria-current')).toBe('page');
+    erneut.click();
+    await fixture.whenStable();
+    expect(TestBed.inject(Location).getState()).toMatchObject({ herkunft: '/andere' });
+  });
+
+  it('kennzeichnet die Variante in der Seitenleiste', async () => {
+    const { fixture, element } = await menue();
+    expect(element.classList.contains('seitenleiste')).toBe(false);
+    fixture.componentRef.setInput('seitenleiste', true);
+    await fixture.whenStable();
+    expect(element.classList.contains('seitenleiste')).toBe(true);
+  });
+
+  it('erkennt die Einstellungen, auch mit Query', () => {
+    expect(istEinstellungen('/einstellungen')).toBe(true);
+    expect(istEinstellungen('/einstellungen?x=1')).toBe(true);
+    expect(istEinstellungen('/einstellungenx')).toBe(false);
+    expect(istEinstellungen('/start')).toBe(false);
   });
 
   it('zeigt ohne Nutzer nichts', async () => {

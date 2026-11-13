@@ -30,26 +30,29 @@
   color: var(--app-text-gedaempft);
 }
 
-// Ab 901 px steht das Copyright in der Seitennavigation.
-@media (min-width: 901px) {
-  :host(.mit-navigation) .copyright {
-    display: none;
-  }
-}
-
 .status {
   grid-column: 2;
 }
 
-// Unter dem Systemstatus.
+// Unter dem Systemstatus, ohne ihn in derselben Zeile wie Copyright und Version.
 .recht {
   grid-column: 2;
+}
+
+.status ~ .recht {
   grid-row: 2;
 }
 
 .version {
   grid-column: 3;
   justify-self: end;
+}
+
+@media (min-width: 901px) {
+  :host(.flach) .fusszeile {
+    padding-top: 10px;
+    padding-bottom: 12px;
+  }
 }
 
 @media (max-width: 640px) {

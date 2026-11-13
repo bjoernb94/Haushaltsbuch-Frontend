@@ -36,6 +36,17 @@ describe('Fusszeile', () => {
     expect(element.classList.contains('mit-navigation')).toBe(false);
   });
 
+  it('zeigt den Systemstatus nicht, wenn die Seite ihn selbst zeigt, und wird flach', async () => {
+    const fixture = TestBed.createComponent(Fusszeile);
+    fixture.componentRef.setInput('mitStatus', false);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('.status')).toBeNull();
+    expect(element.querySelector('.copyright')?.textContent).toBe('© Björn Bochmann');
+    expect(element.querySelector('.version')?.textContent).toContain('v0.1.0');
+    expect(element.classList.contains('flach')).toBe(true);
+  });
+
   it('kennzeichnet die Variante mit Seitennavigation', async () => {
     const fixture = TestBed.createComponent(Fusszeile);
     fixture.componentRef.setInput('mitNavigation', true);

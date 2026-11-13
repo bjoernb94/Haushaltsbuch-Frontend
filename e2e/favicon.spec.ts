@@ -93,13 +93,25 @@ test.describe('Logo', () => {
     }
   });
 
-  test('Kopfzeile: 30 px, auf Startseite und im Bereich', async ({ page }) => {
+  test('Kopfzeile: 30 px, auf Startseite und Impressum', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true });
-    for (const pfad of ['/start', '/vertraege']) {
+    for (const pfad of ['/start', '/impressum']) {
       await page.goto(pfad);
       await expect(logo(page)).toBeVisible();
       expect(await groesse(page)).toEqual([30, 30]);
     }
+  });
+
+  test('Seitenleiste: 26 px in Grün, die Kopfzeile ohne Logo', async ({ page }) => {
+    await backendSimulieren(page, { angemeldet: true });
+    await page.goto('/vertraege');
+    const inLeiste = page.locator('app-hauptmenue app-logo svg');
+    await expect(inLeiste).toBeVisible();
+    const box = (await inLeiste.boundingBox())!;
+    expect([box.width, box.height]).toEqual([26, 26]);
+    const farbe = await inLeiste.locator('path').evaluate((p) => getComputedStyle(p).fill);
+    expect(farbe).toBe('rgb(31, 92, 69)');
+    await expect(page.locator('app-kopfzeile app-logo svg')).toBeHidden();
   });
 
   test('das Logo braucht keine Schrift: kein Text und keine Maske', async ({ page }) => {

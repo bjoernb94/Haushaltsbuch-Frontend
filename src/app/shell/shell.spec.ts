@@ -138,9 +138,29 @@ describe('Shell', () => {
     expect((await shell()).querySelector('.ladefehler')).toBeNull();
   });
 
-  it('zeigt Copyright und Systemstatus in der Fußzeile', async () => {
+  it('zeigt in der Fußzeile das Copyright, den Systemstatus nur auf den Einstellungen', async () => {
     const fusszeile = (await shell()).querySelector('footer');
     expect(fusszeile?.textContent).toContain('© Björn Bochmann');
-    expect(fusszeile?.textContent).toContain('Datenbank nicht erreichbar');
+    expect(fusszeile?.textContent).not.toContain('Datenbank');
+  });
+
+  it('setzt das Kontomenü nur mit Navigation in die Seitenleiste', async () => {
+    const harness = await RouterTestingHarness.create();
+    const fixture = TestBed.createComponent(Shell);
+    const element = fixture.nativeElement as HTMLElement;
+    const inSeitenleiste = () =>
+      element.querySelector('app-kopfzeile')!.classList.contains('seitenleiste');
+
+    await harness.navigateByUrl('/start');
+    await fixture.whenStable();
+    expect(inSeitenleiste()).toBe(false);
+
+    await harness.navigateByUrl('/vertraege');
+    await fixture.whenStable();
+    expect(inSeitenleiste()).toBe(true);
+    expect(element.querySelectorAll('app-nutzermenue')).toHaveLength(1);
+    expect(element.querySelector('nav[aria-label="Hauptmenü"]')?.textContent).toContain(
+      'Haushaltsbuch',
+    );
   });
 });

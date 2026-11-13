@@ -1,0 +1,142 @@
+@use '../../shared/version-anzeige/stage';
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  color: var(--app-text);
+}
+
+// „Zurück“ am Rand wie auf Impressum und Datenschutz, der Inhalt schmal und mittig.
+.zurueck {
+  align-self: flex-start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.spalte {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.titel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h1 {
+    margin: 0;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--app-text-gedaempft);
+  }
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+h2 {
+  margin: 0 0 0 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-text-gedaempft);
+}
+
+.liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  border: 1px solid var(--app-trenner);
+  border-radius: 12px;
+  background: var(--app-flaeche);
+
+  > li + li {
+    border-top: 1px solid var(--app-trenner);
+  }
+}
+
+.zeile {
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 16px;
+}
+
+.link {
+  color: var(--app-text);
+  text-decoration: none;
+
+  svg {
+    flex: none;
+    color: var(--app-platzhalter);
+  }
+
+  &:hover {
+    background: var(--app-grund);
+    color: var(--app-text);
+  }
+
+  &:focus-visible {
+    outline-offset: -3px;
+  }
+}
+
+.zustand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-text-gedaempft);
+
+  &.ok {
+    color: var(--app-erfolg);
+  }
+
+  &.fehlt {
+    color: var(--app-fehler-text);
+  }
+}
+
+.wert {
+  color: var(--app-text-gedaempft);
+}
+
+.version {
+  font-variant-numeric: tabular-nums;
+}
+
+.stage {
+  @include stage.badge;
+}
+
+@media (max-width: 640px) {
+  .titel h1 {
+    font-size: 30px;
+  }
+}

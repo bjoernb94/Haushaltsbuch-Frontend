@@ -3,23 +3,10 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter, map } from 'rxjs';
-
-/** Schlüssel im Navigations-State: Seite, zu der „Zurück“ auf Impressum und Datenschutz führt. */
-export const HERKUNFT = 'herkunft';
+import { HERKUNFT, herkunftAus } from '../herkunft/herkunft';
 
 export function istRechtlich(url: string): boolean {
   return /^\/(impressum|datenschutz)(?=[?#]|$)/.test(url);
-}
-
-/** Nur eigene Pfade außerhalb von Impressum und Datenschutz, nichts von außen. */
-export function herkunftAus(state: unknown): string | undefined {
-  const herkunft = (state as Record<string, unknown> | null | undefined)?.[HERKUNFT];
-  return typeof herkunft === 'string' &&
-    herkunft.startsWith('/') &&
-    !herkunft.startsWith('//') &&
-    !istRechtlich(herkunft)
-    ? herkunft
-    : undefined;
 }
 
 /**
@@ -62,6 +49,8 @@ export class RechtlicheLinks {
 
   protected readonly state = computed(() => {
     const url = this.url();
-    return { [HERKUNFT]: istRechtlich(url) ? herkunftAus(this.location.getState()) : url };
+    return {
+      [HERKUNFT]: istRechtlich(url) ? herkunftAus(this.location.getState(), istRechtlich) : url,
+    };
   });
 }
