@@ -1,22 +1,25 @@
 import { expect, Page, test } from '@playwright/test';
-import { abmelden, backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
+import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
 
 const KFZ = 'Kfz-Versicherung';
 
-function zeile(page: Page, name: string) {
-  return page.locator('app-vertrag-zeile').filter({ hasText: name });
-}
+const zeile = (page: Page, name: string) =>
+  page.locator('app-vertrag-zeile').filter({ hasText: name });
+const sheet = (page: Page) => page.getByRole('dialog', { name: 'Vertrag bearbeiten' });
+const details = (page: Page, name: string) => page.getByRole('complementary', { name });
 
+/** Aus der Liste über das Menü der Zeile. */
 async function bearbeiten(page: Page, name = KFZ) {
-  await page.getByRole('button', { name: `${name} bearbeiten` }).click();
-  const formular = page.getByRole('form', { name: `${name} bearbeiten` });
+  await page.getByRole('button', { name: `Aktionen für ${name}` }).click();
+  await page.getByRole('menuitem', { name: 'Bearbeiten …' }).click();
+  const formular = sheet(page).getByRole('form', { name: `${name} bearbeiten` });
   await expect(formular).toBeVisible();
   return formular;
 }
 
 async function speichernUndAnfrageLesen(page: Page) {
   const anfrage = page.waitForRequest((r) => r.method() === 'PUT');
-  await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+  await sheet(page).getByRole('button', { name: 'Sichern' }).click();
   return (await anfrage).postDataJSON();
 }
 
@@ -26,11 +29,10 @@ test.describe('Vertrag bearbeiten', () => {
     await page.goto('/vertraege');
   });
 
-  test('öffnet in der Zeile mit den gespeicherten Werten', async ({ page }) => {
-    const knopf = page.getByRole('button', { name: `${KFZ} bearbeiten` });
-    await expect(knopf).toHaveAttribute('aria-expanded', 'false');
+  test('öffnet als Sheet in der Fenstermitte mit den gespeicherten Werten', async ({ page }) => {
     const formular = await bearbeiten(page);
-    await expect(knopf).toHaveAttribute('aria-expanded', 'true');
+    await expect(page).toHaveURL(/\/vertraege\/kfz\/bearbeiten$/);
+    await expect(sheet(page)).toContainText(KFZ);
 
     await expect(formular.getByLabel('Anbieter *')).toHaveValue('Musterversicherung AG');
     await expect(formular.getByLabel('Anbieter *')).toBeFocused();
@@ -41,6 +43,12 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(formular.getByLabel('Zahlungsweg')).toHaveValue('LASTSCHRIFT');
     await expect(formular.getByLabel('Verlängerung')).toHaveValue('ZWOELF_MONATE');
     await expect(formular.getByLabel('Kündigungsfrist')).toHaveValue('1');
+    // Abbrechen und Sichern stehen nur in der Leiste.
+    await expect(formular.getByRole('button', { name: 'Speichern' })).toBeHidden();
+
+    const box = (await sheet(page).boundingBox())!;
+    expect(box.width).toBe(800);
+    expect(Math.round(box.x + box.width / 2)).toBe(640);
   });
 
   test('ohne Änderung bleiben alle Felder und der Anker gleich, Meldung an der Zeile', async ({
@@ -66,10 +74,39 @@ test.describe('Vertrag bearbeiten', () => {
       notiz: null,
     });
 
+    // Aus der Liste geöffnet, geht es zur Liste zurück.
+    await expect(page).toHaveURL(/\/vertraege$/);
+    await expect(sheet(page)).toHaveCount(0);
     const meldung = zeile(page, KFZ).getByText(`„${KFZ}“ wurde gespeichert.`);
     await expect(meldung).toBeVisible();
     await expect(meldung).toBeInViewport();
-    await expect(page.getByRole('form')).toHaveCount(0);
+  });
+
+  test('aus den Details geöffnet, geht es zu den Details zurück, mit der Meldung dort', async ({
+    page,
+  }) => {
+    await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
+    await details(page, KFZ).getByRole('button', { name: 'Bearbeiten' }).click();
+    await expect(page).toHaveURL(/\/vertraege\/kfz\/bearbeiten$/);
+    await sheet(page).getByLabel('Notiz').fill('Neu');
+    await speichernUndAnfrageLesen(page);
+
+    await expect(page).toHaveURL(/\/vertraege\/kfz$/);
+    await expect(details(page, KFZ).getByRole('status')).toHaveText(`„${KFZ}“ wurde gespeichert.`);
+    await expect(zeile(page, KFZ).getByRole('status')).toHaveCount(0);
+
+    // Bearbeiten liegt nicht mehr im Verlauf.
+    await page.goBack();
+    await expect(page).toHaveURL(/\/vertraege$/);
+  });
+
+  test('ein geteilter Link öffnet das Sheet über den Details', async ({ page }) => {
+    await page.goto('/vertraege/kfz/bearbeiten');
+    await expect(sheet(page)).toBeVisible();
+    await expect(details(page, KFZ)).toBeAttached();
+    await sheet(page).getByRole('button', { name: 'Abbrechen' }).click();
+    await expect(page).toHaveURL(/\/vertraege\/kfz$/);
+    await expect(details(page, KFZ)).toBeVisible();
   });
 
   test('ein neues Datum wird Anker, die Zahlweise zeigt den Hinweis', async ({ page }) => {
@@ -97,7 +134,7 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(formular.getByLabel('Verlängerung')).toBeVisible();
     expect((await speichernUndAnfrageLesen(page)).kuendbar).toBe(true);
 
-    await expect(page.getByRole('form')).toHaveCount(0);
+    await expect(sheet(page)).toHaveCount(0);
     const gekuendigt = await bearbeiten(page, 'Zeitschriften-Abo');
     await expect(gekuendigt.getByLabel('Gekündigt', { exact: true })).toBeChecked();
     await expect(gekuendigt.getByLabel('Gekündigt zum')).toHaveValue('2026-12-31');
@@ -112,25 +149,26 @@ test.describe('Vertrag bearbeiten', () => {
     const formular = await bearbeiten(page);
     const gespeichert = BEISPIEL_VERTRAEGE.find((v) => v.bezeichnung === KFZ)!;
     expect((await vorschau).postDataJSON().abbuchungAb).toBe(gespeichert.abbuchungAb);
-    const zeile = formular.getByRole('status').filter({ hasText: 'Nächster Kündigungstermin:' });
-    await expect(zeile).toContainText('Kündbar bis');
+    const termin = formular.getByRole('status').filter({ hasText: 'Nächster Kündigungstermin:' });
+    await expect(termin).toContainText('Kündbar bis');
     await formular.getByLabel('Gekündigt', { exact: true }).check();
     await formular.getByLabel('Gekündigt zum').fill('2027-06-30');
-    await expect(zeile).toContainText('Gekündigt zum 30.06.2027');
+    await expect(termin).toContainText('Gekündigt zum 30.06.2027');
   });
 
-  test('Feldfehler: Formular bleibt offen und zeigt sie am Feld', async ({ page }) => {
+  test('Feldfehler: Sheet bleibt offen und zeigt sie am Feld', async ({ page }) => {
     const formular = await bearbeiten(page);
     await formular.getByLabel('Betrag in € *').fill('19,999');
-    await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+    await sheet(page).getByRole('button', { name: 'Sichern' }).click();
     await expect(formular.getByRole('alert')).toHaveText('Bitte prüfe die markierten Felder.');
     await expect(formular.getByLabel('Betrag in € *')).toHaveAccessibleDescription(
       'Höchstens 2 Nachkommastellen.',
     );
     await expect(formular.getByLabel('Betrag in € *')).toBeFocused();
+    await expect(page).toHaveURL(/\/bearbeiten$/);
   });
 
-  test('409: Hinweis an der Zeile, Formular zu, Stand neu geladen', async ({ page }) => {
+  test('409: Hinweis an der Zeile, Sheet zu, Stand neu geladen', async ({ page }) => {
     const formular = await bearbeiten(page);
     await formular.getByLabel('Notiz').fill('Meine Eingabe');
     await page.route('/api/vertraege/kfz', (route) =>
@@ -141,7 +179,7 @@ test.describe('Vertrag bearbeiten', () => {
       }),
     );
     const neu = page.waitForResponse((r) => new URL(r.url()).pathname === '/api/vertraege');
-    await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+    await sheet(page).getByRole('button', { name: 'Sichern' }).click();
     await neu;
 
     await expect(
@@ -149,7 +187,7 @@ test.describe('Vertrag bearbeiten', () => {
         'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
       ),
     ).toBeVisible();
-    await expect(page.getByRole('form')).toHaveCount(0);
+    await expect(sheet(page)).toHaveCount(0);
   });
 
   test('404: Hinweis oben, Zeile fehlt nach dem Neuladen', async ({ page }) => {
@@ -164,13 +202,13 @@ test.describe('Vertrag bearbeiten', () => {
     await page.route('/api/vertraege', (route) =>
       route.fulfill({ json: BEISPIEL_VERTRAEGE.filter((v) => v.id !== 'kfz') }),
     );
-    await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+    await sheet(page).getByRole('button', { name: 'Sichern' }).click();
 
+    await expect(page).toHaveURL(/\/vertraege$/);
     await expect(page.locator('app-vertrag-zeile')).toHaveCount(BEISPIEL_VERTRAEGE.length - 1);
-    const meldung = page
-      .getByRole('alert')
-      .filter({ hasText: 'Diesen Vertrag gibt es nicht mehr.' });
-    await expect(meldung).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Diesen Vertrag gibt es nicht mehr.' }),
+    ).toBeVisible();
     await expect(page.locator('app-vertrag-zeile').getByRole('alert')).toHaveCount(0);
   });
 
@@ -183,24 +221,21 @@ test.describe('Vertrag bearbeiten', () => {
       return formular;
     }
 
-    test('ohne Änderung kein Dialog: anderes „Bearbeiten“, Details, Abbrechen und Menü', async ({
-      page,
-    }) => {
+    test('ohne Änderung kein Dialog: Abbrechen, Esc und Klick daneben', async ({ page }) => {
       const formular = await bearbeiten(page);
       await formular.getByLabel('Notiz').fill('x');
       await formular.getByLabel('Notiz').fill('');
-      await bearbeiten(page, 'Rundfunkbeitrag');
-      await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
-      await expect(page.getByRole('form')).toHaveCount(0);
-
-      const zweites = await bearbeiten(page);
-      await zweites.getByRole('button', { name: 'Abbrechen' }).click();
-      await expect(page.getByRole('form')).toHaveCount(0);
-      await expect(page.getByRole('button', { name: `${KFZ} bearbeiten` })).toBeFocused();
+      await sheet(page).getByRole('button', { name: 'Abbrechen' }).click();
+      await expect(sheet(page)).toHaveCount(0);
+      await expect(page.getByRole('button', { name: `Aktionen für ${KFZ}` })).toBeFocused();
 
       await bearbeiten(page);
-      await page.getByRole('link', { name: 'Zur Übersicht' }).click();
-      await expect(page).toHaveURL(/\/start$/);
+      await page.keyboard.press('Escape');
+      await expect(sheet(page)).toHaveCount(0);
+
+      await bearbeiten(page);
+      await page.mouse.click(5, 300);
+      await expect(sheet(page)).toHaveCount(0);
       await expect(dialog(page)).toHaveCount(0);
     });
 
@@ -208,7 +243,7 @@ test.describe('Vertrag bearbeiten', () => {
       page,
     }) => {
       const formular = await mitAenderung(page);
-      await page.getByRole('button', { name: 'Rundfunkbeitrag bearbeiten' }).click();
+      await sheet(page).getByRole('button', { name: 'Abbrechen' }).click();
       await expect(dialog(page)).toBeVisible();
       const weiter = dialog(page).getByRole('button', { name: 'Weiter bearbeiten' });
       await expect(weiter).toBeFocused();
@@ -216,88 +251,45 @@ test.describe('Vertrag bearbeiten', () => {
       await weiter.click();
       await expect(dialog(page)).toHaveCount(0);
       await expect(formular.getByLabel('Notiz')).toHaveValue('Meine Eingabe');
+      await expect(page).toHaveURL(/\/bearbeiten$/);
 
-      await page.getByRole('button', { name: 'Rundfunkbeitrag bearbeiten' }).click();
+      // Abbrechen geht im Verlauf zurück; direkt nach dessen Wiederherstellung schluckt der Browser das.
+      await page.waitForTimeout(500);
+      await page.mouse.click(5, 300);
       await expect(dialog(page)).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(dialog(page)).toHaveCount(0);
       await expect(formular.getByLabel('Notiz')).toHaveValue('Meine Eingabe');
     });
 
-    test('„Verwerfen“ führt die Aktion aus: Details', async ({ page }) => {
-      await mitAenderung(page);
-      await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
+    test('Esc im Sheet fragt, „Verwerfen“ schließt', async ({ page }) => {
+      const formular = await mitAenderung(page);
+      await formular.getByLabel('Notiz').press('Escape');
+      await expect(dialog(page)).toBeVisible();
       await dialog(page).getByRole('button', { name: 'Verwerfen' }).click();
-      await expect(page.getByRole('form')).toHaveCount(0);
-      await expect(page.getByRole('region', { name: `Details zu ${KFZ}` })).toBeVisible();
+      await expect(sheet(page)).toHaveCount(0);
+      await expect(page).toHaveURL(/\/vertraege$/);
 
       const wieder = await bearbeiten(page);
       await expect(wieder.getByLabel('Notiz')).toHaveValue('');
     });
 
-    test('„Abbrechen“ fragt bei Änderungen nach', async ({ page }) => {
-      const formular = await mitAenderung(page);
-      await formular.getByRole('button', { name: 'Abbrechen' }).click();
-      await expect(dialog(page)).toBeVisible();
-      await dialog(page).getByRole('button', { name: 'Verwerfen' }).click();
-      await expect(page.getByRole('form')).toHaveCount(0);
-      await expect(page.getByRole('button', { name: `${KFZ} bearbeiten` })).toBeFocused();
-    });
-
-    test('das Menü fragt nach, „Weiter bearbeiten“ bleibt auf der Seite', async ({ page }) => {
-      const formular = await mitAenderung(page);
-      await page
-        .getByRole('navigation', { name: 'Hauptmenü' })
-        .getByRole('link', { name: 'Übersicht' })
-        .click();
-      await expect(dialog(page)).toBeVisible();
-      await dialog(page).getByRole('button', { name: 'Weiter bearbeiten' }).click();
-      await expect(page).toHaveURL(/\/vertraege$/);
-      await expect(formular.getByLabel('Notiz')).toHaveValue('Meine Eingabe');
-
-      await page.getByRole('link', { name: 'Neuer Vertrag' }).click();
-      await dialog(page).getByRole('button', { name: 'Verwerfen' }).click();
-      await expect(page).toHaveURL(/\/vertraege\/neu$/);
-    });
-
     test('der Zurück-Button fragt nach und der Verlauf bleibt stimmig', async ({ page }) => {
-      await page.goto('/start');
-      await page.getByRole('link', { name: 'Alle Verträge' }).click();
-      await expect(page).toHaveURL(/\/vertraege$/);
       const formular = await mitAenderung(page);
 
       await page.evaluate(() => history.back());
       await expect(dialog(page)).toBeVisible();
       await dialog(page).getByRole('button', { name: 'Weiter bearbeiten' }).click();
-      await expect(page).toHaveURL(/\/vertraege$/);
+      await expect(page).toHaveURL(/\/vertraege\/kfz\/bearbeiten$/);
       await expect(formular.getByLabel('Notiz')).toHaveValue('Meine Eingabe');
 
       // Direkt nach der Wiederherstellung des Verlaufs schluckt der Browser ein weiteres Zurück.
-      // Genau einmal zurück: Ein zweites Mal ginge bis auf die per goto geladene Seite.
       await page.waitForTimeout(500);
       await page.evaluate(() => history.back());
       await expect(dialog(page)).toBeVisible();
       await dialog(page).getByRole('button', { name: 'Verwerfen' }).click();
-      await expect(page).toHaveURL(/\/start$/);
-    });
-
-    test('Abmelden fragt vor dem Abmelden nach', async ({ page }) => {
-      let abgemeldet = false;
-      page.on('request', (r) => {
-        if (new URL(r.url()).pathname === '/api/abmeldung') abgemeldet = true;
-      });
-      const formular = await mitAenderung(page);
-      await abmelden(page);
-      await expect(dialog(page)).toBeVisible();
-      await dialog(page).getByRole('button', { name: 'Weiter bearbeiten' }).click();
-      await expect(formular.getByLabel('Notiz')).toHaveValue('Meine Eingabe');
-      expect(abgemeldet).toBe(false);
-
-      await abmelden(page);
-      await dialog(page).getByRole('button', { name: 'Verwerfen' }).click();
-      await expect(page).toHaveURL(/\/login/);
-      await expect(dialog(page)).toHaveCount(0);
-      expect(abgemeldet).toBe(true);
+      await expect(page).toHaveURL(/\/vertraege$/);
+      await expect(sheet(page)).toHaveCount(0);
     });
 
     test('abgelaufene Sitzung leitet ohne Dialog zum Login', async ({ page }) => {
@@ -309,7 +301,7 @@ test.describe('Vertrag bearbeiten', () => {
           json: { status: 401, code: 'NICHT_ANGEMELDET', detail: 'Authentication required.' },
         }),
       );
-      await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+      await sheet(page).getByRole('button', { name: 'Sichern' }).click();
       await expect(page).toHaveURL(/\/login\?returnUrl=/);
       await expect(dialog(page)).toHaveCount(0);
     });
@@ -323,16 +315,19 @@ test.describe('Vertrag bearbeiten', () => {
           json: { status: 403, code: 'KEIN_ZUGRIFF', detail: 'Access denied.' },
         }),
       );
-      await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+      await sheet(page).getByRole('button', { name: 'Sichern' }).click();
       await expect(page).toHaveURL(/\/start$/);
       await expect(dialog(page)).toHaveCount(0);
     });
 
     test('nach dem Speichern kein Dialog beim Weitergehen', async ({ page }) => {
       await mitAenderung(page);
-      await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+      await sheet(page).getByRole('button', { name: 'Sichern' }).click();
       await expect(zeile(page, KFZ).getByText('wurde gespeichert')).toBeVisible();
-      await page.getByRole('link', { name: 'Zur Übersicht' }).click();
+      await page
+        .getByRole('navigation', { name: 'Hauptmenü' })
+        .getByRole('link', { name: 'Übersicht' })
+        .click();
       await expect(page).toHaveURL(/\/start$/);
       await expect(dialog(page)).toHaveCount(0);
     });
@@ -346,8 +341,10 @@ test.describe('Vertrag bearbeiten', () => {
       await bearbeiten(page);
       await page.reload();
       expect(dialoge).toEqual([]);
+      await expect(sheet(page)).toBeVisible();
 
-      const formular = await mitAenderung(page);
+      const formular = sheet(page).getByRole('form');
+      await formular.getByLabel('Notiz').fill('Meine Eingabe');
       await formular.getByLabel('Notiz').click();
       await page.reload({ timeout: 1000 }).catch(() => undefined);
       expect(dialoge).toEqual(['beforeunload']);
@@ -355,110 +352,29 @@ test.describe('Vertrag bearbeiten', () => {
 
     test('der Dialog passt auf ein schmales Display', async ({ page }) => {
       await page.setViewportSize({ width: 320, height: 700 });
-      await mitAenderung(page);
-      await page.getByRole('button', { name: 'Rundfunkbeitrag bearbeiten' }).click();
+      await page.goto('/vertraege/kfz/bearbeiten');
+      await sheet(page).getByLabel('Notiz').fill('Meine Eingabe');
+      await sheet(page).getByRole('button', { name: 'Abbrechen' }).click();
       await expect(dialog(page)).toBeInViewport({ ratio: 1 });
       const breite = await page.evaluate(() => document.documentElement.scrollWidth);
       expect(breite).toBeLessThanOrEqual(320);
     });
   });
 
-  test.describe('scrollt die geöffnete Zeile ins Bild', () => {
-    const scrollY = (page: Page) => page.evaluate(() => Math.round(window.scrollY));
-    const LETZTE = 'Mobilfunk GmbH';
+  test('auf dem Handy: Vollbild aus den Details, Sichern in der Leiste', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
+    await details(page, KFZ).getByRole('button', { name: 'Bearbeiten' }).click();
+    await expect(sheet(page)).toBeVisible();
+    expect(await sheet(page).boundingBox()).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      390,
+    );
 
-    test.beforeEach(async ({ page }) => {
-      await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.setViewportSize({ width: 1280, height: 600 });
-    });
-
-    test('Details: die ganze Zeile ist danach sichtbar, oben wie unten', async ({ page }) => {
-      await page.getByRole('button', { name: `Details zu ${LETZTE} anzeigen` }).click();
-      await expect(page.getByRole('region', { name: `Details zu ${LETZTE}` })).toBeInViewport({
-        ratio: 1,
-      });
-      await expect(zeile(page, LETZTE)).toBeInViewport({ ratio: 1 });
-    });
-
-    test('schon vollständig sichtbar: Die Seite bleibt stehen', async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 2400 });
-      const vorher = await scrollY(page);
-      await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
-      await expect(page.getByRole('region', { name: `Details zu ${KFZ}` })).toBeVisible();
-      expect(await scrollY(page)).toBe(vorher);
-    });
-
-    test('schließen scrollt nicht', async ({ page }) => {
-      const knopf = page.getByRole('button', { name: `Details zu ${LETZTE} anzeigen` });
-      await knopf.click();
-      await expect(zeile(page, LETZTE)).toBeInViewport({ ratio: 1 });
-      await page.evaluate(() => window.scrollBy(0, -40));
-      const vorher = await scrollY(page);
-      await page.getByRole('button', { name: `Details zu ${LETZTE} ausblenden` }).click();
-      await expect(page.getByRole('region', { name: `Details zu ${LETZTE}` })).toHaveCount(0);
-      expect(await scrollY(page)).toBeLessThanOrEqual(vorher);
-      await expect(zeile(page, LETZTE)).toBeInViewport();
-    });
-
-    test('Formular zu hoch: Die Zeile beginnt oben, das erste Feld hat den Fokus', async ({
-      page,
-    }) => {
-      const formular = await bearbeiten(page, LETZTE);
-      await expect(formular.getByLabel('Anbieter *')).toBeFocused();
-      await expect.poll(async () => (await zeile(page, LETZTE).boundingBox())?.y).toBeLessThan(40);
-      expect((await zeile(page, LETZTE).boundingBox())?.y).toBeGreaterThanOrEqual(0);
-      await expect(formular.getByLabel('Anbieter *')).toBeInViewport();
-    });
-
-    test('klappt oben etwas zu, bleibt die angeklickte Zeile im Bild', async ({ page }) => {
-      await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
-      await page.getByRole('button', { name: `Details zu ${LETZTE} anzeigen` }).click();
-      await expect(page.getByRole('region', { name: `Details zu ${KFZ}` })).toHaveCount(0);
-      await expect(zeile(page, LETZTE)).toBeInViewport({ ratio: 1 });
-    });
-
-    test('nach „Verwerfen“ kommt die neue Zeile ins Bild', async ({ page }) => {
-      const formular = await bearbeiten(page);
-      await formular.getByLabel('Notiz').fill('Meine Eingabe');
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      await page.getByRole('button', { name: `${LETZTE} bearbeiten` }).click();
-      await page.getByRole('dialog').getByRole('button', { name: 'Verwerfen' }).click();
-      const neu = page.getByRole('form', { name: `${LETZTE} bearbeiten` });
-      await expect(neu.getByLabel('Anbieter *')).toBeInViewport();
-    });
-
-    test('Handy: Die feste Navigation verdeckt nichts', async ({ page }) => {
-      await page.setViewportSize({ width: 390, height: 900 });
-      await page.getByRole('button', { name: `Details zu ${LETZTE} anzeigen` }).click();
-      const details = page.getByRole('region', { name: `Details zu ${LETZTE}` });
-      await expect(details).toBeVisible();
-      const box = await zeile(page, LETZTE).boundingBox();
-      const navigation = await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox();
-      if (box!.height <= 900 - navigation!.height) {
-        await expect
-          .poll(async () => {
-            const aktuell = await zeile(page, LETZTE).boundingBox();
-            return aktuell!.y + aktuell!.height;
-          })
-          .toBeLessThanOrEqual(navigation!.y);
-      } else {
-        await expect
-          .poll(async () => (await zeile(page, LETZTE).boundingBox())!.y)
-          .toBeLessThan(40);
-      }
-    });
-  });
-
-  test('ohne Einstellung scrollt die Seite weich und kommt trotzdem an', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 600 });
-    await page.getByRole('button', { name: 'Details zu Mobilfunk GmbH anzeigen' }).click();
-    await expect(zeile(page, 'Mobilfunk GmbH')).toBeInViewport({ ratio: 1 });
-  });
-
-  test('passt auf ein schmales Display ohne seitliches Scrollen', async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 700 });
-    await bearbeiten(page);
-    const breite = await page.evaluate(() => document.documentElement.scrollWidth);
-    expect(breite).toBeLessThanOrEqual(320);
+    await sheet(page).getByLabel('Notiz').fill('Vom Handy');
+    const anfrage = await speichernUndAnfrageLesen(page);
+    expect(anfrage.notiz).toBe('Vom Handy');
+    await expect(details(page, KFZ).getByRole('status')).toContainText('wurde gespeichert');
   });
 });

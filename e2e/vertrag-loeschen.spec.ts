@@ -9,11 +9,17 @@ const zeile = (page: Page, name: string) =>
   page.locator('app-vertrag-zeile').filter({ hasText: name });
 const dialog = (page: Page, name: string) =>
   page.getByRole('dialog', { name: `„${name}“ löschen?` });
-const loeschKnopf = (page: Page, name: string) =>
-  page.getByRole('button', { name: `${name} löschen` });
+const mehr = (page: Page, name: string) =>
+  page.getByRole('button', { name: `Aktionen für ${name}` });
+
+/** Über das Menü der Zeile. */
+async function loeschenFragen(page: Page, name: string) {
+  await mehr(page, name).click();
+  await page.getByRole('menuitem', { name: 'Löschen …' }).click();
+}
 
 async function loeschenBestaetigen(page: Page, name = KFZ) {
-  await loeschKnopf(page, name).click();
+  await loeschenFragen(page, name);
   await dialog(page, name).getByRole('button', { name: 'Ja, löschen' }).click();
 }
 
@@ -42,7 +48,7 @@ test.describe('Vertrag löschen', () => {
     page.on('request', (r) => {
       if (r.method() === 'DELETE') anfragen++;
     });
-    await loeschKnopf(page, KFZ).click();
+    await loeschenFragen(page, KFZ);
     await expect(dialog(page, KFZ)).toBeVisible();
     await expect(dialog(page, KFZ)).toContainText('Das lässt sich nicht rückgängig machen.');
     const abbrechen = dialog(page, KFZ).getByRole('button', { name: 'Abbrechen' });
@@ -50,9 +56,9 @@ test.describe('Vertrag löschen', () => {
 
     await abbrechen.click();
     await expect(dialog(page, KFZ)).toHaveCount(0);
-    await expect(loeschKnopf(page, KFZ)).toBeFocused();
+    await expect(mehr(page, KFZ)).toBeFocused();
 
-    await loeschKnopf(page, KFZ).click();
+    await loeschenFragen(page, KFZ);
     await expect(dialog(page, KFZ)).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(dialog(page, KFZ)).toHaveCount(0);
@@ -74,7 +80,7 @@ test.describe('Vertrag löschen', () => {
   test('die Meldung steht über dem nächsten Vertrag, die Position bleibt', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 1280, height: 500 });
-    await page.getByRole('button', { name: 'Rundfunkbeitrag löschen' }).scrollIntoViewIfNeeded();
+    await mehr(page, 'Rundfunkbeitrag').scrollIntoViewIfNeeded();
     await loeschenBestaetigen(page, 'Rundfunkbeitrag');
 
     const meldung = page
@@ -82,7 +88,8 @@ test.describe('Vertrag löschen', () => {
       .filter({ hasText: '„Rundfunkbeitrag“ wurde gelöscht.' });
     await expect(meldung).toBeInViewport();
     await expect(zeile(page, 'Sprachschule').getByRole('status')).toContainText('wurde gelöscht');
-    await expect(page.getByRole('heading', { level: 1 })).not.toBeInViewport();
+    // Die Werkzeugleiste steht am Desktop immer oben, die Kennzahlen nicht.
+    await expect(page.getByText('Laufende Verträge')).not.toBeInViewport();
   });
 
   test('beim letzten Vertrag steht die Meldung unter dem davor', async ({ page }) => {
@@ -108,8 +115,12 @@ test.describe('Vertrag löschen', () => {
     await expect(zeile(page, 'Zeitschriften-Abo').getByRole('status')).toBeVisible();
     expect(await rand('Zeitschriften-Abo', 'Top')).toBe('1px');
 
-    await page.getByRole('button', { name: `${KFZ} bearbeiten` }).click();
-    await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+    await mehr(page, KFZ).click();
+    await page.getByRole('menuitem', { name: 'Bearbeiten …' }).click();
+    await page
+      .getByRole('dialog', { name: 'Vertrag bearbeiten' })
+      .getByRole('button', { name: 'Sichern' })
+      .click();
     await expect(zeile(page, KFZ).getByRole('status')).toBeVisible();
     expect(await rand(KFZ, 'Bottom')).toBe('0px');
   });
@@ -133,7 +144,7 @@ test.describe('Vertrag löschen', () => {
 
   test('404 gilt als gelöscht, ohne Fehlermeldung', async ({ page }) => {
     // Erst wenn die Liste da ist, sonst träfe die Umleitung unten schon das erste Laden.
-    await expect(loeschKnopf(page, KFZ)).toBeVisible();
+    await expect(mehr(page, KFZ)).toBeVisible();
     await page.route('/api/vertraege/kfz?version=0', (route) =>
       route.fulfill(problem(404, 'NICHT_GEFUNDEN')),
     );
@@ -174,59 +185,33 @@ test.describe('Vertrag löschen', () => {
     await expect(page.getByText(`„${KFZ}“ wurde gelöscht.`)).toBeVisible();
   });
 
-  test.describe('bei offenem, geändertem Formular', () => {
-    async function formularMitAenderung(page: Page, name: string) {
-      await page.getByRole('button', { name: `${name} bearbeiten` }).click();
-      const formular = page.getByRole('form', { name: `${name} bearbeiten` });
-      await formular.getByLabel('Notiz').fill('Meine Eingabe');
-      return formular;
-    }
+  test('aus den Details: fragt, löscht und schließt sie', async ({ page }) => {
+    await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
+    const details = page.getByRole('complementary', { name: KFZ });
+    await details.getByRole('button', { name: 'Vertrag löschen' }).click();
+    await dialog(page, KFZ).getByRole('button', { name: 'Ja, löschen' }).click();
+    await expect(page).toHaveURL(/\/vertraege$/);
+    await expect(page.getByRole('complementary')).toHaveCount(0);
+    await expect(page.getByText(`„${KFZ}“ wurde gelöscht.`)).toBeVisible();
+    await expect(page.getByText('Diesen Vertrag gibt es nicht mehr.')).toHaveCount(0);
+  });
 
-    test('anderer Vertrag: kein „Verwerfen“, Formular und Eingaben bleiben', async ({ page }) => {
-      const formular = await formularMitAenderung(page, KFZ);
-      await loeschenBestaetigen(page, 'Rundfunkbeitrag');
-      await expect(page.getByText('„Rundfunkbeitrag“ wurde gelöscht.')).toBeVisible();
-      await expect(page.getByRole('dialog')).toHaveCount(0);
-      await expect(formular.getByLabel('Notiz')).toHaveValue('Meine Eingabe');
-
-      await page.getByRole('link', { name: 'Zur Übersicht' }).click();
-      await expect(page.getByRole('dialog', { name: 'Änderungen verwerfen?' })).toBeVisible();
-    });
-
-    test('derselbe Vertrag: nur die Lösch-Frage, danach ist nichts mehr offen', async ({
-      page,
-    }) => {
-      await formularMitAenderung(page, KFZ);
-      await loeschenBestaetigen(page);
-      await expect(page.getByText(`„${KFZ}“ wurde gelöscht.`)).toBeVisible();
-      await expect(page.getByRole('form')).toHaveCount(0);
-
-      await page.getByRole('link', { name: 'Zur Übersicht' }).click();
-      await expect(page).toHaveURL(/\/start$/);
-      await expect(page.getByRole('dialog')).toHaveCount(0);
-    });
-
-    test('derselbe Vertrag, „Abbrechen“: Formular und Eingaben bleiben', async ({ page }) => {
-      const formular = await formularMitAenderung(page, KFZ);
-      await loeschKnopf(page, KFZ).click();
-      await dialog(page, KFZ).getByRole('button', { name: 'Abbrechen' }).click();
-      await expect(formular.getByLabel('Notiz')).toHaveValue('Meine Eingabe');
-    });
-
-    test('409 am selben Vertrag schließt das Formular', async ({ page }) => {
-      await formularMitAenderung(page, KFZ);
-      await page.route('/api/vertraege/kfz?version=0', (route) =>
-        route.fulfill(problem(409, 'KONFLIKT')),
-      );
-      await loeschenBestaetigen(page);
-      await expect(zeile(page, KFZ).getByRole('alert')).toBeVisible();
-      await expect(page.getByRole('form')).toHaveCount(0);
-    });
+  test('„Abbrechen“ in den Details lässt sie offen', async ({ page }) => {
+    await page.goto('/vertraege/kfz');
+    const details = page.getByRole('complementary', { name: KFZ });
+    await details.getByRole('button', { name: 'Vertrag löschen' }).click();
+    await dialog(page, KFZ).getByRole('button', { name: 'Abbrechen' }).click();
+    await expect(details).toBeVisible();
+    await expect(details.getByRole('button', { name: 'Vertrag löschen' })).toBeFocused();
   });
 
   test('auf dem Handy passt alles in die Breite', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 700 });
-    await loeschKnopf(page, KFZ).click();
+    await page.goto('/vertraege/kfz');
+    await page
+      .getByRole('complementary', { name: KFZ })
+      .getByRole('button', { name: 'Vertrag löschen' })
+      .click();
     await expect(dialog(page, KFZ)).toBeInViewport({ ratio: 1 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       320,

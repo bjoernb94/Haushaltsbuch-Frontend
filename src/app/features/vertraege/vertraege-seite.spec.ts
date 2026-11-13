@@ -1,10 +1,14 @@
+import { Location } from '@angular/common';
+import { provideLocationMocks } from '@angular/common/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { LOCALE_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { NEVER, of, Subject, throwError } from 'rxjs';
 import { VertragAntwort, VertragsuebersichtAntwort } from '../../core/api/api';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
+import { VERTRAEGE_ROUTES } from './vertraege.routes';
 import { VertraegeSeite } from './vertraege-seite';
 import { VertragService } from './vertrag.service';
 
@@ -128,9 +132,12 @@ describe('VertraegeSeite', () => {
     auflisten.mockReturnValue(of([JAEHRLICH, BEENDET, PFLICHT]));
     uebersicht.mockReturnValue(of(UEBERSICHT));
     await TestBed.configureTestingModule({
-      imports: [VertraegeSeite],
       providers: [
-        provideRouter([]),
+        provideRouter(
+          [{ path: 'vertraege', children: VERTRAEGE_ROUTES }],
+          withComponentInputBinding(),
+        ),
+        provideLocationMocks(),
         { provide: LOCALE_ID, useValue: 'de-DE' },
         {
           provide: VertragService,
@@ -138,161 +145,142 @@ describe('VertraegeSeite', () => {
         },
       ],
     }).compileComponents();
+    // Sonst nur beim Start der App: Ohne folgt der Router der Zurück-Taste (location.back) nicht.
+    TestBed.inject(Router).setUpLocationChangeListener();
   });
 
-  async function seite() {
-    const fixture = TestBed.createComponent(VertraegeSeite);
-    await fixture.whenStable();
-    return { fixture, element: fixture.nativeElement as HTMLElement };
+  afterEach(() => TestBed.inject(UngespeicherteEingaben).melden(false));
+
+  async function seite(url = '/vertraege') {
+    const harness = await RouterTestingHarness.create(url);
+    const fixture = harness.fixture;
+    const element = harness.routeNativeElement as HTMLElement;
+    const stabil = async () => {
+      await fixture.whenStable();
+      await naechsteRunde();
+      await fixture.whenStable();
+    };
+    await stabil();
+    return {
+      harness,
+      fixture,
+      element,
+      stabil,
+      url: () => TestBed.inject(Router).url,
+      instanz: () => harness.routeDebugElement!.componentInstance as VertraegeSeite,
+    };
   }
 
   const text = (element: Element | null | undefined) =>
     element?.textContent?.replace(/\s+/g, ' ').trim();
 
-  const details = (element: HTMLElement) =>
+  const zeilen = (element: HTMLElement) =>
+    element.querySelectorAll<HTMLElement>('app-vertrag-zeile');
+
+  const knopf = (element: HTMLElement, name: string) =>
+    element.querySelector<HTMLButtonElement>(`button[aria-label="${name}"]`)!;
+
+  const schaltflaeche = (element: ParentNode, beschriftung: string) =>
+    [...element.querySelectorAll('button')].find((b) => text(b) === beschriftung)!;
+
+  const panel = (element: HTMLElement) => element.querySelector<HTMLElement>('.panel');
+
+  const eintraege = (element: HTMLElement) =>
     Object.fromEntries(
-      [...element.querySelectorAll('dl > div')].map((d) => [
+      [...element.querySelectorAll('.panel dl > div')].map((d) => [
         text(d.querySelector('dt')),
         text(d.querySelector('dd')),
       ]),
     );
 
-  it('zeigt die Kennzahlen je Währung vollständig', async () => {
-    const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
-    expect(text(kennzahlen[0])).toBe('Laufende Verträge2');
-    expect(text(kennzahlen[1])).toBe('Kosten pro Monat58,90 € · 5,00 $');
-    expect(text(kennzahlen[2])).toBe('Kosten pro Jahr706,80 €');
-  });
-
-  it('behält die Reihenfolge des Backends', async () => {
-    const namen = [...(await seite()).element.querySelectorAll('.name')].map(text);
-    expect(namen).toEqual(['Kfz-Versicherung', 'Alt GmbH', 'Beitragsservice']);
-  });
-
-  it('zeigt eine Zeile mit Angaben, Kosten und Badge', async () => {
-    const zeile = (await seite()).element.querySelector('app-vertrag-zeile')!;
-    expect(text(zeile.querySelector('.meta'))).toBe(
-      'Musterversicherung AG · Versicherung · Nr. KFZ-1',
-    );
-    expect(text(zeile.querySelector('.notiz'))).toBe('Wichtig');
-    expect(text(zeile.querySelector('.betrag'))).toBe('586,80 €');
-    expect(text(zeile.querySelectorAll('.klein')[0])).toBe('jährlich · 48,90 €/Monat');
-    expect(text(zeile.querySelectorAll('.klein')[1])).toBe('Nächste Abbuchung 01.01.2027');
-    expect(text(zeile.querySelector('.badge'))).toBe('Kündbar bis 30.11.2026');
-    expect(zeile.querySelector('.badge')?.classList).toContain('ton-warnung');
-    expect(text(zeile.querySelector('.zusatz'))).toBe('Vertrag endet zum 31.12.2026');
-  });
-
-  it('rechnet bei monatlicher Zahlung nicht um und nennt fehlende Abbuchungen', async () => {
-    const zeile = (await seite()).element.querySelectorAll('app-vertrag-zeile')[1];
-    expect(text(zeile.querySelector('.meta'))).toBe('Versicherung');
-    expect(text(zeile.querySelectorAll('.klein')[0])).toBe('monatlich');
-    expect(text(zeile.querySelectorAll('.klein')[1])).toBe('Keine weiteren Abbuchungen');
-    expect(zeile.querySelector('.zeile')?.classList).toContain('beendet');
-  });
-
-  it('klappt Details auf und lässt höchstens eine offen', async () => {
-    const { fixture, element } = await seite();
-    const knoepfe = element.querySelectorAll<HTMLButtonElement>('button[aria-label^="Details zu"]');
-    expect(knoepfe[0].getAttribute('aria-expanded')).toBe('false');
-    expect(knoepfe[0].getAttribute('aria-label')).toBe('Details zu Kfz-Versicherung anzeigen');
-
-    knoepfe[0].click();
-    await fixture.whenStable();
-    expect(knoepfe[0].getAttribute('aria-expanded')).toBe('true');
-    expect(knoepfe[0].getAttribute('aria-label')).toBe('Details zu Kfz-Versicherung ausblenden');
-    expect(element.querySelectorAll('.details').length).toBe(1);
-
-    knoepfe[1].click();
-    await fixture.whenStable();
-    expect(knoepfe[0].getAttribute('aria-expanded')).toBe('false');
-    expect(element.querySelectorAll('.details').length).toBe(1);
-    expect(element.querySelector('.details')?.getAttribute('aria-label')).toBe(
-      'Details zu Alt GmbH',
-    );
-
-    knoepfe[1].click();
-    await fixture.whenStable();
-    expect(element.querySelector('.details')).toBeNull();
-  });
-
-  it('zeigt alle Details aus den Vertragsdaten', async () => {
-    const { fixture, element } = await seite();
-    element.querySelector<HTMLButtonElement>('button[aria-label^="Details zu"]')!.click();
-    await fixture.whenStable();
-    expect(details(element)).toEqual({
-      Anbieter: 'Musterversicherung AG',
-      Bezeichnung: 'Kfz-Versicherung',
-      Kategorie: 'Versicherung',
-      'Vertrags- oder Kundennummer': 'KFZ-1',
-      Betrag: '586,80 € jährlich',
-      'Pro Monat': '48,90 €',
-      'Pro Jahr': '586,80 €',
-      'Nächste Abbuchung': '01.01.2027',
-      Zahlungsweg: 'Lastschrift',
-      Vertragsbeginn: '01.01.2023',
-      Laufzeitende: '31.12.2023',
-      Verlängerung: 'Nach Laufzeitende um 12 Monate',
-      Kündigungsfrist: '1 Monat',
-      Kündigung: 'Kündbar bis 30.11.2026. Vertrag endet zum 31.12.2026',
-      Status: 'Aktiv',
-      Notiz: 'Wichtig',
+  describe('Liste', () => {
+    it('zeigt die Kennzahlen je Währung vollständig', async () => {
+      const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
+      expect(text(kennzahlen[0])).toBe('Laufende Verträge2');
+      expect(text(kennzahlen[1])).toBe('Kosten pro Monat58,90 € · 5,00 $');
+      expect(text(kennzahlen[2])).toBe('Kosten pro Jahr706,80 €');
     });
-  });
 
-  it('nennt fehlende Angaben und lässt Felder weg, die nicht passen', async () => {
-    const { fixture, element } = await seite();
-    element.querySelectorAll<HTMLButtonElement>('button[aria-label^="Details zu"]')[1].click();
-    await fixture.whenStable();
-    expect(details(element)).toMatchObject({
-      'Vertrags- oder Kundennummer': 'Nicht hinterlegt',
-      'Nächste Abbuchung': 'Keine weiteren Abbuchungen',
-      Zahlungsweg: 'Nicht hinterlegt',
-      Vertragsbeginn: 'Nicht hinterlegt',
-      Laufzeitende: 'Keine Mindestlaufzeit',
-      Verlängerung: 'Nicht hinterlegt',
-      Kündigungsfrist: 'Nicht hinterlegt',
-      Status: 'Beendet',
+    it('behält die Reihenfolge des Backends', async () => {
+      const namen = [...(await seite()).element.querySelectorAll('.name')].map(text);
+      expect(namen).toEqual(['Kfz-Versicherung', 'Alt GmbH', 'Beitragsservice']);
     });
-    expect(details(element)).not.toHaveProperty('Bezeichnung');
-    expect(details(element)).not.toHaveProperty('Notiz');
 
-    element.querySelectorAll<HTMLButtonElement>('button[aria-label^="Details zu"]')[2].click();
-    await fixture.whenStable();
-    expect(details(element)).not.toHaveProperty('Laufzeitende');
-    expect(details(element)).not.toHaveProperty('Verlängerung');
-    expect(details(element)).not.toHaveProperty('Kündigungsfrist');
-  });
+    it('zeigt eine Zeile mit Angaben, Kosten und Badge', async () => {
+      const zeile = zeilen((await seite()).element)[0];
+      expect(text(zeile.querySelector('.meta'))).toBe(
+        'Musterversicherung AG · Versicherung · Nr. KFZ-1',
+      );
+      expect(text(zeile.querySelector('.notiz'))).toBe('Wichtig');
+      expect(text(zeile.querySelector('.betrag'))).toBe('586,80 €');
+      expect(text(zeile.querySelectorAll('.klein')[0])).toBe('jährlich · 48,90 €/Monat');
+      expect(text(zeile.querySelectorAll('.klein')[1])).toBe('Nächste Abbuchung 01.01.2027');
+      expect(text(zeile.querySelector('.badge'))).toBe('Kündbar bis 30.11.2026');
+      expect(zeile.querySelector('.badge')?.classList).toContain('ton-warnung');
+      expect(text(zeile.querySelector('.zusatz'))).toBe('Vertrag endet zum 31.12.2026');
+    });
 
-  it('zeigt den Leerzustand', async () => {
-    auflisten.mockReturnValue(of([]));
-    expect(text((await seite()).element.querySelector('.leer'))).toBe(
-      'Noch keine VerträgeLege mit „Neuer Vertrag“ deinen ersten Vertrag an.',
-    );
-  });
+    it('rechnet bei monatlicher Zahlung nicht um und nennt fehlende Abbuchungen', async () => {
+      const zeile = zeilen((await seite()).element)[1];
+      expect(text(zeile.querySelector('.meta'))).toBe('Versicherung');
+      expect(text(zeile.querySelectorAll('.klein')[0])).toBe('monatlich');
+      expect(text(zeile.querySelectorAll('.klein')[1])).toBe('Keine weiteren Abbuchungen');
+      expect(zeile.querySelector('.zeile')?.classList).toContain('beendet');
+    });
 
-  it('zeigt den Ladezustand', async () => {
-    auflisten.mockReturnValue(NEVER);
-    expect(text((await seite()).element.querySelector('[role="status"]'))).toBe('Wird geladen …');
-  });
+    it('zeigt den Leerzustand mit Link zum ersten Vertrag', async () => {
+      auflisten.mockReturnValue(of([]));
+      const leer = (await seite()).element.querySelector('.leer');
+      expect(text(leer)).toBe(
+        'Noch keine VerträgeHier siehst du später alle Abos, Versicherungen und Beiträge auf einen Blick. Ersten Vertrag anlegen',
+      );
+      expect(leer?.querySelector('a')?.getAttribute('href')).toBe('/vertraege/neu');
+    });
 
-  it.each([
-    ['Liste', auflisten],
-    ['Übersicht', uebersicht],
-  ])('bietet einen neuen Versuch an, wenn die %s nicht lädt', async (_name, aufruf) => {
-    aufruf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
-    const { fixture, element } = await seite();
-    expect(text(element.querySelector('[role="alert"]'))).toBe(
-      'Die Verträge konnten nicht geladen werden.',
-    );
-    expect(element.querySelector('.kennzahlen')).toBeNull();
+    it('zeigt den Ladezustand', async () => {
+      auflisten.mockReturnValue(NEVER);
+      expect(text((await seite()).element.querySelector('[role="status"]'))).toBe('Wird geladen …');
+    });
 
-    aufruf.mockReturnValue(aufruf === auflisten ? of([JAEHRLICH]) : of(UEBERSICHT));
-    element.querySelector<HTMLButtonElement>('.fehler button')!.click();
-    await fixture.whenStable();
+    it.each([
+      ['Liste', auflisten],
+      ['Übersicht', uebersicht],
+    ])('bietet einen neuen Versuch an, wenn die %s nicht lädt', async (_name, aufruf) => {
+      aufruf.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      const { element, stabil } = await seite();
+      expect(text(element.querySelector('[role="alert"]'))).toBe(
+        'Die Verträge konnten nicht geladen werden.',
+      );
+      expect(element.querySelector('.kennzahlen')).toBeNull();
 
-    expect(element.querySelector('[role="alert"]')).toBeNull();
-    expect(element.querySelector('.kennzahlen')).not.toBeNull();
+      aufruf.mockReturnValue(aufruf === auflisten ? of([JAEHRLICH]) : of(UEBERSICHT));
+      element.querySelector<HTMLButtonElement>('.fehler button')!.click();
+      await stabil();
+
+      expect(element.querySelector('[role="alert"]')).toBeNull();
+      expect(element.querySelector('.kennzahlen')).not.toBeNull();
+    });
+
+    it('nennt das Kürzel für „Neuer Vertrag“', async () => {
+      const neu = [...(await seite()).element.querySelectorAll('.kopf a')].find(
+        (a) => text(a) === 'Neuer Vertrag',
+      )!;
+      expect(neu.getAttribute('aria-keyshortcuts')).toBe('n');
+      expect(neu.getAttribute('title')).toBe('Neuer Vertrag (N)');
+    });
+
+    it('ein älterer Ladevorgang überschreibt keinen neueren', async () => {
+      const langsam = new Subject<VertragAntwort[]>();
+      const { instanz, element, stabil } = await seite();
+      auflisten.mockReturnValueOnce(langsam).mockReturnValueOnce(of([BEENDET]));
+      instanz().laden();
+      instanz().laden();
+      await stabil();
+      langsam.next([JAEHRLICH, PFLICHT]);
+      langsam.complete();
+      await stabil();
+      expect(zeilen(element)).toHaveLength(1);
+    });
   });
 
   describe('nach dem Anlegen', () => {
@@ -301,20 +289,18 @@ describe('VertraegeSeite', () => {
         .spyOn(TestBed.inject(Router), 'currentNavigation')
         .mockReturnValue({ trigger, extras: { state } } as never);
     const STATE = { meldung: '„Neu“ wurde gespeichert.', vertragId: 'alt' };
-    const zeile = (element: HTMLElement, i: number) =>
-      element.querySelectorAll('app-vertrag-zeile')[i];
 
     beforeEach(() => vi.mocked(Element.prototype.scrollIntoView).mockClear());
 
     it('zeigt die Meldung an der Zeile, fokussiert sie und holt die Zeile ins Bild', async () => {
       naviAus('imperative', STATE);
       const { element } = await seite();
-      const meldung = zeile(element, 1).querySelector('.meldung');
+      const meldung = zeilen(element)[1].querySelector('.meldung');
       expect(meldung?.textContent).toContain('„Neu“ wurde gespeichert.');
       expect(element.querySelector(':scope > .meldung')).toBeNull();
       expect(document.activeElement).toBe(meldung);
       expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toEqual([
-        zeile(element, 1).querySelector('.zeile'),
+        zeilen(element)[1].querySelector('.zeile'),
       ]);
     });
 
@@ -328,15 +314,15 @@ describe('VertraegeSeite', () => {
     it('zeigt die Meldung oben, wenn das Laden scheitert; der neue Versuch holt die Zeile ins Bild', async () => {
       naviAus('imperative', STATE);
       auflisten.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
-      const { fixture, element } = await seite();
+      const { element, stabil } = await seite();
       expect(element.querySelector(':scope > .meldung')?.textContent).toContain('„Neu“');
       expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
 
       auflisten.mockReturnValue(of([JAEHRLICH, BEENDET, PFLICHT]));
       element.querySelector<HTMLButtonElement>('.fehler button')!.click();
-      await fixture.whenStable();
+      await stabil();
       expect(element.querySelector(':scope > .meldung')).toBeNull();
-      expect(zeile(element, 1).querySelector('.meldung')?.textContent).toContain('„Neu“');
+      expect(zeilen(element)[1].querySelector('.meldung')?.textContent).toContain('„Neu“');
       expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
     });
 
@@ -348,184 +334,477 @@ describe('VertraegeSeite', () => {
     });
   });
 
-  describe('Bearbeiten', () => {
-    const knopf = (element: HTMLElement, name: string) =>
-      element.querySelector<HTMLButtonElement>(`button[aria-label="${name}"]`)!;
-    const zeile = (element: HTMLElement, i: number) =>
-      element.querySelectorAll('app-vertrag-zeile')[i] as HTMLElement;
+  describe('Details', () => {
     const NAME = 'Kfz-Versicherung';
 
-    async function geoeffnet() {
-      const { fixture, element } = await seite();
-      knopf(element, `${NAME} bearbeiten`).click();
-      await fixture.whenStable();
-      const eingeben = async (wert: string) => {
-        const notiz = element.querySelector<HTMLTextAreaElement>('[formcontrolname="notiz"]')!;
-        notiz.value = wert;
-        notiz.dispatchEvent(new Event('input'));
-        await fixture.whenStable();
-      };
-      const absenden = async () => {
-        element.querySelector('form')!.dispatchEvent(new Event('submit'));
-        await fixture.whenStable();
-      };
-      return { fixture, element, eingeben, absenden };
+    it('ein Klick auf die Zeile öffnet sie, ein zweiter schließt sie', async () => {
+      const { element, stabil, url } = await seite();
+      const tippen = knopf(element, `Details zu ${NAME} anzeigen`);
+      expect(tippen.getAttribute('aria-expanded')).toBe('false');
+
+      tippen.click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz');
+      expect(tippen.getAttribute('aria-expanded')).toBe('true');
+      expect(tippen.getAttribute('aria-label')).toBe(`Details zu ${NAME} schließen`);
+      expect(zeilen(element)[0].querySelector('.zeile')?.classList).toContain('offen');
+      expect(text(panel(element)?.querySelector('h2'))).toBe(NAME);
+      expect(document.activeElement).toBe(panel(element));
+
+      tippen.click();
+      await stabil();
+      expect(url()).toBe('/vertraege');
+      expect(panel(element)).toBeNull();
+      expect(document.activeElement).toBe(tippen);
+    });
+
+    it('zeigt Kacheln und die Tabs Allgemein, Kosten und Laufzeit', async () => {
+      const { element, stabil, url } = await seite('/vertraege/kfz');
+      expect([...element.querySelectorAll('.kachel')].map(text)).toEqual([
+        'Pro Monat48,90 €',
+        'Nächste Abbuchung01.01.2027',
+        'KündigungKündbar bis 30.11.2026Vertrag endet zum 31.12.2026',
+      ]);
+      const tabs = [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+      expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit']);
+      expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+      expect(element.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
+        tabs[0].id,
+      );
+      expect(eintraege(element)).toEqual({
+        Anbieter: 'Musterversicherung AG',
+        Bezeichnung: 'Kfz-Versicherung',
+        Kategorie: 'Versicherung',
+        'Vertrags- oder Kundennummer': 'KFZ-1',
+        Notiz: 'Wichtig',
+      });
+
+      tabs[1].click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz?tab=kosten');
+      expect(eintraege(element)).toEqual({
+        Betrag: '586,80 € jährlich',
+        'Pro Monat': '48,90 €',
+        'Pro Jahr': '586,80 €',
+        Zahlungsweg: 'Lastschrift',
+        'Nächste Abbuchung': '01.01.2027',
+      });
+
+      tabs[2].click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz?tab=laufzeit');
+      expect(eintraege(element)).toEqual({
+        Vertragsbeginn: '01.01.2023',
+        Laufzeitende: '31.12.2023',
+        Verlängerung: 'Nach Laufzeitende um 12 Monate',
+        Kündigungsfrist: '1 Monat',
+        Kündigung: 'Kündbar bis 30.11.2026. Vertrag endet zum 31.12.2026',
+        Status: 'Aktiv',
+      });
+
+      tabs[0].click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz');
+    });
+
+    it('wählt Tabs mit den Pfeiltasten', async () => {
+      const { element, stabil, url } = await seite('/vertraege/kfz');
+      const tabs = () => [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+      tabs()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz?tab=laufzeit');
+      expect(document.activeElement).toBe(tabs()[2]);
+      expect(tabs().map((t) => t.tabIndex)).toEqual([-1, -1, 0]);
+    });
+
+    it('zeigt bei unbekanntem Tab „Allgemein“', async () => {
+      const { element } = await seite('/vertraege/kfz?tab=preise');
+      expect(text(element.querySelector('[role="tab"][aria-selected="true"]'))).toBe('Allgemein');
+    });
+
+    it('nennt fehlende Angaben und lässt Felder weg, die nicht passen', async () => {
+      const { element, stabil } = await seite('/vertraege/alt?tab=kosten');
+      expect(eintraege(element)).toMatchObject({
+        'Nächste Abbuchung': 'Keine weiteren Abbuchungen',
+        Zahlungsweg: 'Nicht hinterlegt',
+      });
+      await TestBed.inject(Router).navigateByUrl('/vertraege/alt?tab=laufzeit');
+      await stabil();
+      expect(eintraege(element)).toMatchObject({
+        Vertragsbeginn: 'Nicht hinterlegt',
+        Laufzeitende: 'Keine Mindestlaufzeit',
+        Verlängerung: 'Nicht hinterlegt',
+        Kündigungsfrist: 'Nicht hinterlegt',
+        Status: 'Beendet',
+      });
+      await TestBed.inject(Router).navigateByUrl('/vertraege/alt');
+      await stabil();
+      expect(eintraege(element)).toMatchObject({
+        'Vertrags- oder Kundennummer': 'Nicht hinterlegt',
+      });
+      expect(eintraege(element)).not.toHaveProperty('Bezeichnung');
+      expect(eintraege(element)).not.toHaveProperty('Notiz');
+
+      await TestBed.inject(Router).navigateByUrl('/vertraege/rundfunk?tab=laufzeit');
+      await stabil();
+      expect(eintraege(element)).not.toHaveProperty('Laufzeitende');
+      expect(eintraege(element)).not.toHaveProperty('Verlängerung');
+      expect(eintraege(element)).not.toHaveProperty('Kündigungsfrist');
+    });
+
+    it('Wechsel zu einem anderen Vertrag ersetzt den Eintrag im Verlauf, Schließen geht zurück', async () => {
+      const { element, stabil, url } = await seite();
+      const location = TestBed.inject(Location);
+      const back = vi.spyOn(location, 'back');
+      knopf(element, `Details zu ${NAME} anzeigen`).click();
+      await stabil();
+      knopf(element, 'Details zu Alt GmbH anzeigen').click();
+      await stabil();
+      expect(url()).toBe('/vertraege/alt');
+      expect(text(panel(element)?.querySelector('h2'))).toBe('Alt GmbH');
+
+      knopf(element, 'Details schließen').click();
+      expect(back).toHaveBeenCalledOnce();
+    });
+
+    it('ein geteilter Link schließt zur Liste, ohne den Verlauf zu verlassen', async () => {
+      const { element, stabil, url } = await seite('/vertraege/kfz');
+      const back = vi.spyOn(TestBed.inject(Location), 'back');
+      schaltflaeche(element, 'Verträge').click();
+      await stabil();
+      expect(back).not.toHaveBeenCalled();
+      expect(url()).toBe('/vertraege');
+    });
+
+    it('Esc im Panel schließt', async () => {
+      const { element, stabil, url } = await seite('/vertraege/kfz');
+      panel(element)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await stabil();
+      expect(url()).toBe('/vertraege');
+    });
+
+    it('ein Link auf einen unbekannten Vertrag zeigt oben einen Hinweis', async () => {
+      const { element, url } = await seite('/vertraege/gibt-es-nicht');
+      expect(url()).toBe('/vertraege');
+      expect(element.querySelector(':scope > .meldung')?.textContent).toContain(
+        'Diesen Vertrag gibt es nicht mehr.',
+      );
+    });
+
+    it('zeigt die Meldung des offenen Vertrags im Panel statt an der Zeile', async () => {
+      aendern.mockReturnValue(of(JAEHRLICH));
+      const { element, instanz, stabil } = await seite('/vertraege/kfz');
+      instanz().gespeichert(JAEHRLICH);
+      await stabil();
+      expect(panel(element)?.querySelector('.meldung')?.textContent).toContain(
+        '„Kfz-Versicherung“ wurde gespeichert.',
+      );
+      expect(zeilen(element)[0].querySelector('.meldung')).toBeNull();
+    });
+  });
+
+  describe('Kontextmenü', () => {
+    const menue = (element: HTMLElement) => element.querySelector<HTMLElement>('[role="menu"]');
+    const eintraegeImMenue = (element: HTMLElement) => [
+      ...menue(element)!.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
+    ];
+    const taste = (ziel: Element, key: string) =>
+      ziel.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+
+    async function offen() {
+      const s = await seite();
+      knopf(s.element, 'Aktionen für Kfz-Versicherung').click();
+      await s.stabil();
+      return s;
     }
 
-    it('lädt die Kategorien erst beim ersten Bearbeiten und nur einmal', async () => {
-      const { fixture, element } = await seite();
-      expect(kategorien).not.toHaveBeenCalled();
+    it('öffnet über „…“ mit dem Fokus auf dem ersten Eintrag', async () => {
+      const { element } = await offen();
+      const mehr = knopf(element, 'Aktionen für Kfz-Versicherung');
+      expect(mehr.getAttribute('aria-expanded')).toBe('true');
+      expect(mehr.getAttribute('aria-controls')).toBe(menue(element)?.id);
+      expect(eintraegeImMenue(element).map(text)).toEqual([
+        'Details anzeigen',
+        'Bearbeiten …',
+        'Löschen …',
+      ]);
+      expect(document.activeElement).toBe(eintraegeImMenue(element)[0]);
+    });
 
-      knopf(element, `${NAME} bearbeiten`).click();
-      await fixture.whenStable();
-      knopf(element, `${NAME} bearbeiten`).click();
-      await fixture.whenStable();
-      knopf(element, `${NAME} bearbeiten`).click();
-      await fixture.whenStable();
-      expect(element.querySelector('form')).not.toBeNull();
+    it('Pfeiltasten wandern, Esc schließt und gibt den Fokus an „…“ zurück', async () => {
+      const { element, stabil } = await offen();
+      const [details, bearbeiten, loeschenEintrag] = eintraegeImMenue(element);
+      taste(details, 'ArrowDown');
+      expect(document.activeElement).toBe(bearbeiten);
+      taste(bearbeiten, 'End');
+      expect(document.activeElement).toBe(loeschenEintrag);
+      taste(loeschenEintrag, 'ArrowDown');
+      expect(document.activeElement).toBe(details);
+      taste(details, 'ArrowUp');
+      expect(document.activeElement).toBe(loeschenEintrag);
+
+      taste(loeschenEintrag, 'Escape');
+      await stabil();
+      expect(menue(element)).toBeNull();
+      expect(document.activeElement).toBe(knopf(element, 'Aktionen für Kfz-Versicherung'));
+    });
+
+    it('ein Klick daneben schließt', async () => {
+      const { element, stabil } = await offen();
+      element.querySelector<HTMLButtonElement>('.hintergrund')!.click();
+      await stabil();
+      expect(menue(element)).toBeNull();
+    });
+
+    it('„Details anzeigen“ öffnet die Details', async () => {
+      const { element, stabil, url } = await offen();
+      eintraegeImMenue(element)[0].click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz');
+    });
+
+    it('„Bearbeiten …“ öffnet das Sheet', async () => {
+      const { element, stabil, url } = await offen();
+      eintraegeImMenue(element)[1].click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz/bearbeiten');
+    });
+
+    it('„Löschen …“ fragt nach', async () => {
+      const { element, stabil } = await offen();
+      eintraegeImMenue(element)[2].click();
+      await stabil();
+      expect(text(element.querySelector('app-bestaetigen-dialog dialog[open] h2'))).toBe(
+        '„Kfz-Versicherung“ löschen?',
+      );
+    });
+
+    it('Rechtsklick öffnet es ab 901 px, darunter bleibt das Menü des Browsers', async () => {
+      const { element, stabil } = await seite();
+      const zeile = zeilen(element)[0].querySelector('.zeile')!;
+      const rechtsklick = () => {
+        const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+        zeile.dispatchEvent(event);
+        return event.defaultPrevented;
+      };
+
+      expect(rechtsklick()).toBe(false);
+      await stabil();
+      expect(menue(element)).toBeNull();
+
+      vi.mocked(window.matchMedia).mockReturnValue({ matches: true } as MediaQueryList);
+      expect(rechtsklick()).toBe(true);
+      await stabil();
+      expect(menue(element)).not.toBeNull();
+    });
+  });
+
+  describe('Kürzel N', () => {
+    const druecken = (ziel: EventTarget, init: KeyboardEventInit = {}) => {
+      const event = new KeyboardEvent('keydown', {
+        key: 'n',
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      });
+      ziel.dispatchEvent(event);
+      return event;
+    };
+
+    it('öffnet „Neuer Vertrag“', async () => {
+      const { stabil, url } = await seite();
+      expect(druecken(document.body).defaultPrevented).toBe(true);
+      await stabil();
+      expect(url()).toBe('/vertraege/neu');
+    });
+
+    it.each([
+      ['Strg', { ctrlKey: true }],
+      ['⌘', { metaKey: true }],
+      ['Alt', { altKey: true }],
+      ['gehalten', { repeat: true }],
+    ])('nicht mit %s', async (_, init) => {
+      const { stabil, url } = await seite();
+      expect(druecken(document.body, init).defaultPrevented).toBe(false);
+      await stabil();
+      expect(url()).toBe('/vertraege');
+    });
+
+    it('nicht beim Tippen', async () => {
+      const { stabil, url } = await seite();
+      const feld = document.createElement('input');
+      document.body.appendChild(feld);
+      druecken(feld);
+      await stabil();
+      expect(url()).toBe('/vertraege');
+      feld.remove();
+    });
+
+    it('nicht, solange das Sheet offen ist', async () => {
+      const { stabil, url } = await seite('/vertraege/kfz/bearbeiten');
+      druecken(document.body);
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz/bearbeiten');
+    });
+  });
+
+  describe('Bearbeiten', () => {
+    const NAME = 'Kfz-Versicherung';
+    const sheet = (element: HTMLElement) =>
+      element.querySelector<HTMLDialogElement>('app-vertrag-bearbeiten dialog');
+
+    async function geoeffnet(url = '/vertraege/kfz/bearbeiten') {
+      const s = await seite(url);
+      const eingeben = async (wert: string) => {
+        const notiz = s.element.querySelector<HTMLTextAreaElement>('[formcontrolname="notiz"]')!;
+        notiz.value = wert;
+        notiz.dispatchEvent(new Event('input'));
+        await s.stabil();
+      };
+      const sichern = async () => {
+        schaltflaeche(sheet(s.element)!, 'Sichern').click();
+        await s.stabil();
+      };
+      return { ...s, eingeben, sichern };
+    }
+
+    it('öffnet aus den Details das Sheet mit vorbelegtem Formular', async () => {
+      const { element, stabil, url } = await seite('/vertraege/kfz');
+      schaltflaeche(panel(element)!, 'Bearbeiten').click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz/bearbeiten');
+      expect(sheet(element)?.open).toBe(true);
+      expect(text(sheet(element)?.querySelector('h2'))).toBe('Vertrag bearbeiten');
+      expect(text(sheet(element)?.querySelector('.name'))).toBe(NAME);
+      expect(element.querySelector<HTMLInputElement>('[formcontrolname="anbieter"]')!.value).toBe(
+        'Musterversicherung AG',
+      );
+      expect(schaltflaeche(sheet(element)!, 'Sichern').getAttribute('form')).toBe(
+        element.querySelector('app-vertrag-bearbeiten form')!.id,
+      );
+    });
+
+    it('lädt die Kategorien erst beim ersten Bearbeiten und nur einmal', async () => {
+      const { stabil } = await seite();
+      expect(kategorien).not.toHaveBeenCalled();
+      const router = TestBed.inject(Router);
+      await router.navigateByUrl('/vertraege/kfz/bearbeiten');
+      await stabil();
+      await router.navigateByUrl('/vertraege/kfz');
+      await stabil();
+      await router.navigateByUrl('/vertraege/alt/bearbeiten');
+      await stabil();
       expect(kategorien).toHaveBeenCalledOnce();
     });
 
     it('lädt nach einem Fehler beim nächsten Versuch neu', async () => {
       kategorien.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
-      const { fixture, element } = await seite();
-      knopf(element, `${NAME} bearbeiten`).click();
-      await fixture.whenStable();
+      const { element, stabil } = await geoeffnet();
       expect(element.textContent).toContain('Die Kategorien konnten nicht geladen werden.');
-      expect(element.querySelector('form')).toBeNull();
+      expect(element.querySelector('app-vertrag-bearbeiten form')).toBeNull();
+      expect(schaltflaeche(sheet(element)!, 'Sichern').disabled).toBe(true);
 
       element.querySelector<HTMLButtonElement>('app-vertrag-bearbeiten .fehler button')!.click();
-      await fixture.whenStable();
-      expect(element.querySelector('form')).not.toBeNull();
+      await stabil();
+      expect(element.querySelector('app-vertrag-bearbeiten form')).not.toBeNull();
     });
 
-    it('zeigt höchstens ein Formular und schließt die Details', async () => {
-      const { fixture, element } = await seite();
-      knopf(element, `Details zu ${NAME} anzeigen`).click();
-      await fixture.whenStable();
-      knopf(element, `${NAME} bearbeiten`).click();
-      await fixture.whenStable();
-      expect(element.querySelector('.details')).toBeNull();
-      expect(knopf(element, `${NAME} bearbeiten`).getAttribute('aria-expanded')).toBe('true');
-
-      knopf(element, 'Beitragsservice bearbeiten').click();
-      await fixture.whenStable();
-      expect(element.querySelectorAll('form')).toHaveLength(1);
-      expect(knopf(element, `${NAME} bearbeiten`).getAttribute('aria-expanded')).toBe('false');
-    });
-
-    it('fragt bei geänderten Eingaben nach und behält sie bei „Weiter bearbeiten“', async () => {
-      const { fixture, element, eingeben } = await geoeffnet();
+    it('„Abbrechen“ fragt bei Änderungen nach, „Weiter bearbeiten“ behält sie', async () => {
+      const { element, stabil, eingeben, url } = await geoeffnet();
       const fragen = TestBed.inject(UngespeicherteEingaben);
       await eingeben('Neu');
-
-      knopf(element, 'Beitragsservice bearbeiten').click();
-      await fixture.whenStable();
+      schaltflaeche(sheet(element)!, 'Abbrechen').click();
+      // Nicht auf Stabilität warten: Die Navigation wartet auf die Antwort.
+      await naechsteRunde();
       expect(fragen.frageOffen()).toBe(true);
-      expect(knopf(element, `${NAME} bearbeiten`).getAttribute('aria-expanded')).toBe('true');
 
       fragen.antworten(false);
-      await fixture.whenStable();
-      expect(knopf(element, `${NAME} bearbeiten`).getAttribute('aria-expanded')).toBe('true');
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz/bearbeiten');
       expect(element.querySelector<HTMLTextAreaElement>('[formcontrolname="notiz"]')!.value).toBe(
         'Neu',
       );
     });
 
-    it('führt nach „Verwerfen“ die Aktion aus', async () => {
-      const { fixture, element, eingeben } = await geoeffnet();
+    it('nach „Verwerfen“ schließt es zu den Details', async () => {
+      const { element, stabil, eingeben, url } = await geoeffnet();
       const fragen = TestBed.inject(UngespeicherteEingaben);
       await eingeben('Neu');
-
-      knopf(element, 'Beitragsservice bearbeiten').click();
-      await fixture.whenStable();
-      fragen.antworten(true);
+      schaltflaeche(sheet(element)!, 'Abbrechen').click();
       await naechsteRunde();
-      await fixture.whenStable();
-      expect(knopf(element, 'Beitragsservice bearbeiten').getAttribute('aria-expanded')).toBe(
-        'true',
-      );
-      expect(element.querySelector<HTMLTextAreaElement>('[formcontrolname="notiz"]')!.value).toBe(
-        '',
-      );
-      expect(fragen.vorhanden()).toBe(false);
-    });
-
-    it('fragt nicht nach, wenn die Eingabe wieder dem Stand entspricht', async () => {
-      const { fixture, element, eingeben } = await geoeffnet();
-      await eingeben('Neu');
-      await eingeben('Wichtig');
-      knopf(element, 'Beitragsservice bearbeiten').click();
-      await fixture.whenStable();
-      expect(TestBed.inject(UngespeicherteEingaben).frageOffen()).toBe(false);
-    });
-
-    it('„Abbrechen“ fragt bei Änderungen nach und schließt erst danach', async () => {
-      const { fixture, element, eingeben } = await geoeffnet();
-      const fragen = TestBed.inject(UngespeicherteEingaben);
-      await eingeben('Neu');
-      [...element.querySelectorAll('button')]
-        .find((b) => b.textContent?.trim() === 'Abbrechen')!
-        .click();
-      await fixture.whenStable();
-      expect(fragen.frageOffen()).toBe(true);
-      expect(element.querySelector('form')).not.toBeNull();
-
       fragen.antworten(true);
-      await naechsteRunde();
-      await fixture.whenStable();
-      expect(element.querySelector('form')).toBeNull();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz');
+      expect(sheet(element)).toBeNull();
     });
 
-    it('„Abbrechen“ schließt ohne Änderung sofort', async () => {
-      const { fixture, element } = await geoeffnet();
-      [...element.querySelectorAll('button')]
-        .find((b) => b.textContent?.trim() === 'Abbrechen')!
-        .click();
-      await fixture.whenStable();
-      expect(element.querySelector('form')).toBeNull();
-      expect(TestBed.inject(UngespeicherteEingaben).frageOffen()).toBe(false);
+    it('Esc und ein Klick daneben schließen wie „Abbrechen“', async () => {
+      const { element, stabil, url } = await geoeffnet();
+      const esc = new Event('cancel', { cancelable: true });
+      sheet(element)!.dispatchEvent(esc);
+      expect(esc.defaultPrevented).toBe(true);
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz');
+
+      await TestBed.inject(Router).navigateByUrl('/vertraege/kfz/bearbeiten');
+      await stabil();
+      sheet(element)!.click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz');
     });
 
-    it('meldet nach dem Speichern keine ungespeicherten Eingaben mehr', async () => {
-      aendern.mockReturnValue(of(JAEHRLICH));
-      const { fixture, eingeben, absenden } = await geoeffnet();
+    it('ein Klick im Sheet schließt nicht', async () => {
+      const { element, stabil, url } = await geoeffnet();
+      sheet(element)!.querySelector<HTMLElement>('.inhalt')!.click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz/bearbeiten');
+    });
+
+    it('fragt auch beim Wechsel zu einem anderen Vertrag', async () => {
+      const { stabil, eingeben, url } = await geoeffnet();
       await eingeben('Neu');
-      expect(TestBed.inject(UngespeicherteEingaben).vorhanden()).toBe(true);
-      await absenden();
-      await fixture.whenStable();
-      expect(TestBed.inject(UngespeicherteEingaben).vorhanden()).toBe(false);
+      void TestBed.inject(Router).navigateByUrl('/vertraege/alt');
+      await naechsteRunde();
+      expect(TestBed.inject(UngespeicherteEingaben).frageOffen()).toBe(true);
+      TestBed.inject(UngespeicherteEingaben).antworten(false);
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz/bearbeiten');
     });
 
-    it('200: schließt, lädt neu und zeigt die Meldung an der Zeile', async () => {
+    it('200: schließt, lädt neu und zeigt die Meldung in den Details', async () => {
       aendern.mockReturnValue(of(JAEHRLICH));
-      const { fixture, element, absenden } = await geoeffnet();
+      const { element, sichern, url, eingeben } = await geoeffnet();
+      await eingeben('Neu');
       expect(auflisten).toHaveBeenCalledOnce();
-      await absenden();
-      await fixture.whenStable();
+      await sichern();
 
       expect(aendern).toHaveBeenCalledWith(
         'kfz',
         expect.objectContaining({ version: 0, abbuchungAb: '2025-01-01', kategorieId: 'k' }),
       );
-      expect(element.querySelector('form')).toBeNull();
+      expect(TestBed.inject(UngespeicherteEingaben).vorhanden()).toBe(false);
+      expect(url()).toBe('/vertraege/kfz');
+      expect(sheet(element)).toBeNull();
       expect(auflisten).toHaveBeenCalledTimes(2);
       expect(uebersicht).toHaveBeenCalledTimes(2);
-      const meldung = zeile(element, 0).querySelector('.meldung');
-      expect(meldung?.textContent).toContain('„Kfz-Versicherung“ wurde gespeichert.');
-      expect(element.querySelector(':scope > .meldung')).toBeNull();
+      expect(panel(element)?.querySelector('.meldung')?.textContent).toContain(
+        '„Kfz-Versicherung“ wurde gespeichert.',
+      );
     });
 
-    it('holt nach dem Speichern nur die Meldung in den Blick, nicht die Zeile', async () => {
+    it('aus der Liste geöffnet geht es danach zurück zur Liste', async () => {
       aendern.mockReturnValue(of(JAEHRLICH));
-      const { fixture, absenden } = await geoeffnet();
-      vi.mocked(Element.prototype.scrollIntoView).mockClear();
-      await absenden();
-      await fixture.whenStable();
-      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+      const { element, stabil, sichern } = await geoeffnet('/vertraege');
+      const back = vi.spyOn(TestBed.inject(Location), 'back');
+      knopf(element, 'Aktionen für Kfz-Versicherung').click();
+      await stabil();
+      schaltflaeche(element.querySelector('[role="menu"]')!, 'Bearbeiten …').click();
+      await stabil();
+      await sichern();
+      expect(back).toHaveBeenCalledOnce();
     });
 
-    it('400: Formular bleibt offen, Fehler am Feld, keine Meldung an der Zeile', async () => {
+    it('400: Sheet bleibt offen, Fehler am Feld', async () => {
       aendern.mockReturnValue(
         throwError(
           () =>
@@ -538,106 +817,76 @@ describe('VertraegeSeite', () => {
             }),
         ),
       );
-      const { element, absenden } = await geoeffnet();
-      await absenden();
-      expect(element.querySelector('form')).not.toBeNull();
+      const { element, sichern, url } = await geoeffnet();
+      await sichern();
+      expect(url()).toBe('/vertraege/kfz/bearbeiten');
       expect(element.textContent).toContain('Höchstens 1000 Zeichen.');
       expect(auflisten).toHaveBeenCalledOnce();
     });
 
-    it('409: schließt, lädt neu und zeigt den Hinweis an der Zeile', async () => {
+    it('409: schließt, lädt neu und zeigt den Hinweis in den Details', async () => {
       aendern.mockReturnValue(
         throwError(() => new HttpErrorResponse({ status: 409, error: { code: 'KONFLIKT' } })),
       );
-      const { fixture, element, absenden } = await geoeffnet();
-      await absenden();
-      await fixture.whenStable();
-      expect(element.querySelector('form')).toBeNull();
+      const { element, sichern, url } = await geoeffnet();
+      await sichern();
+      expect(url()).toBe('/vertraege/kfz');
       expect(auflisten).toHaveBeenCalledTimes(2);
-      expect(zeile(element, 0).querySelector('.meldung [role="alert"]')?.textContent).toContain(
+      expect(panel(element)?.querySelector('.meldung [role="alert"]')?.textContent).toContain(
         'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
       );
     });
 
-    it('404: lädt neu und zeigt den Hinweis oben, weil die Zeile fort ist', async () => {
+    it('404: schließt zur Liste und zeigt den Hinweis oben', async () => {
       aendern.mockReturnValue(
         throwError(() => new HttpErrorResponse({ status: 404, error: { code: 'NICHT_GEFUNDEN' } })),
       );
-      const { fixture, element, absenden } = await geoeffnet();
+      const { element, sichern, url } = await geoeffnet();
       auflisten.mockReturnValue(of([BEENDET, PFLICHT]));
-      await absenden();
-      await fixture.whenStable();
-      expect(element.querySelectorAll('app-vertrag-zeile')).toHaveLength(2);
-      expect(element.querySelector('app-vertrag-zeile .meldung')).toBeNull();
-      expect(element.querySelector('.meldung')?.textContent).toContain(
+      await sichern();
+      expect(url()).toBe('/vertraege');
+      expect(zeilen(element)).toHaveLength(2);
+      expect(element.querySelector(':scope > .meldung')?.textContent).toContain(
         'Diesen Vertrag gibt es nicht mehr.',
       );
-    });
-
-    it('zeigt die Meldung oben, wenn das Neuladen danach scheitert', async () => {
-      aendern.mockReturnValue(of(JAEHRLICH));
-      const { fixture, element, absenden } = await geoeffnet();
-      auflisten.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
-      await absenden();
-      await fixture.whenStable();
-      expect(element.querySelector('.meldung')?.textContent).toContain('wurde gespeichert.');
-      expect(element.textContent).toContain('Die Verträge konnten nicht geladen werden.');
-    });
-
-    it('ein älterer Ladevorgang überschreibt keinen neueren', async () => {
-      const langsam = new Subject<VertragAntwort[]>();
-      auflisten.mockReturnValueOnce(of([JAEHRLICH])).mockReturnValueOnce(langsam);
-      aendern.mockReturnValue(of(JAEHRLICH));
-      const { fixture, element, absenden } = await geoeffnet();
-      await absenden();
-      auflisten.mockReturnValue(of([BEENDET]));
-      fixture.componentInstance['laden']();
-      await fixture.whenStable();
-      langsam.next([JAEHRLICH, PFLICHT]);
-      langsam.complete();
-      await fixture.whenStable();
-      expect(element.querySelectorAll('app-vertrag-zeile')).toHaveLength(1);
     });
   });
 
   describe('Löschen', () => {
     const fehlerAntwort = (status: number, code?: string) =>
       throwError(() => new HttpErrorResponse({ status, error: code ? { code } : null }));
-    const zeilen = (element: HTMLElement) =>
-      element.querySelectorAll<HTMLElement>('app-vertrag-zeile');
-    const schaltflaeche = (element: HTMLElement, text: string) =>
-      [...element.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)!;
+    const dialog = (element: HTMLElement) =>
+      element.querySelector<HTMLDialogElement>(':scope > app-bestaetigen-dialog dialog')!;
 
-    async function gefragt(name = 'Kfz-Versicherung') {
-      const { fixture, element } = await seite();
-      element.querySelector<HTMLButtonElement>(`button[aria-label="${name} löschen"]`)!.click();
-      await fixture.whenStable();
-      return { fixture, element };
+    async function gefragt(name = 'Kfz-Versicherung', url = '/vertraege') {
+      const s = await seite(url);
+      knopf(s.element, `Aktionen für ${name}`).click();
+      await s.stabil();
+      schaltflaeche(s.element.querySelector('[role="menu"]')!, 'Löschen …').click();
+      await s.stabil();
+      return s;
     }
 
-    async function bestaetigt(name?: string) {
-      const { fixture, element } = await gefragt(name);
-      schaltflaeche(element, 'Ja, löschen').click();
-      await fixture.whenStable();
-      return { fixture, element };
+    async function bestaetigt(name?: string, url?: string) {
+      const s = await gefragt(name, url);
+      schaltflaeche(dialog(s.element), 'Ja, löschen').click();
+      await s.stabil();
+      return s;
     }
 
     it('fragt im Dialog und nennt den Vertrag', async () => {
       const { element } = await gefragt();
-      const dialog = element.querySelector<HTMLDialogElement>(
-        ':scope > app-bestaetigen-dialog dialog',
-      )!;
-      expect(dialog.open).toBe(true);
-      expect(dialog.textContent).toContain('„Kfz-Versicherung“ löschen?');
+      expect(dialog(element).open).toBe(true);
+      expect(dialog(element).textContent).toContain('„Kfz-Versicherung“ löschen?');
       expect(loeschen).not.toHaveBeenCalled();
     });
 
     it('„Abbrechen“ löscht nicht', async () => {
-      const { fixture, element } = await gefragt();
-      schaltflaeche(element, 'Abbrechen').click();
-      await fixture.whenStable();
+      const { element, stabil } = await gefragt();
+      schaltflaeche(dialog(element), 'Abbrechen').click();
+      await stabil();
       expect(loeschen).not.toHaveBeenCalled();
-      expect(element.querySelector<HTMLDialogElement>('dialog')!.open).toBe(false);
+      expect(dialog(element).open).toBe(false);
     });
 
     it('schickt die Version und lädt danach neu', async () => {
@@ -646,6 +895,24 @@ describe('VertraegeSeite', () => {
       expect(loeschen).toHaveBeenCalledExactlyOnceWith('kfz', 0);
       expect(auflisten).toHaveBeenCalledTimes(2);
       expect(uebersicht).toHaveBeenCalledTimes(2);
+    });
+
+    it('aus den Details: fragt, löscht und schließt sie', async () => {
+      loeschen.mockReturnValue(of(undefined));
+      auflisten
+        .mockReturnValueOnce(of([JAEHRLICH, BEENDET, PFLICHT]))
+        .mockReturnValueOnce(of([BEENDET, PFLICHT]));
+      const { element, stabil, url } = await seite('/vertraege/kfz');
+      schaltflaeche(panel(element)!, 'Vertrag löschen').click();
+      await stabil();
+      expect(dialog(element).open).toBe(true);
+      schaltflaeche(dialog(element), 'Ja, löschen').click();
+      await stabil();
+      expect(url()).toBe('/vertraege');
+      expect(zeilen(element)[0].querySelector('.meldung')?.textContent).toContain(
+        '„Kfz-Versicherung“ wurde gelöscht.',
+      );
+      expect(element.textContent).not.toContain('Diesen Vertrag gibt es nicht mehr.');
     });
 
     it('zeigt die Meldung über dem nächsten Vertrag', async () => {
@@ -710,20 +977,15 @@ describe('VertraegeSeite', () => {
         'Der Vertrag konnte nicht gelöscht werden.',
       );
       expect(auflisten).toHaveBeenCalledOnce();
-      expect(
-        element.querySelector<HTMLButtonElement>('button[aria-label="Kfz-Versicherung löschen"]')!
-          .disabled,
-      ).toBe(false);
+      expect(knopf(element, 'Aktionen für Kfz-Versicherung').disabled).toBe(false);
     });
 
-    it('sperrt den Knopf, solange die Anfrage läuft', async () => {
+    it('sperrt die Aktionen, solange die Anfrage läuft', async () => {
       loeschen.mockReturnValue(NEVER);
       const { element } = await bestaetigt();
-      const knopf = element.querySelector<HTMLButtonElement>(
-        'button[aria-label="Kfz-Versicherung löschen"]',
-      )!;
-      expect(knopf.disabled).toBe(true);
-      expect(knopf.getAttribute('aria-busy')).toBe('true');
+      const mehr = knopf(element, 'Aktionen für Kfz-Versicherung');
+      expect(mehr.disabled).toBe(true);
+      expect(mehr.getAttribute('aria-busy')).toBe('true');
     });
   });
 });

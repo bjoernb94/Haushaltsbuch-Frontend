@@ -6,20 +6,175 @@
   &:not(:first-child) .zeile {
     border-top: 1px solid var(--app-trenner);
   }
+
+  // Das offene Menü liegt über den folgenden Zeilen.
+  &:has(.menue) {
+    position: relative;
+    z-index: 3;
+  }
 }
 
+// Über die Ränder der Liste hinaus, damit die Markierung der offenen Zeile Luft hat.
 .zeile {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px 20px;
-  padding: 16px 0;
+  margin: 0 -12px;
+  padding: 16px 12px;
+  border-radius: 10px;
   scroll-margin: 16px 0;
 
-  // Unten ist hier die Navigation fest eingeblendet.
+  // Oben die Werkzeugleiste, unten bis 900 px die Tab-Leiste.
+  @media (min-width: 901px) {
+    scroll-margin-top: 84px;
+
+    &:hover {
+      background-color: rgba(23, 32, 27, 0.03);
+    }
+
+    &.offen {
+      background-color: var(--app-gruen-hell);
+    }
+  }
+
   @media (max-width: 900px) {
+    padding-right: 40px;
     scroll-margin-bottom: 84px;
   }
+}
+
+:host(:not(:first-child)) .zeile {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+// Die ganze Zeile ist der Knopf für die Details; „…“ und Meldung liegen darüber.
+.tippen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: -3px;
+  }
+}
+
+.pfeil {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  color: var(--app-platzhalter);
+
+  @media (max-width: 900px) {
+    display: flex;
+  }
+}
+
+.mehr {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--app-rand);
+  border-radius: 8px;
+  background: var(--app-flaeche);
+  color: var(--app-text);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.6;
+  }
+
+  @media (min-width: 901px) {
+    display: inline-flex;
+  }
+}
+
+.hintergrund {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.menue {
+  position: absolute;
+  top: calc(50% + 22px);
+  right: 12px;
+  z-index: 31;
+  min-width: 220px;
+  box-sizing: border-box;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--app-trenner);
+  border-radius: 10px;
+  background: var(--app-flaeche);
+  box-shadow: 0 12px 32px rgba(23, 32, 27, 0.18);
+}
+
+.eintrag {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    background: var(--app-gruen);
+    color: var(--app-flaeche);
+  }
+
+  &.gefahr {
+    color: var(--app-fehler);
+
+    &:hover,
+    &:focus-visible {
+      background: var(--app-fehler);
+      color: var(--app-flaeche);
+    }
+  }
+}
+
+.menue .trenner {
+  height: 1px;
+  margin: 5px 6px;
+  background: var(--app-trenner);
 }
 
 .angaben {
@@ -127,14 +282,9 @@
   line-height: 1.4;
 }
 
-.bearbeitet {
-  margin: 0 -12px;
-  padding: 16px 12px;
-  border-radius: 10px;
-  background: var(--app-gruen-hell);
-}
-
 .meldung {
+  position: relative;
+  z-index: 2;
   flex: 0 0 100%;
 
   &.unten {
@@ -156,100 +306,5 @@
 
   &:focus {
     outline: none;
-  }
-}
-
-.formular-zeile {
-  flex: 1 1 100%;
-  min-width: 0;
-}
-
-.knoepfe {
-  flex: 0 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.ansicht-knopf {
-  flex: none;
-  min-height: 44px;
-  padding: 0 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 1.5px solid var(--app-rand);
-  border-radius: 10px;
-  background: var(--app-flaeche);
-  color: var(--app-text);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 3px solid var(--app-gruen-fokus-rand);
-    outline-offset: 2px;
-  }
-
-  .offen {
-    transform: rotate(180deg);
-  }
-}
-
-.details {
-  flex: 1 1 100%;
-  box-sizing: border-box;
-  padding: 16px 20px;
-  border: 1px solid var(--app-trenner);
-  border-radius: 12px;
-  background: var(--app-details-grund);
-}
-
-dl {
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px 24px;
-
-  div {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    overflow-wrap: anywhere;
-  }
-}
-
-// Einziger längerer Freitext: volle Breite, Zeilenumbrüche bleiben erhalten.
-.notiz-eintrag {
-  grid-column: 1 / -1;
-
-  dd {
-    white-space: pre-line;
-  }
-}
-
-dt {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--app-text-gedaempft);
-}
-
-dd {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.gefahr-knopf {
-  border-color: var(--app-fehler-rand);
-  color: var(--app-fehler);
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
   }
 }

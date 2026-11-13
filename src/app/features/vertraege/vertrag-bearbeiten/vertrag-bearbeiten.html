@@ -1,20 +1,44 @@
-@if (ladefehler()) {
-  <div class="fehler">
-    <app-hinweis-box text="Die Kategorien konnten nicht geladen werden." />
-    <button type="button" class="knopf knopf-sekundaer" (click)="laden()">Erneut versuchen</button>
-    <button type="button" class="knopf knopf-sekundaer" (click)="abgebrochen.emit()">
-      Abbrechen
+<dialog
+  #dialog
+  class="sheet"
+  aria-labelledby="bearbeiten-titel"
+  (cancel)="esc($event)"
+  (close)="geschlossen()"
+>
+  <div class="leiste">
+    <button type="button" class="leiste-knopf" (click)="abbrechen()">Abbrechen</button>
+    <h2 id="bearbeiten-titel">Vertrag bearbeiten</h2>
+    <button
+      type="submit"
+      class="leiste-knopf sichern"
+      [attr.form]="formularId"
+      [disabled]="!kategorien() || !vertrag() || sendet()"
+      [attr.aria-busy]="sendet()"
+    >
+      Sichern
     </button>
   </div>
-} @else if (geladen(); as liste) {
-  <app-vertrag-formular
-    [vertrag]="vertrag()"
-    [kategorien]="liste"
-    [sendet]="sendet()"
-    [fehlerAntwort]="speicherfehler()"
-    (speichern)="speichern($event)"
-    (abbrechen)="abgebrochen.emit()"
-  />
-} @else {
-  <p class="laedt" role="status">Wird geladen …</p>
-}
+
+  <div class="inhalt">
+    <p class="name">{{ name() }}</p>
+    @if (ladefehler()) {
+      <div class="fehler">
+        <app-hinweis-box text="Die Kategorien konnten nicht geladen werden." />
+        <button type="button" class="knopf-sekundaer" (click)="laden()">Erneut versuchen</button>
+      </div>
+    } @else if (kategorien() && vertrag()) {
+      <app-vertrag-formular
+        [vertrag]="vertrag()"
+        [kategorien]="kategorien()!"
+        [sendet]="sendet()"
+        [fehlerAntwort]="speicherfehler()"
+        [formularId]="formularId"
+        knoepfe="nie"
+        (speichern)="speichern($event)"
+        (abbrechen)="abbrechen()"
+      />
+    } @else {
+      <p class="laedt" role="status">Wird geladen …</p>
+    }
+  </div>
+</dialog>

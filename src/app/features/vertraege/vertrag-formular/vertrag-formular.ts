@@ -115,8 +115,11 @@ export class VertragFormular implements OnInit {
   readonly fehlerAntwort = input<unknown>(null);
   /** Für einen Absende-Knopf außerhalb des Formulars ({@code form}-Attribut). */
   readonly formularId = input<string | null>(null);
-  /** Abbrechen und Speichern stehen bis 900 px in der Leiste der Seite, nicht im Formular. */
-  readonly knoepfeInLeiste = input(false);
+  /**
+   * Abbrechen und Speichern im Formular: {@code ab-901} bis 900 px in der Leiste der Seite,
+   * {@code nie} immer in der Leiste des Sheets.
+   */
+  readonly knoepfe = input<'immer' | 'ab-901' | 'nie'>('immer');
 
   readonly speichern = output<Required<VertragEingabe>>();
   readonly abbrechen = output<void>();
@@ -240,7 +243,7 @@ export class VertragFormular implements OnInit {
     this.formular.controls.nichtKuendbar.updateValueAndValidity({ onlySelf: true });
     this.formular.controls.gekuendigt.updateValueAndValidity({ onlySelf: true });
     afterNextRender(
-      // Ohne Scrollen: Wohin die Seite geht, entscheidet die Zeile, die das Formular zeigt.
+      // Ohne Scrollen: Das Formular beginnt oben im Sheet.
       () =>
         this.formularElement()
           .nativeElement.querySelector<HTMLElement>('input')
