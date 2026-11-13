@@ -15,6 +15,7 @@ import {
   OnInit,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -30,8 +31,13 @@ import {
 } from '../../../core/api/api';
 import { problemFelder } from '../../../core/fehler/problem';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
-import { waehrungZeichen } from '../../../shared/format/betrag.pipe';
+import { betragText, waehrungZeichen } from '../../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import { Tabliste } from '../../../shared/tabliste/tabliste';
+import {
+  Uebersicht,
+  VertragZusammenfassung,
+} from '../vertrag-zusammenfassung/vertrag-zusammenfassung';
 import {
   kategorieText,
   kuendigungText,
@@ -43,6 +49,7 @@ import {
 import { VertragEingabe, VertragService } from '../vertrag.service';
 import {
   anfrageAus,
+  betragLesen,
   feldfehlerTexte,
   VertragFeld,
   vertragPruefen,
@@ -62,6 +69,36 @@ const BLENDET_AUS: Partial<Record<VertragFeld, VertragFeld[]>> = {
 };
 
 const VORSCHAU_VERZOEGERUNG_MS = 400;
+
+/** „Preise“ kommt mit den Preisänderungen dazu. */
+const TABS = [
+  { key: 'allgemein', label: 'Allgemein' },
+  { key: 'kosten', label: 'Kosten' },
+  { key: 'laufzeit', label: 'Laufzeit' },
+] as const;
+
+type TabKey = (typeof TABS)[number]['key'];
+
+const TAB_VON: Record<VertragFeld, TabKey> = {
+  anbieter: 'allgemein',
+  bezeichnung: 'allgemein',
+  kategorieId: 'allgemein',
+  vertragsnummer: 'allgemein',
+  notiz: 'allgemein',
+  betrag: 'kosten',
+  zahlweise: 'kosten',
+  abbuchungAb: 'kosten',
+  zahlungsweg: 'kosten',
+  nichtKuendbar: 'laufzeit',
+  beginn: 'laufzeit',
+  laufzeitende: 'laufzeit',
+  verlaengerung: 'laufzeit',
+  kuendigungsfristMonate: 'laufzeit',
+  gekuendigt: 'laufzeit',
+  gekuendigtZum: 'laufzeit',
+};
+
+const NOCH_OFFEN = 'Noch offen';
 
 const HINWEIS_ZAHLWEISE = 'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.';
 
@@ -88,13 +125,15 @@ function optionen<T extends string>(texte: Record<T, string>): { wert: T; text: 
 let letztesFormular = 0;
 
 /**
- * Felder eines Vertrags. Prüft nur Pflichtfelder und meldet dann {@link speichern}; das Speichern und
- * die Antwort darauf liegen bei der Seite, die Fehler zurückgibt über {@link fehlerAntwort}. Mit
- * {@link vertrag} bearbeitet es diesen Vertrag, sonst legt es einen neuen an.
+ * Felder eines Vertrags in den Tabs Allgemein, Kosten und Laufzeit; jeder Tab zählt seine Fehler, und
+ * Fehler beim Speichern führen zum ersten Tab mit Fehler. Prüft nur Pflichtfelder und meldet dann
+ * {@link speichern}; das Speichern und die Antwort darauf liegen bei der Seite, die Fehler zurückgibt
+ * über {@link fehlerAntwort}. Mit {@link vertrag} bearbeitet es diesen Vertrag, sonst legt es einen
+ * neuen an.
  */
 @Component({
   selector: 'app-vertrag-formular',
-  imports: [NgTemplateOutlet, ReactiveFormsModule, HinweisBox],
+  imports: [NgTemplateOutlet, ReactiveFormsModule, HinweisBox, Tabliste, VertragZusammenfassung],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-formular.html',
   styleUrl: './vertrag-formular.scss',
@@ -120,6 +159,8 @@ export class VertragFormular implements OnInit {
    * {@code nie} immer in der Leiste des Sheets.
    */
   readonly knoepfe = input<'immer' | 'ab-901' | 'nie'>('immer');
+  /** Rechts daneben eine Zusammenfassung der Eingaben (ab 901 px), für „Neuer Vertrag“. */
+  readonly zusammenfassung = input(false);
 
   readonly speichern = output<Required<VertragEingabe>>();
   readonly abbrechen = output<void>();
@@ -168,6 +209,11 @@ export class VertragFormular implements OnInit {
 
   private ausgangswerte = JSON.stringify(this.formular.getRawValue());
 
+  /** Für die Zusammenfassung; folgt den Eingaben und der Vorbelegung. */
+  private readonly werte = signal(this.formular.getRawValue());
+
+  protected readonly tab = signal<TabKey>('allgemein');
+
   private readonly zahlweise = toSignal(this.formular.controls.zahlweise.valueChanges);
 
   protected readonly zahlweiseGeaendert = computed(() => {
@@ -199,6 +245,45 @@ export class VertragFormular implements OnInit {
     () => !!this.fehlerAntwort() && !feldfehlerTexte(problemFelder(this.fehlerAntwort())).size,
   );
 
+  protected readonly tabs = computed(() => {
+    const anzahl = new Map<TabKey, number>();
+    for (const feld of this.feldFehler().keys()) {
+      anzahl.set(TAB_VON[feld], (anzahl.get(TAB_VON[feld]) ?? 0) + 1);
+    }
+    return TABS.map((tab) => ({ ...tab, fehler: anzahl.get(tab.key) ?? 0 }));
+  });
+
+  /** Nur Formatierung der Eingaben; Termine kommen aus der Vorschau des Backends (ADR 0010). */
+  protected readonly uebersicht = computed<Uebersicht>(() => {
+    const w = this.werte();
+    const anbieter = w.anbieter.trim();
+    const bezeichnung = w.bezeichnung.trim();
+    const kategorie = this.kategorien().find(({ id }) => id === w.kategorieId);
+    const wert = betragLesen(w.betrag);
+    const betrag =
+      wert !== null && wert > 0
+        ? betragText({ wert, waehrung: this.vertrag()?.betrag.waehrung ?? 'EUR' }, this.locale) +
+          (w.zahlweise ? ` ${ZAHLWEISE_TEXT[w.zahlweise]}` : '')
+        : NOCH_OFFEN;
+    const vorschau = this.vorschau();
+    const kuendigung = w.nichtKuendbar
+      ? 'Nicht kündbar'
+      : vorschau
+        ? kuendigungText(vorschau)
+        : NOCH_OFFEN;
+    return {
+      name: bezeichnung || anbieter || 'Neuer Vertrag',
+      unter:
+        [bezeichnung ? anbieter : '', kategorie ? kategorieText(kategorie) : '']
+          .filter(Boolean)
+          .join(' · ') || 'Noch keine Angaben',
+      zeilen: [
+        { label: 'Betrag', wert: betrag },
+        { label: 'Kündigung', wert: kuendigung },
+      ],
+    };
+  });
+
   protected readonly hinweis = computed(() => {
     if (this.feldFehler().size) {
       return FEHLER_FELDER;
@@ -219,10 +304,14 @@ export class VertragFormular implements OnInit {
         takeUntilDestroyed(),
       )
       .subscribe((geaendert) => this.ungespeichert.melden(geaendert));
+    this.formular.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.werte.set(this.formular.getRawValue()));
     this.destroyRef.onDestroy(() => this.ungespeichert.melden(false));
     effect(() => {
       if (this.fehlerAntwort()) {
-        this.fehlerZeigen();
+        // Nur bei einer neuen Antwort, nicht jedes Mal, wenn danach ein Fehler verschwindet.
+        untracked(() => this.fehlerZeigen());
       }
     });
   }
@@ -239,6 +328,7 @@ export class VertragFormular implements OnInit {
     }
     this.formular.setValue(werteAus(vertrag), { emitEvent: false });
     this.ausgangswerte = JSON.stringify(this.formular.getRawValue());
+    this.werte.set(this.formular.getRawValue());
     // Die Signale folgen valueChanges, das setValue oben bewusst nicht auslöst.
     this.formular.controls.nichtKuendbar.updateValueAndValidity({ onlySelf: true });
     this.formular.controls.gekuendigt.updateValueAndValidity({ onlySelf: true });
@@ -276,7 +366,11 @@ export class VertragFormular implements OnInit {
       .subscribe((kuendigung) => this.vorschau.set(kuendigung));
   }
 
-  protected id(feld: VertragFeld): string {
+  protected tabWaehlen(tab: string): void {
+    this.tab.set(tab as TabKey);
+  }
+
+  protected id(feld: VertragFeld | 'tab' | 'tabpanel'): string {
     return `vertrag-${this.nummer}-${feld}`;
   }
 
@@ -313,8 +407,17 @@ export class VertragFormular implements OnInit {
     );
   }
 
-  /** Der Button steht am Ende des langen Formulars, die Box am Anfang: Der Fehler muss in den Blick. */
+  /**
+   * Zum ersten Tab mit Fehler, dort zum ersten markierten Feld. Ohne Feldfehler (z. B. Serverfehler)
+   * bleibt der Tab, die Box oben kommt in den Blick.
+   */
   private fehlerZeigen(): void {
+    const tab = TABS.find(({ key }) =>
+      [...this.feldFehler().keys()].some((f) => TAB_VON[f] === key),
+    );
+    if (tab) {
+      this.tab.set(tab.key);
+    }
     afterNextRender(
       () => {
         const formular = this.formularElement().nativeElement;

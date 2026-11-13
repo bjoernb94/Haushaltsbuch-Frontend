@@ -9,300 +9,335 @@
   (ngSubmit)="absenden()"
   novalidate
 >
+  <app-tabliste
+    #tabliste
+    [tabs]="tabs()"
+    [aktiv]="tab()"
+    [label]="vertrag() ? 'Bereiche des Vertrags bearbeiten' : 'Bereiche des Vertrags'"
+    [idPrefix]="id('tab')"
+    [panelId]="id('tabpanel')"
+    (waehlen)="tabWaehlen($event)"
+  />
+
   @if (hinweis(); as text) {
     <div class="hinweis" tabindex="-1">
       <app-hinweis-box [text]="text" />
     </div>
   }
 
-  <fieldset>
-    <legend>Vertrag</legend>
-    <div class="raster">
-      <div class="feld">
-        <label [for]="id('anbieter')">Anbieter *</label>
-        <input
-          [id]="id('anbieter')"
-          type="text"
-          placeholder="z. B. Musterversicherung AG"
-          formControlName="anbieter"
-          [attr.aria-invalid]="!!fehlerText('anbieter')"
-          [attr.aria-describedby]="beschreibung('anbieter')"
-        />
-        @if (fehlerText('anbieter'); as text) {
-          <p class="feldfehler" [id]="id('anbieter') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-      <div class="feld">
-        <label [for]="id('bezeichnung')"
-          >Bezeichnung <span class="optional">(optional)</span></label
-        >
-        <input
-          [id]="id('bezeichnung')"
-          type="text"
-          placeholder="Leer = Name des Anbieters"
-          formControlName="bezeichnung"
-          [attr.aria-invalid]="!!fehlerText('bezeichnung')"
-          [attr.aria-describedby]="beschreibung('bezeichnung')"
-        />
-        @if (fehlerText('bezeichnung'); as text) {
-          <p class="feldfehler" [id]="id('bezeichnung') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-      <div class="feld">
-        <label [for]="id('kategorieId')">Kategorie *</label>
-        <select
-          [id]="id('kategorieId')"
-          formControlName="kategorieId"
-          [attr.aria-invalid]="!!fehlerText('kategorieId')"
-          [attr.aria-describedby]="beschreibung('kategorieId')"
-        >
-          <option value="">Bitte wählen</option>
-          @for (kategorie of kategorien(); track kategorie.id) {
-            <option [value]="kategorie.id">{{ kategorieText(kategorie) }}</option>
-          }
-        </select>
-        @if (fehlerText('kategorieId'); as text) {
-          <p class="feldfehler" [id]="id('kategorieId') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-      <div class="feld">
-        <label [for]="id('vertragsnummer')"
-          >Vertrags- oder Kundennummer <span class="optional">(optional)</span></label
-        >
-        <input
-          [id]="id('vertragsnummer')"
-          type="text"
-          placeholder="z. B. KV-123456"
-          formControlName="vertragsnummer"
-          [attr.aria-invalid]="!!fehlerText('vertragsnummer')"
-          [attr.aria-describedby]="beschreibung('vertragsnummer')"
-        />
-        @if (fehlerText('vertragsnummer'); as text) {
-          <p class="feldfehler" [id]="id('vertragsnummer') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-    </div>
-  </fieldset>
-
-  <fieldset>
-    <legend>Kosten</legend>
-    <div class="raster">
-      <div class="feld">
-        <label [for]="id('betrag')">Betrag in {{ waehrung() }} *</label>
-        <input
-          [id]="id('betrag')"
-          type="text"
-          inputmode="decimal"
-          placeholder="0,00"
-          formControlName="betrag"
-          [attr.aria-invalid]="!!fehlerText('betrag')"
-          [attr.aria-describedby]="beschreibung('betrag')"
-        />
-        @if (fehlerText('betrag'); as text) {
-          <p class="feldfehler" [id]="id('betrag') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-      <div class="feld">
-        <label [for]="id('zahlweise')">Zahlweise *</label>
-        <select
-          [id]="id('zahlweise')"
-          formControlName="zahlweise"
-          [attr.aria-invalid]="!!fehlerText('zahlweise')"
-          [attr.aria-describedby]="beschreibung('zahlweise')"
-        >
-          <option value="">Bitte wählen</option>
-          @for (option of zahlweisen; track option.wert) {
-            <option [value]="option.wert">{{ option.text }}</option>
-          }
-        </select>
-        @if (fehlerText('zahlweise'); as text) {
-          <p class="feldfehler" [id]="id('zahlweise') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-      <div class="feld">
-        <label [for]="id('abbuchungAb')">Nächste Abbuchung *</label>
-        <input
-          [id]="id('abbuchungAb')"
-          type="date"
-          formControlName="abbuchungAb"
-          [attr.aria-invalid]="!!fehlerText('abbuchungAb')"
-          [attr.aria-describedby]="
-            beschreibung('abbuchungAb', zahlweiseGeaendert() ? id('abbuchungAb') + '-hinweis' : '')
-          "
-        />
-        @if (zahlweiseGeaendert()) {
-          <p class="feldhinweis" [id]="id('abbuchungAb') + '-hinweis'">{{ hinweisZahlweise }}</p>
-        }
-        @if (fehlerText('abbuchungAb'); as text) {
-          <p class="feldfehler" [id]="id('abbuchungAb') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-      <div class="feld">
-        <label [for]="id('zahlungsweg')"
-          >Zahlungsweg <span class="optional">(optional)</span></label
-        >
-        <select
-          [id]="id('zahlungsweg')"
-          formControlName="zahlungsweg"
-          [attr.aria-invalid]="!!fehlerText('zahlungsweg')"
-          [attr.aria-describedby]="beschreibung('zahlungsweg')"
-        >
-          <option value="">Bitte wählen</option>
-          @for (option of zahlungswege; track option.wert) {
-            <option [value]="option.wert">{{ option.text }}</option>
-          }
-        </select>
-        @if (fehlerText('zahlungsweg'); as text) {
-          <p class="feldfehler" [id]="id('zahlungsweg') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-    </div>
-  </fieldset>
-
-  <fieldset>
-    <legend>Laufzeit und Kündigung</legend>
-    <div class="ankreuzen">
-      <input
-        [id]="id('nichtKuendbar')"
-        type="checkbox"
-        formControlName="nichtKuendbar"
-        [attr.aria-describedby]="id('nichtKuendbar') + '-hinweis'"
-      />
-      <div>
-        <label [for]="id('nichtKuendbar')">Nicht kündbar</label>
-        <span class="feldhinweis" [id]="id('nichtKuendbar') + '-hinweis'"
-          >Für Pflichtbeiträge wie den Rundfunkbeitrag. Verlängerung und Kündigungsfrist werden dann
-          ausgeblendet; Beginn und Laufzeitende bleiben.</span
-        >
-      </div>
-    </div>
-    <div class="raster">
-      <div class="feld">
-        <label [for]="id('beginn')">Vertragsbeginn <span class="optional">(optional)</span></label>
-        <input
-          [id]="id('beginn')"
-          type="date"
-          formControlName="beginn"
-          [attr.aria-invalid]="!!fehlerText('beginn')"
-          [attr.aria-describedby]="beschreibung('beginn')"
-        />
-        @if (fehlerText('beginn'); as text) {
-          <p class="feldfehler" [id]="id('beginn') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-      <div class="feld">
-        <label [for]="id('laufzeitende')"
-          >Laufzeitende <span class="optional">(optional)</span></label
-        >
-        <input
-          [id]="id('laufzeitende')"
-          type="date"
-          formControlName="laufzeitende"
-          [attr.aria-invalid]="!!fehlerText('laufzeitende')"
-          [attr.aria-describedby]="beschreibung('laufzeitende')"
-        />
-        @if (fehlerText('laufzeitende'); as text) {
-          <p class="feldfehler" [id]="id('laufzeitende') + '-fehler'">{{ text }}</p>
-        }
-      </div>
-    </div>
-    @if (!nichtKuendbar()) {
-      <div class="raster">
-        <div class="feld">
-          <label [for]="id('verlaengerung')">Verlängerung</label>
-          <select
-            [id]="id('verlaengerung')"
-            formControlName="verlaengerung"
-            [attr.aria-invalid]="!!fehlerText('verlaengerung')"
-            [attr.aria-describedby]="beschreibung('verlaengerung')"
-          >
-            <option value="">Bitte wählen</option>
-            @for (option of verlaengerungen; track option.wert) {
-              <option [value]="option.wert">{{ option.text }}</option>
+  <div
+    class="tabpanel"
+    role="tabpanel"
+    tabindex="-1"
+    [id]="id('tabpanel')"
+    [attr.aria-labelledby]="tabliste.tabId(tab())"
+  >
+    <div class="tabinhalt" [hidden]="tab() !== 'allgemein'">
+      <fieldset>
+        <legend>Vertrag</legend>
+        <div class="raster">
+          <div class="feld">
+            <label [for]="id('anbieter')">Anbieter *</label>
+            <input
+              [id]="id('anbieter')"
+              type="text"
+              placeholder="z. B. Musterversicherung AG"
+              formControlName="anbieter"
+              [attr.aria-invalid]="!!fehlerText('anbieter')"
+              [attr.aria-describedby]="beschreibung('anbieter')"
+            />
+            @if (fehlerText('anbieter'); as text) {
+              <p class="feldfehler" [id]="id('anbieter') + '-fehler'">{{ text }}</p>
             }
-          </select>
-          @if (fehlerText('verlaengerung'); as text) {
-            <p class="feldfehler" [id]="id('verlaengerung') + '-fehler'">{{ text }}</p>
-          }
-        </div>
-        <div class="feld">
-          <label [for]="id('kuendigungsfristMonate')">Kündigungsfrist</label>
-          <select
-            [id]="id('kuendigungsfristMonate')"
-            formControlName="kuendigungsfristMonate"
-            [attr.aria-invalid]="!!fehlerText('kuendigungsfristMonate')"
-            [attr.aria-describedby]="beschreibung('kuendigungsfristMonate')"
-          >
-            <option value="">Bitte wählen</option>
-            @for (option of fristen(); track option.wert) {
-              <option [value]="option.wert">{{ option.text }}</option>
+          </div>
+          <div class="feld">
+            <label [for]="id('bezeichnung')"
+              >Bezeichnung <span class="optional">(optional)</span></label
+            >
+            <input
+              [id]="id('bezeichnung')"
+              type="text"
+              placeholder="Leer = Name des Anbieters"
+              formControlName="bezeichnung"
+              [attr.aria-invalid]="!!fehlerText('bezeichnung')"
+              [attr.aria-describedby]="beschreibung('bezeichnung')"
+            />
+            @if (fehlerText('bezeichnung'); as text) {
+              <p class="feldfehler" [id]="id('bezeichnung') + '-fehler'">{{ text }}</p>
             }
-          </select>
-          @if (fehlerText('kuendigungsfristMonate'); as text) {
-            <p class="feldfehler" [id]="id('kuendigungsfristMonate') + '-fehler'">{{ text }}</p>
+          </div>
+          <div class="feld">
+            <label [for]="id('kategorieId')">Kategorie *</label>
+            <select
+              [id]="id('kategorieId')"
+              formControlName="kategorieId"
+              [attr.aria-invalid]="!!fehlerText('kategorieId')"
+              [attr.aria-describedby]="beschreibung('kategorieId')"
+            >
+              <option value="">Bitte wählen</option>
+              @for (kategorie of kategorien(); track kategorie.id) {
+                <option [value]="kategorie.id">{{ kategorieText(kategorie) }}</option>
+              }
+            </select>
+            @if (fehlerText('kategorieId'); as text) {
+              <p class="feldfehler" [id]="id('kategorieId') + '-fehler'">{{ text }}</p>
+            }
+          </div>
+          <div class="feld">
+            <label [for]="id('vertragsnummer')"
+              >Vertrags- oder Kundennummer <span class="optional">(optional)</span></label
+            >
+            <input
+              [id]="id('vertragsnummer')"
+              type="text"
+              placeholder="z. B. KV-123456"
+              formControlName="vertragsnummer"
+              [attr.aria-invalid]="!!fehlerText('vertragsnummer')"
+              [attr.aria-describedby]="beschreibung('vertragsnummer')"
+            />
+            @if (fehlerText('vertragsnummer'); as text) {
+              <p class="feldfehler" [id]="id('vertragsnummer') + '-fehler'">{{ text }}</p>
+            }
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Notiz</legend>
+        <div class="feld">
+          <label class="sr-only" [for]="id('notiz')">Notiz</label>
+          <textarea
+            [id]="id('notiz')"
+            rows="3"
+            placeholder="z. B. Familien-Abo, Preiserhöhung ab 01/2027"
+            formControlName="notiz"
+            [attr.aria-invalid]="!!fehlerText('notiz')"
+            [attr.aria-describedby]="beschreibung('notiz')"
+          ></textarea>
+          @if (fehlerText('notiz'); as text) {
+            <p class="feldfehler" [id]="id('notiz') + '-fehler'">{{ text }}</p>
           }
         </div>
-      </div>
-      <div class="vorschau" role="status">
-        <b>Nächster Kündigungstermin:</b>
-        <span>{{ vorschauText() }}</span>
-      </div>
-    }
-  </fieldset>
-
-  <fieldset>
-    <legend>Status und Notiz</legend>
-    <div class="raster">
-      <div class="ankreuzen">
-        <input
-          [id]="id('gekuendigt')"
-          type="checkbox"
-          formControlName="gekuendigt"
-          [attr.aria-describedby]="id('gekuendigt') + '-hinweis'"
-        />
-        <div>
-          <label [for]="id('gekuendigt')">Gekündigt</label>
-          <span class="feldhinweis" [id]="id('gekuendigt') + '-hinweis'"
-            >Bis zum Kündigungsdatum gilt der Vertrag als gekündigt, danach als beendet.</span
-          >
+      </fieldset>
+    </div>
+    <div class="tabinhalt" [hidden]="tab() !== 'kosten'">
+      <fieldset>
+        <legend>Kosten</legend>
+        <div class="raster">
+          <div class="feld">
+            <label [for]="id('betrag')">Betrag in {{ waehrung() }} *</label>
+            <input
+              [id]="id('betrag')"
+              type="text"
+              inputmode="decimal"
+              placeholder="0,00"
+              formControlName="betrag"
+              [attr.aria-invalid]="!!fehlerText('betrag')"
+              [attr.aria-describedby]="beschreibung('betrag')"
+            />
+            @if (fehlerText('betrag'); as text) {
+              <p class="feldfehler" [id]="id('betrag') + '-fehler'">{{ text }}</p>
+            }
+          </div>
+          <div class="feld">
+            <label [for]="id('zahlweise')">Zahlweise *</label>
+            <select
+              [id]="id('zahlweise')"
+              formControlName="zahlweise"
+              [attr.aria-invalid]="!!fehlerText('zahlweise')"
+              [attr.aria-describedby]="beschreibung('zahlweise')"
+            >
+              <option value="">Bitte wählen</option>
+              @for (option of zahlweisen; track option.wert) {
+                <option [value]="option.wert">{{ option.text }}</option>
+              }
+            </select>
+            @if (fehlerText('zahlweise'); as text) {
+              <p class="feldfehler" [id]="id('zahlweise') + '-fehler'">{{ text }}</p>
+            }
+          </div>
+          <div class="feld">
+            <label [for]="id('abbuchungAb')">Nächste Abbuchung *</label>
+            <input
+              [id]="id('abbuchungAb')"
+              type="date"
+              formControlName="abbuchungAb"
+              [attr.aria-invalid]="!!fehlerText('abbuchungAb')"
+              [attr.aria-describedby]="
+                beschreibung(
+                  'abbuchungAb',
+                  zahlweiseGeaendert() ? id('abbuchungAb') + '-hinweis' : ''
+                )
+              "
+            />
+            @if (zahlweiseGeaendert()) {
+              <p class="feldhinweis" [id]="id('abbuchungAb') + '-hinweis'">
+                {{ hinweisZahlweise }}
+              </p>
+            }
+            @if (fehlerText('abbuchungAb'); as text) {
+              <p class="feldfehler" [id]="id('abbuchungAb') + '-fehler'">{{ text }}</p>
+            }
+          </div>
+          <div class="feld">
+            <label [for]="id('zahlungsweg')"
+              >Zahlungsweg <span class="optional">(optional)</span></label
+            >
+            <select
+              [id]="id('zahlungsweg')"
+              formControlName="zahlungsweg"
+              [attr.aria-invalid]="!!fehlerText('zahlungsweg')"
+              [attr.aria-describedby]="beschreibung('zahlungsweg')"
+            >
+              <option value="">Bitte wählen</option>
+              @for (option of zahlungswege; track option.wert) {
+                <option [value]="option.wert">{{ option.text }}</option>
+              }
+            </select>
+            @if (fehlerText('zahlungsweg'); as text) {
+              <p class="feldfehler" [id]="id('zahlungsweg') + '-fehler'">{{ text }}</p>
+            }
+          </div>
         </div>
-      </div>
-      @if (gekuendigt()) {
-        <div class="feld">
-          <label [for]="id('gekuendigtZum')">Gekündigt zum *</label>
+      </fieldset>
+    </div>
+    <div class="tabinhalt" [hidden]="tab() !== 'laufzeit'">
+      <fieldset>
+        <legend>Laufzeit und Kündigung</legend>
+        <div class="ankreuzen">
           <input
-            [id]="id('gekuendigtZum')"
-            type="date"
-            formControlName="gekuendigtZum"
-            [attr.aria-invalid]="!!fehlerText('gekuendigtZum')"
-            [attr.aria-describedby]="
-              beschreibung('gekuendigtZum', id('gekuendigtZum') + '-hinweis')
-            "
+            [id]="id('nichtKuendbar')"
+            type="checkbox"
+            formControlName="nichtKuendbar"
+            [attr.aria-describedby]="id('nichtKuendbar') + '-hinweis'"
           />
-          <span class="feldhinweis" [id]="id('gekuendigtZum') + '-hinweis'"
-            >Ein vergangenes Datum erfasst einen bereits beendeten Vertrag.</span
-          >
-          @if (fehlerText('gekuendigtZum'); as text) {
-            <p class="feldfehler" [id]="id('gekuendigtZum') + '-fehler'">{{ text }}</p>
+          <div>
+            <label [for]="id('nichtKuendbar')">Nicht kündbar</label>
+            <span class="feldhinweis" [id]="id('nichtKuendbar') + '-hinweis'"
+              >Für Pflichtbeiträge wie den Rundfunkbeitrag. Verlängerung und Kündigungsfrist werden
+              dann ausgeblendet; Beginn und Laufzeitende bleiben.</span
+            >
+          </div>
+        </div>
+        <div class="raster">
+          <div class="feld">
+            <label [for]="id('beginn')"
+              >Vertragsbeginn <span class="optional">(optional)</span></label
+            >
+            <input
+              [id]="id('beginn')"
+              type="date"
+              formControlName="beginn"
+              [attr.aria-invalid]="!!fehlerText('beginn')"
+              [attr.aria-describedby]="beschreibung('beginn')"
+            />
+            @if (fehlerText('beginn'); as text) {
+              <p class="feldfehler" [id]="id('beginn') + '-fehler'">{{ text }}</p>
+            }
+          </div>
+          <div class="feld">
+            <label [for]="id('laufzeitende')"
+              >Laufzeitende <span class="optional">(optional)</span></label
+            >
+            <input
+              [id]="id('laufzeitende')"
+              type="date"
+              formControlName="laufzeitende"
+              [attr.aria-invalid]="!!fehlerText('laufzeitende')"
+              [attr.aria-describedby]="beschreibung('laufzeitende')"
+            />
+            @if (fehlerText('laufzeitende'); as text) {
+              <p class="feldfehler" [id]="id('laufzeitende') + '-fehler'">{{ text }}</p>
+            }
+          </div>
+        </div>
+        @if (!nichtKuendbar()) {
+          <div class="raster">
+            <div class="feld">
+              <label [for]="id('verlaengerung')">Verlängerung</label>
+              <select
+                [id]="id('verlaengerung')"
+                formControlName="verlaengerung"
+                [attr.aria-invalid]="!!fehlerText('verlaengerung')"
+                [attr.aria-describedby]="beschreibung('verlaengerung')"
+              >
+                <option value="">Bitte wählen</option>
+                @for (option of verlaengerungen; track option.wert) {
+                  <option [value]="option.wert">{{ option.text }}</option>
+                }
+              </select>
+              @if (fehlerText('verlaengerung'); as text) {
+                <p class="feldfehler" [id]="id('verlaengerung') + '-fehler'">{{ text }}</p>
+              }
+            </div>
+            <div class="feld">
+              <label [for]="id('kuendigungsfristMonate')">Kündigungsfrist</label>
+              <select
+                [id]="id('kuendigungsfristMonate')"
+                formControlName="kuendigungsfristMonate"
+                [attr.aria-invalid]="!!fehlerText('kuendigungsfristMonate')"
+                [attr.aria-describedby]="beschreibung('kuendigungsfristMonate')"
+              >
+                <option value="">Bitte wählen</option>
+                @for (option of fristen(); track option.wert) {
+                  <option [value]="option.wert">{{ option.text }}</option>
+                }
+              </select>
+              @if (fehlerText('kuendigungsfristMonate'); as text) {
+                <p class="feldfehler" [id]="id('kuendigungsfristMonate') + '-fehler'">
+                  {{ text }}
+                </p>
+              }
+            </div>
+          </div>
+          <div class="vorschau" role="status">
+            <b>Nächster Kündigungstermin:</b>
+            <span>{{ vorschauText() }}</span>
+          </div>
+        }
+      </fieldset>
+
+      <fieldset>
+        <legend>Status</legend>
+        <div class="raster">
+          <div class="ankreuzen">
+            <input
+              [id]="id('gekuendigt')"
+              type="checkbox"
+              formControlName="gekuendigt"
+              [attr.aria-describedby]="id('gekuendigt') + '-hinweis'"
+            />
+            <div>
+              <label [for]="id('gekuendigt')">Gekündigt</label>
+              <span class="feldhinweis" [id]="id('gekuendigt') + '-hinweis'"
+                >Bis zum Kündigungsdatum gilt der Vertrag als gekündigt, danach als beendet.</span
+              >
+            </div>
+          </div>
+          @if (gekuendigt()) {
+            <div class="feld">
+              <label [for]="id('gekuendigtZum')">Gekündigt zum *</label>
+              <input
+                [id]="id('gekuendigtZum')"
+                type="date"
+                formControlName="gekuendigtZum"
+                [attr.aria-invalid]="!!fehlerText('gekuendigtZum')"
+                [attr.aria-describedby]="
+                  beschreibung('gekuendigtZum', id('gekuendigtZum') + '-hinweis')
+                "
+              />
+              <span class="feldhinweis" [id]="id('gekuendigtZum') + '-hinweis'"
+                >Ein vergangenes Datum erfasst einen bereits beendeten Vertrag.</span
+              >
+              @if (fehlerText('gekuendigtZum'); as text) {
+                <p class="feldfehler" [id]="id('gekuendigtZum') + '-fehler'">{{ text }}</p>
+              }
+            </div>
           }
         </div>
-      }
+      </fieldset>
     </div>
-    <div class="feld">
-      <label [for]="id('notiz')">Notiz <span class="optional">(optional)</span></label>
-      <textarea
-        [id]="id('notiz')"
-        rows="3"
-        placeholder="z. B. Familien-Abo, Preiserhöhung ab 01/2027"
-        formControlName="notiz"
-        [attr.aria-invalid]="!!fehlerText('notiz')"
-        [attr.aria-describedby]="beschreibung('notiz')"
-      ></textarea>
-      @if (fehlerText('notiz'); as text) {
-        <p class="feldfehler" [id]="id('notiz') + '-fehler'">{{ text }}</p>
-      }
-    </div>
-  </fieldset>
+  </div>
 
   <div class="aktionen">
     @if (vertrag()) {
@@ -314,6 +349,10 @@
     }
   </div>
 </form>
+
+@if (zusammenfassung()) {
+  <app-vertrag-zusammenfassung [uebersicht]="uebersicht()" />
+}
 
 <ng-template #abbrechenKnopf>
   <button class="knopf knopf-abbrechen" type="button" (click)="abbrechen.emit()">Abbrechen</button>

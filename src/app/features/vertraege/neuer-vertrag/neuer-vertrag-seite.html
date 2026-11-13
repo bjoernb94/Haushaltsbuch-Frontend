@@ -32,10 +32,7 @@
 
 <div class="kopf">
   <h1 class="titel">Neuer Vertrag</h1>
-  <p>
-    Felder mit * sind Pflichtfelder. Den nächsten Kündigungstermin berechnen wir aus Laufzeit,
-    Verlängerung und Frist.
-  </p>
+  <p>Pflichtfelder (*) findest du unter „Allgemein“ und „Kosten“. Alles Weitere ist optional.</p>
 </div>
 
 @if (ladefehler()) {
@@ -50,6 +47,7 @@
     [fehlerAntwort]="speicherfehler()"
     [formularId]="formularId"
     knoepfe="ab-901"
+    [zusammenfassung]="true"
     (speichern)="speichern($event)"
     (abbrechen)="zurueck()"
   />

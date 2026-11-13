@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, signal } from '@angular/core';
+import { Component, LOCALE_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { NEVER, Subject } from 'rxjs';
 import {
@@ -426,9 +426,160 @@ describe('VertragFormular', () => {
     expect(host.gespeichert).toEqual([]);
   });
 
+  describe('Tabs', () => {
+    const tabs = (el: HTMLElement) => [...el.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const sichtbar = (el: HTMLElement, name: string) =>
+      !el.querySelector(`[formcontrolname="${name}"]`)!.closest('[hidden]');
+    const text = (e: Element) => e.textContent?.replace(/\s+/g, ' ').trim();
+
+    it('zeigt Allgemein, Kosten und Laufzeit, je Tab nur seine Felder', async () => {
+      const { el, fixture } = await erstellen();
+      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit']);
+      expect(tabs(el)[0].getAttribute('aria-selected')).toBe('true');
+      expect(sichtbar(el, 'anbieter')).toBe(true);
+      expect(sichtbar(el, 'notiz')).toBe(true);
+      expect(sichtbar(el, 'betrag')).toBe(false);
+      expect(el.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
+        tabs(el)[0].id,
+      );
+
+      tabs(el)[1].click();
+      await fixture.whenStable();
+      expect(sichtbar(el, 'betrag')).toBe(true);
+      expect(sichtbar(el, 'anbieter')).toBe(false);
+
+      tabs(el)[2].click();
+      await fixture.whenStable();
+      expect(sichtbar(el, 'beginn')).toBe(true);
+      expect(sichtbar(el, 'gekuendigt')).toBe(true);
+      expect(tabs(el)[2].getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('zählt die Fehler je Tab und springt zum ersten Tab mit Fehler', async () => {
+      const { el, fixture, absenden, setzen } = await erstellen();
+      setzen('anbieter', 'Anbieter');
+      setzen('kategorieId', 'k1');
+      tabs(el)[2].click();
+      await fixture.whenStable();
+      await absenden();
+
+      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten 3, 3 Fehler', 'Laufzeit']);
+      expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+      expect(document.activeElement).toBe(el.querySelector('[formcontrolname="betrag"]'));
+
+      setzen('betrag', '19,99');
+      await fixture.whenStable();
+      expect(text(tabs(el)[1])).toBe('Kosten 2, 2 Fehler');
+    });
+
+    it('springt bei Feldfehlern des Backends zum ersten betroffenen Tab', async () => {
+      const { el, fixture, host } = await erstellen();
+      host.fehler.set(validierung(['laufzeitende', 'LaufzeitendeNachBeginn']));
+      await fixture.whenStable();
+      expect(tabs(el)[2].getAttribute('aria-selected')).toBe('true');
+      expect(text(tabs(el)[2])).toBe('Laufzeit 1, 1 Fehler');
+      expect(document.activeElement).toBe(el.querySelector('[formcontrolname="laufzeitende"]'));
+    });
+
+    it('bleibt bei einem Fehler ohne Feld im Tab', async () => {
+      const { el, fixture, host } = await erstellen();
+      tabs(el)[1].click();
+      await fixture.whenStable();
+      host.fehler.set(new HttpErrorResponse({ status: 500 }));
+      await fixture.whenStable();
+      expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+    });
+  });
+
+  describe('Zusammenfassung', () => {
+    async function mitZusammenfassung() {
+      TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
+      const fixture = TestBed.createComponent(VertragFormular);
+      fixture.componentRef.setInput('kategorien', KATEGORIEN);
+      fixture.componentRef.setInput('zusammenfassung', true);
+      await fixture.whenStable();
+      const el: HTMLElement = fixture.nativeElement;
+      const setzen = async (name: string, wert: string | boolean) => {
+        const control = el.querySelector<HTMLInputElement>(`[formcontrolname="${name}"]`)!;
+        if (typeof wert === 'boolean') {
+          control.click();
+        } else {
+          control.value = wert;
+          control.dispatchEvent(new Event(control.tagName === 'SELECT' ? 'change' : 'input'));
+        }
+        await fixture.whenStable();
+      };
+      const zeilen = () =>
+        Object.fromEntries(
+          [...el.querySelectorAll('app-vertrag-zusammenfassung dl > div')].map((d) => [
+            d.querySelector('dt')?.textContent?.trim(),
+            d.querySelector('dd')?.textContent?.replace(/\s+/g, ' ').trim(),
+          ]),
+        );
+      const titel = () =>
+        [...el.querySelectorAll('app-vertrag-zusammenfassung .titel span')].map((s) =>
+          s.textContent?.trim(),
+        );
+      return { fixture, el, setzen, zeilen, titel };
+    }
+
+    it('zeigt ohne Eingaben „Noch offen“', async () => {
+      const { el, zeilen, titel } = await mitZusammenfassung();
+      expect(el.querySelector('app-vertrag-zusammenfassung')?.getAttribute('role')).toBe(
+        'complementary',
+      );
+      expect(titel()).toEqual(['Neuer Vertrag', 'Noch keine Angaben']);
+      expect(zeilen()).toEqual({ Betrag: 'Noch offen', Kündigung: 'Noch offen' });
+    });
+
+    it('folgt den Eingaben: Name, Anbieter · Kategorie, Betrag mit Zahlweise', async () => {
+      const { setzen, zeilen, titel } = await mitZusammenfassung();
+      await setzen('anbieter', 'Musterversicherung AG');
+      expect(titel()).toEqual(['Musterversicherung AG', 'Noch keine Angaben']);
+      await setzen('bezeichnung', 'Kfz');
+      await setzen('kategorieId', 'k1');
+      expect(titel()).toEqual(['Kfz', 'Musterversicherung AG · Versicherung']);
+
+      await setzen('betrag', '1.234,5');
+      expect(zeilen()['Betrag']).toBe('1.234,50 €');
+      await setzen('zahlweise', 'JAEHRLICH');
+      expect(zeilen()['Betrag']).toBe('1.234,50 € jährlich');
+      await setzen('betrag', '12.50');
+      expect(zeilen()['Betrag']).toBe('Noch offen');
+    });
+
+    it('nennt „Nicht kündbar“ und sonst den Termin der Vorschau', async () => {
+      const antwort = new Subject<VertragVorschauAntwort>();
+      vorschau.mockReturnValue(antwort);
+      const { fixture, setzen, zeilen } = await mitZusammenfassung();
+      await setzen('zahlweise', 'MONATLICH');
+      await setzen('abbuchungAb', '2027-01-01');
+      await new Promise((fertig) => setTimeout(fertig, 450));
+      antwort.next({
+        kuendigung: {
+          art: 'MONATLICH_KUENDBAR',
+          dringend: false,
+          fristMonate: null,
+          kuendigenBis: null,
+          zum: '2027-01-31',
+        },
+      });
+      await fixture.whenStable();
+      expect(zeilen()['Kündigung']).toBe('Monatlich kündbar. Kündbar zum 31.01.2027');
+
+      await setzen('nichtKuendbar', true);
+      expect(zeilen()['Kündigung']).toBe('Nicht kündbar');
+    });
+
+    it('ohne Eingang keine Zusammenfassung', async () => {
+      const { el } = await erstellen();
+      expect(el.querySelector('app-vertrag-zusammenfassung')).toBeNull();
+    });
+  });
+
   it('meldet Abbrechen', async () => {
     const { host, el } = await erstellen();
-    el.querySelector<HTMLButtonElement>('button[type="button"]')!.click();
+    el.querySelector<HTMLButtonElement>('.aktionen button[type="button"]')!.click();
     expect(host.abgebrochen).toBe(1);
   });
 
@@ -580,7 +731,7 @@ describe('VertragFormular', () => {
       await setzen('zahlweise', 'JAEHRLICH');
       expect(el.textContent).toContain(hinweis);
       const ids = feld('abbuchungAb').getAttribute('aria-describedby')!;
-      expect(document.getElementById(ids)?.textContent).toBe(hinweis);
+      expect(document.getElementById(ids)?.textContent?.trim()).toBe(hinweis);
 
       await setzen('zahlweise', 'MONATLICH');
       expect(el.textContent).not.toContain(hinweis);
