@@ -3,37 +3,22 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   ElementRef,
   inject,
   Injector,
   input,
   LOCALE_ID,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
-import { Observable } from 'rxjs';
-import { VertragAntwort, VertragKategorieAntwort } from '../../../core/api/api';
-import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
-import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
-import { inDenBlick } from '../../../shared/in-den-blick/in-den-blick';
+import { VertragAntwort } from '../../../core/api/api';
 import { BetragPipe, betragText } from '../../../shared/format/betrag.pipe';
 import { datumText } from '../../../shared/format/datum.pipe';
-import { VertragBearbeiten } from '../vertrag-bearbeiten/vertrag-bearbeiten';
-import {
-  fristDauerText,
-  kategorieText,
-  kuendigungAnzeige,
-  kuendigungText,
-  STATUS_TEXT,
-  VERLAENGERUNG_TEXT,
-  vertragName,
-  ZAHLUNGSWEG_TEXT,
-  ZAHLWEISE_TEXT,
-} from '../vertrag-texte';
+import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import { kategorieText, kuendigungAnzeige, vertragName, ZAHLWEISE_TEXT } from '../vertrag-texte';
 
-const NICHT_HINTERLEGT = 'Nicht hinterlegt';
-const KEINE_ABBUCHUNG = 'Keine weiteren Abbuchungen';
+export const KEINE_ABBUCHUNG = 'Keine weiteren Abbuchungen';
 
 export interface ZeilenMeldung {
   text: string;
@@ -44,60 +29,44 @@ export interface ZeilenMeldung {
   unten?: boolean;
 }
 
-/** Eine Zeile der Vertragsliste mit aufklappbaren Details und Formular; Werte kommen vom Backend. */
+/** Ab hier gibt es „…“ und Rechtsklick; darunter öffnet ein Tippen die Details mit allen Aktionen. */
+const DESKTOP = '(min-width: 901px)';
+
+let letzteZeile = 0;
+
+/**
+ * Eine Zeile der Vertragsliste; Werte kommen vom Backend. Ein Klick auf die Zeile öffnet die Details.
+ * Am Desktop gibt es dazu ein Kontextmenü über „…“ oder Rechtsklick.
+ */
 @Component({
   selector: 'app-vertrag-zeile',
-  imports: [BetragPipe, HinweisBox, VertragBearbeiten],
+  imports: [BetragPipe, HinweisBox],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-zeile.html',
   styleUrl: './vertrag-zeile.scss',
 })
 export class VertragZeile {
   private readonly locale = inject(LOCALE_ID);
+  private readonly injector = inject(Injector);
 
   readonly vertrag = input.required<VertragAntwort>();
-  readonly ansicht = input<'details' | 'bearbeiten' | null>(null);
+  /** Die Details dieses Vertrags sind offen. */
+  readonly offen = input(false);
   readonly meldung = input<ZeilenMeldung | null>(null);
-  readonly kategorien = input.required<Observable<VertragKategorieAntwort[]>>();
   /** Die Anfrage zum Löschen läuft. */
   readonly loescht = input(false);
 
-  readonly umschalten = output<'details' | 'bearbeiten'>();
+  readonly details = output();
+  readonly bearbeiten = output();
   readonly loeschen = output();
-  readonly abgebrochen = output();
-  readonly gespeichert = output<VertragAntwort>();
-  readonly konflikt = output();
-  readonly nichtGefunden = output();
 
-  private readonly ungespeichert = inject(UngespeicherteEingaben);
-  private readonly injector = inject(Injector);
-  private readonly bearbeitenKnopf = viewChild.required<ElementRef<HTMLElement>>('bearbeitenKnopf');
-  private readonly zeile = viewChild.required<ElementRef<HTMLElement>>('zeile');
+  protected readonly menueId = `zeilenmenue-${++letzteZeile}`;
+  protected readonly menueOffen = signal(false);
 
-  constructor() {
-    // Nach dem Rendern, denn erst dann ist z. B. eine offene Zeile weiter oben zugeklappt. Das
-    // Formular meldet sich selbst, weil es erst nach den Kategorien dasteht.
-    effect(() => {
-      if (this.ansicht() === 'details') {
-        afterNextRender(() => this.zeigen(), { injector: this.injector });
-      }
-    });
-  }
-
-  protected zeigen(): void {
-    inDenBlick(this.zeile().nativeElement);
-  }
-
-  protected async abbrechen(): Promise<void> {
-    if (await this.ungespeichert.bestaetigen()) {
-      this.abgebrochen.emit();
-      this.bearbeitenKnopf().nativeElement.focus();
-    }
-  }
+  private readonly menue = viewChild<ElementRef<HTMLElement>>('menue');
+  private readonly mehrKnopf = viewChild.required<ElementRef<HTMLButtonElement>>('mehrKnopf');
 
   protected readonly name = computed(() => vertragName(this.vertrag()));
-  protected readonly offen = computed(() => this.ansicht() === 'details');
-  protected readonly bearbeitet = computed(() => this.ansicht() === 'bearbeiten');
   protected readonly beendet = computed(() => this.vertrag().berechnet.status === 'BEENDET');
   protected readonly kuendigung = computed(() =>
     kuendigungAnzeige(this.vertrag().berechnet.kuendigung),
@@ -130,41 +99,63 @@ export class VertragZeile {
       : KEINE_ABBUCHUNG;
   });
 
-  protected readonly details = computed(() => {
-    const v = this.vertrag();
-    const { kostenProMonat, kostenProJahr, naechsteAbbuchung, status } = v.berechnet;
-    const betrag = (wert: typeof kostenProMonat) => betragText(wert, this.locale);
-    return [
-      { label: 'Anbieter', wert: v.anbieter },
-      v.bezeichnung && { label: 'Bezeichnung', wert: v.bezeichnung },
-      { label: 'Kategorie', wert: kategorieText(v.kategorie) },
-      { label: 'Vertrags- oder Kundennummer', wert: v.vertragsnummer || NICHT_HINTERLEGT },
-      { label: 'Betrag', wert: `${betrag(v.betrag)} ${ZAHLWEISE_TEXT[v.zahlweise]}` },
-      { label: 'Pro Monat', wert: betrag(kostenProMonat) },
-      { label: 'Pro Jahr', wert: betrag(kostenProJahr) },
-      {
-        label: 'Nächste Abbuchung',
-        wert: naechsteAbbuchung ? datumText(naechsteAbbuchung) : KEINE_ABBUCHUNG,
-      },
-      {
-        label: 'Zahlungsweg',
-        wert: v.zahlungsweg ? ZAHLUNGSWEG_TEXT[v.zahlungsweg] : NICHT_HINTERLEGT,
-      },
-      { label: 'Vertragsbeginn', wert: datumText(v.beginn) || NICHT_HINTERLEGT },
-      (v.kuendbar || v.laufzeitende) && {
-        label: 'Laufzeitende',
-        wert: datumText(v.laufzeitende) || 'Keine Mindestlaufzeit',
-      },
-      v.kuendbar && {
-        label: 'Verlängerung',
-        wert: v.verlaengerung ? VERLAENGERUNG_TEXT[v.verlaengerung] : NICHT_HINTERLEGT,
-      },
-      v.kuendbar && {
-        label: 'Kündigungsfrist',
-        wert: fristDauerText(v.kuendigungsfristMonate) ?? NICHT_HINTERLEGT,
-      },
-      { label: 'Kündigung', wert: kuendigungText(v.berechnet.kuendigung) },
-      { label: 'Status', wert: STATUS_TEXT[status] },
-    ].filter((eintrag) => !!eintrag);
-  });
+  protected menueUmschalten(): void {
+    if (this.menueOffen()) {
+      this.menueSchliessen();
+    } else {
+      this.menueOeffnen();
+    }
+  }
+
+  /** Rechtsklick wie „…“; bis 900 px bleibt das Menü des Browsers. */
+  protected kontextmenue(event: MouseEvent): void {
+    if (!matchMedia(DESKTOP).matches) {
+      return;
+    }
+    event.preventDefault();
+    this.menueOeffnen();
+  }
+
+  protected menueSchliessen(fokus = true): void {
+    this.menueOffen.set(false);
+    if (fokus) {
+      this.mehrKnopf().nativeElement.focus();
+    }
+  }
+
+  protected waehlen(aktion: 'details' | 'bearbeiten' | 'loeschen'): void {
+    this.menueSchliessen();
+    this[aktion].emit();
+  }
+
+  /** Pfeiltasten, Pos1 und Ende wandern durch die Einträge, Esc schließt, Tab verlässt das Menü. */
+  protected menueTaste(event: KeyboardEvent): void {
+    const eintraege = [
+      ...(this.menue()?.nativeElement.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []),
+    ];
+    const aktuell = eintraege.indexOf(document.activeElement as HTMLElement);
+    const ziel: Record<string, number> = {
+      ArrowDown: (aktuell + 1) % eintraege.length,
+      ArrowUp: (aktuell - 1 + eintraege.length) % eintraege.length,
+      Home: 0,
+      End: eintraege.length - 1,
+    };
+    if (event.key in ziel) {
+      event.preventDefault();
+      eintraege[ziel[event.key]]?.focus();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.menueSchliessen();
+    } else if (event.key === 'Tab') {
+      this.menueSchliessen(false);
+    }
+  }
+
+  private menueOeffnen(): void {
+    this.menueOffen.set(true);
+    afterNextRender(
+      () => this.menue()?.nativeElement.querySelector<HTMLElement>('[role="menuitem"]')?.focus(),
+      { injector: this.injector },
+    );
+  }
 }

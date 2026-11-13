@@ -40,10 +40,50 @@ h1 {
   }
 }
 
-// Bis 900 px steht „Neuer Vertrag“ als „+“ in der Kopfzeile.
+// Bis 900 px steht „Neuer Vertrag“ als „+“ in der Kopfzeile. Darüber bleibt die Leiste beim Scrollen
+// stehen, kompakter und durchscheinend.
 @media (max-width: 900px) {
   .kopf .knopf {
     display: none;
+  }
+}
+
+@media (min-width: 901px) {
+  .kopf {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(23, 32, 27, 0.1);
+    background: rgba(243, 245, 242, 0.88);
+    backdrop-filter: saturate(180%) blur(20px);
+
+    h1 {
+      font-size: 26px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+
+    .knopf {
+      height: 36px;
+      padding: 0 14px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+  }
+
+  .liste-und-details {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .liste {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 
@@ -98,6 +138,14 @@ h1 {
 
   span {
     font-size: 15px;
+    line-height: 1.45;
     color: var(--app-text-gedaempft);
+  }
+
+  .knopf {
+    flex: none;
+    margin-top: 10px;
+    gap: 8px;
+    padding: 0 22px;
   }
 }

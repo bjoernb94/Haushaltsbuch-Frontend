@@ -1,5 +1,16 @@
-import { expect, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
+
+const KFZ = 'Kfz-Versicherung';
+const LETZTE = 'Mobilfunk GmbH';
+
+const zeile = (page: Page, name: string) =>
+  page.locator('app-vertrag-zeile').filter({ hasText: name });
+const oeffnen = (page: Page, name: string) =>
+  page.getByRole('button', { name: `Details zu ${name} anzeigen` });
+const details = (page: Page, name: string) => page.getByRole('complementary', { name });
+const menue = (page: Page, name: string) =>
+  page.getByRole('menu', { name: `Aktionen für ${name}` });
 
 test.describe('Seite Verträge', () => {
   const liste = '/api/vertraege';
@@ -24,30 +35,7 @@ test.describe('Seite Verträge', () => {
       await expect(page.getByText(badge, { exact: true })).toBeVisible();
     }
     await expect(page.getByText('Keine weiteren Abbuchungen')).toBeVisible();
-  });
-
-  test('„Zur Übersicht“ führt zur Startseite', async ({ page }) => {
-    await backendSimulieren(page, { angemeldet: true });
-    await page.goto('/vertraege');
-    await page.getByRole('link', { name: 'Zur Übersicht' }).click();
-    await expect(page).toHaveURL(/\/start$/);
-  });
-
-  test('Details lassen sich aufklappen, höchstens eine ist offen', async ({ page }) => {
-    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
-    await page.goto('/vertraege');
-
-    const kfz = page.getByRole('button', { name: 'Details zu Kfz-Versicherung anzeigen' });
-    await kfz.click();
-    const region = page.getByRole('region', { name: 'Details zu Kfz-Versicherung' });
-    await expect(region).toContainText('Lastschrift');
-    await expect(
-      page.getByRole('button', { name: 'Details zu Kfz-Versicherung ausblenden' }),
-    ).toHaveAttribute('aria-expanded', 'true');
-
-    await page.getByRole('button', { name: 'Details zu Rundfunkbeitrag anzeigen' }).click();
-    await expect(region).toHaveCount(0);
-    await expect(page.getByRole('region', { name: 'Details zu Rundfunkbeitrag' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Zur Übersicht' })).toHaveCount(0);
   });
 
   test('kürzt lange Angaben in der Zeile, die Details zeigen alles', async ({ page }) => {
@@ -58,13 +46,13 @@ test.describe('Seite Verträge', () => {
     });
     await page.goto('/vertraege');
 
-    const zeile = page.locator('app-vertrag-zeile');
+    const eintrag = page.locator('app-vertrag-zeile');
     for (const [klasse, zeilen] of [
       ['.name', 2],
       ['.meta', 1],
       ['.notiz', 1],
     ] as const) {
-      const feld = zeile.locator(klasse);
+      const feld = eintrag.locator(klasse);
       await expect(feld).toContainText(lang);
       const { sichtbar, gesamt, zeilenhoehe } = await feld.evaluate((e) => ({
         sichtbar: e.clientHeight,
@@ -75,10 +63,10 @@ test.describe('Seite Verträge', () => {
       expect(sichtbar).toBeLessThanOrEqual(Math.ceil(zeilenhoehe * zeilen));
     }
 
-    await zeile.getByRole('button', { name: /Details/ }).click();
-    const details = zeile.getByRole('region');
-    await expect(details.getByText(lang, { exact: true })).toHaveCount(3);
-    const notiz = details.getByText(lang, { exact: true }).last();
+    await oeffnen(page, lang).click();
+    const werte = details(page, lang).locator('dd');
+    await expect(werte.getByText(lang, { exact: true })).toHaveCount(3);
+    const notiz = werte.getByText(lang, { exact: true }).last();
     expect(await notiz.evaluate((e) => e.scrollHeight <= e.clientHeight)).toBe(true);
   });
 
@@ -89,22 +77,22 @@ test.describe('Seite Verträge', () => {
       angemeldet: true,
       vertraege: [{ ...BEISPIEL_VERTRAEGE[0], notiz: 'Erste Zeile\nZweite Zeile' }],
     });
-    await page.goto('/vertraege');
-    const zeile = page.locator('app-vertrag-zeile');
-    await zeile.getByRole('button', { name: /Details/ }).click();
+    await page.goto('/vertraege/kfz');
 
-    const raster = zeile.locator('dl');
-    const notiz = zeile.locator('.notiz-eintrag');
+    const raster = details(page, KFZ).locator('dl');
+    const notiz = raster.locator('.breit');
     await expect(notiz.locator('dd')).toBeVisible();
     expect((await notiz.boundingBox())!.width).toBe((await raster.boundingBox())!.width);
     expect(await notiz.locator('dd').innerText()).toBe('Erste Zeile\nZweite Zeile');
   });
 
-  test('zeigt den Leerzustand', async ({ page }) => {
+  test('zeigt den Leerzustand, der Link führt zum ersten Vertrag', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true });
     await page.goto('/vertraege');
     await expect(page.getByText('Noch keine Verträge')).toBeVisible();
     await expect(page.getByText('Laufende Verträge0')).toBeVisible();
+    await page.getByRole('link', { name: 'Ersten Vertrag anlegen' }).click();
+    await expect(page).toHaveURL(/\/vertraege\/neu$/);
   });
 
   test('zeigt den Ladezustand, solange das Backend nicht antwortet', async ({ page }) => {
@@ -139,6 +127,19 @@ test.describe('Seite Verträge', () => {
     await expect(page.locator('app-vertrag-zeile')).toHaveCount(BEISPIEL_VERTRAEGE.length);
   });
 
+  test('die Werkzeugleiste bleibt am Desktop beim Scrollen oben', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 600 });
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/vertraege');
+    const neu = page.getByRole('main').getByRole('link', { name: 'Neuer Vertrag' });
+    await expect(neu).toHaveAttribute('aria-keyshortcuts', 'n');
+    await expect(neu).toHaveAttribute('title', 'Neuer Vertrag (N)');
+    await page.mouse.wheel(0, 1500);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+    await expect(neu).toBeInViewport();
+    await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
+  });
+
   test('passt auf dem Handy in die Breite', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
@@ -146,5 +147,190 @@ test.describe('Seite Verträge', () => {
 
     await expect(page.locator('app-vertrag-zeile')).toHaveCount(BEISPIEL_VERTRAEGE.length);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  });
+
+  test.describe('Details', () => {
+    test.beforeEach(async ({ page }) => {
+      await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+      await page.goto('/vertraege');
+    });
+
+    test('ein Klick auf die Zeile öffnet das Panel daneben, mit Tabs in der URL', async ({
+      page,
+    }) => {
+      await oeffnen(page, KFZ).click();
+      await expect(page).toHaveURL(/\/vertraege\/kfz$/);
+      const panel = details(page, KFZ);
+      await expect(panel).toBeVisible();
+      await expect(panel).toBeFocused();
+      await expect(panel).toContainText('Pro Monat48,90 €');
+      await expect(panel.getByRole('tab', { name: 'Allgemein' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(panel.getByRole('tabpanel')).toContainText('Musterversicherung AG');
+
+      const leiste = (await page.getByRole('region', { name: 'Vertragsliste' }).boundingBox())!;
+      const box = (await panel.boundingBox())!;
+      expect(box.x).toBeGreaterThan(leiste.x + leiste.width);
+
+      await panel.getByRole('tab', { name: 'Kosten' }).click();
+      await expect(page).toHaveURL(/\/vertraege\/kfz\?tab=kosten$/);
+      await expect(panel.getByRole('tabpanel')).toContainText('Lastschrift');
+      await panel.getByRole('tab', { name: 'Kosten' }).press('ArrowRight');
+      await expect(panel.getByRole('tab', { name: 'Laufzeit' })).toBeFocused();
+      await expect(page).toHaveURL(/\?tab=laufzeit$/);
+      await expect(panel.getByRole('tabpanel')).toContainText('Kündigungsfrist');
+
+      // Ein geteilter Link zeigt dasselbe.
+      await page.reload();
+      await expect(details(page, KFZ).getByRole('tabpanel')).toContainText('Kündigungsfrist');
+    });
+
+    test('die Zurück-Taste schließt; der Wechsel zu einem anderen Vertrag kostet keinen Schritt', async ({
+      page,
+    }) => {
+      await oeffnen(page, KFZ).click();
+      await details(page, KFZ).getByRole('tab', { name: 'Kosten' }).click();
+      await oeffnen(page, 'Rundfunkbeitrag').click();
+      await expect(page).toHaveURL(/\/vertraege\/rundfunk$/);
+      await expect(details(page, 'Rundfunkbeitrag')).toBeVisible();
+
+      await page.goBack();
+      await expect(page).toHaveURL(/\/vertraege$/);
+      await expect(page.getByRole('complementary')).toHaveCount(0);
+    });
+
+    test('Schließen per Knopf, Esc und zweitem Klick; der Fokus kehrt zur Zeile zurück', async ({
+      page,
+    }) => {
+      await oeffnen(page, KFZ).click();
+      await details(page, KFZ).getByRole('button', { name: 'Details schließen' }).click();
+      await expect(page).toHaveURL(/\/vertraege$/);
+      await expect(oeffnen(page, KFZ)).toBeFocused();
+
+      await oeffnen(page, KFZ).click();
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('complementary')).toHaveCount(0);
+
+      await oeffnen(page, KFZ).click();
+      await page.getByRole('button', { name: `Details zu ${KFZ} schließen` }).click();
+      await expect(page.getByRole('complementary')).toHaveCount(0);
+
+      // Geschlossen geht es mit der Zurück-Taste nicht wieder hinein.
+      await page.goBack();
+      await expect(page).not.toHaveURL(/\/vertraege\/kfz/);
+    });
+
+    test('ein geteilter Link holt die Zeile ins Bild, Schließen bleibt in der App', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await page.goto('/vertraege/alt');
+      await expect(details(page, LETZTE)).toBeVisible();
+      await expect(zeile(page, LETZTE)).toBeInViewport({ ratio: 1 });
+      await details(page, LETZTE).getByRole('button', { name: 'Details schließen' }).click();
+      await expect(page).toHaveURL(/\/vertraege$/);
+    });
+
+    test('ein Link auf einen unbekannten Vertrag zeigt einen Hinweis', async ({ page }) => {
+      await page.goto('/vertraege/gibt-es-nicht');
+      await expect(page).toHaveURL(/\/vertraege$/);
+      await expect(page.getByRole('alert')).toHaveText('Diesen Vertrag gibt es nicht mehr.');
+    });
+
+    test('das Panel bleibt beim Scrollen der Liste stehen', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await oeffnen(page, KFZ).click();
+      await page.mouse.wheel(0, 1500);
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+      await expect(details(page, KFZ).getByRole('heading', { name: KFZ })).toBeInViewport();
+    });
+  });
+
+  test.describe('Kontextmenü', () => {
+    test.beforeEach(async ({ page }) => {
+      await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+      await page.goto('/vertraege');
+    });
+
+    test('„…“ öffnet es, Pfeiltasten wandern, Esc schließt', async ({ page }) => {
+      const mehr = page.getByRole('button', { name: `Aktionen für ${KFZ}` });
+      await mehr.click();
+      await expect(mehr).toHaveAttribute('aria-expanded', 'true');
+      const eintraege = menue(page, KFZ).getByRole('menuitem');
+      await expect(eintraege).toHaveText(['Details anzeigen', 'Bearbeiten …', 'Löschen …']);
+      await expect(eintraege.first()).toBeFocused();
+
+      await page.keyboard.press('ArrowDown');
+      await expect(eintraege.nth(1)).toBeFocused();
+      await page.keyboard.press('ArrowUp');
+      await page.keyboard.press('ArrowUp');
+      await expect(eintraege.last()).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(menue(page, KFZ)).toHaveCount(0);
+      await expect(mehr).toBeFocused();
+
+      await mehr.click();
+      await expect(eintraege.first()).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(page).toHaveURL(/\/vertraege\/kfz$/);
+    });
+
+    test('Rechtsklick auf die Zeile öffnet es, ein Klick daneben schließt', async ({ page }) => {
+      await oeffnen(page, 'Rundfunkbeitrag').click({ button: 'right' });
+      await expect(menue(page, 'Rundfunkbeitrag')).toBeVisible();
+      await page.mouse.click(5, 5);
+      await expect(menue(page, 'Rundfunkbeitrag')).toHaveCount(0);
+      await expect(page).toHaveURL(/\/vertraege$/);
+    });
+
+    test('bis 900 px gibt es kein „…“, Tippen öffnet die Details als Vollbild', async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.getByRole('button', { name: `Aktionen für ${KFZ}` })).toBeHidden();
+      await oeffnen(page, KFZ).click();
+
+      const panel = details(page, KFZ);
+      expect(await panel.boundingBox()).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
+      // Die Tab-Leiste bleibt darüber.
+      await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeVisible();
+      await expect(panel.getByRole('button', { name: 'Details schließen' })).toBeHidden();
+      await panel.getByRole('button', { name: 'Verträge' }).click();
+      await expect(page).toHaveURL(/\/vertraege$/);
+      await expect(page.getByRole('complementary')).toHaveCount(0);
+    });
+  });
+
+  test.describe('Kürzel N', () => {
+    test.beforeEach(async ({ page }) => {
+      await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+      await page.goto('/vertraege');
+      await expect(page.locator('app-vertrag-zeile').first()).toBeVisible();
+    });
+
+    test('öffnet „Neuer Vertrag“', async ({ page }) => {
+      await page.keyboard.press('n');
+      await expect(page).toHaveURL(/\/vertraege\/neu$/);
+    });
+
+    test('nicht, solange ein Dialog offen ist', async ({ page }) => {
+      await page.getByRole('button', { name: `Aktionen für ${KFZ}` }).click();
+      await expect(page.getByRole('menuitem').first()).toBeFocused();
+      await page.keyboard.press('n');
+      await expect(page).toHaveURL(/\/vertraege$/);
+      await page.getByRole('menuitem', { name: 'Löschen …' }).click();
+      await expect(page.getByRole('dialog', { name: `„${KFZ}“ löschen?` })).toBeVisible();
+      await page.keyboard.press('n');
+      await expect(page).toHaveURL(/\/vertraege$/);
+    });
+
+    test('nicht mit Alt', async ({ page }) => {
+      await page.keyboard.press('Alt+n');
+      await page.waitForTimeout(200);
+      await expect(page).toHaveURL(/\/vertraege$/);
+    });
   });
 });

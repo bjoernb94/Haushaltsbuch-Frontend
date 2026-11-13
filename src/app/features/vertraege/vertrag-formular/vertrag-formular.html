@@ -1,18 +1,14 @@
 <form
   #formularElement
   class="formular"
-  [class.bearbeiten]="vertrag()"
-  [class.knoepfe-in-leiste]="knoepfeInLeiste()"
+  [class.knoepfe-ab-901]="knoepfe() === 'ab-901'"
+  [class.ohne-knoepfe]="knoepfe() === 'nie'"
   [attr.id]="formularId()"
   [attr.aria-label]="name() && name() + ' bearbeiten'"
   [formGroup]="formular"
   (ngSubmit)="absenden()"
   novalidate
 >
-  @if (vertrag()) {
-    <h2>Vertrag bearbeiten</h2>
-  }
-
   @if (hinweis(); as text) {
     <div class="hinweis" tabindex="-1">
       <app-hinweis-box [text]="text" />

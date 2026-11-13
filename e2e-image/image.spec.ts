@@ -70,20 +70,26 @@ test.describe('CSP', () => {
     expect(fehler).toEqual([]);
   });
 
-  test('die App läuft ohne Verstoß: Verträge mit Details und Formular', async ({ page }) => {
+  test('die App läuft ohne Verstoß: Verträge mit Details, Menü und Formular', async ({ page }) => {
     const fehler = await verstoesseSammeln(page);
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
     await page.goto('/vertraege');
     await page
-      .getByRole('button', { name: /^Details zu/ })
+      .getByRole('button', { name: /^Aktionen für/ })
       .first()
       .click();
-    await expect(page.getByRole('region', { name: /^Details zu/ })).toBeVisible();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.keyboard.press('Escape');
     await page
-      .getByRole('button', { name: /bearbeiten$/ })
+      .getByRole('button', { name: /^Details zu .* anzeigen$/ })
       .first()
       .click();
-    await expect(page.getByRole('form')).toBeVisible();
+    const details = page.getByRole('complementary');
+    await expect(details).toBeVisible();
+    await details.getByRole('button', { name: 'Bearbeiten' }).click();
+    await expect(
+      page.getByRole('dialog', { name: 'Vertrag bearbeiten' }).getByRole('form'),
+    ).toBeVisible();
     await page.goto('/vertraege/neu');
     await expect(page.getByLabel('Anbieter *')).toBeVisible();
     await expect

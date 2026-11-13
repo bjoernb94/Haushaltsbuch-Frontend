@@ -1,0 +1,310 @@
+@use '../../../shared/zustaende/zustaende';
+
+@include zustaende.laedt;
+@include zustaende.fehler;
+
+// Panel und Bearbeiten-Sheet sind Geschwister im Layout der Liste.
+:host {
+  display: contents;
+}
+
+.panel {
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: var(--app-details-grund);
+  color: var(--app-text);
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.kopf {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 18px;
+  border-bottom: 1px solid var(--app-trenner);
+  background: var(--app-flaeche);
+
+  h2 {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    font-size: 17px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid var(--app-gruen-fokus-rand);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.kopf-knopf {
+  flex: none;
+  font: inherit;
+  cursor: pointer;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1.5px solid var(--app-rand);
+  border-radius: 8px;
+  background: var(--app-flaeche);
+  color: var(--app-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.schliessen {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--app-text-gedaempft);
+
+  &:hover {
+    background: var(--app-seitenleiste-hover);
+  }
+}
+
+.zur-liste {
+  display: none;
+}
+
+.inhalt {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 16px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  > * {
+    flex-shrink: 0;
+  }
+}
+
+.meldung:focus {
+  outline: none;
+}
+
+.kacheln {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 12px;
+}
+
+.kachel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 12px;
+  background: var(--app-flaeche);
+  overflow-wrap: anywhere;
+}
+
+.kachel-titel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--app-text-gedaempft);
+}
+
+.kachel-wert {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.ton-warnung {
+  color: var(--app-hinweis-text);
+}
+
+.ton-ok {
+  color: var(--app-gruen-dunkel);
+}
+
+.ton-info {
+  color: var(--app-info-text);
+}
+
+.kachel-zusatz {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--app-text-gedaempft);
+}
+
+[role='tabpanel']:focus-visible {
+  outline: 3px solid var(--app-gruen-fokus-rand);
+  outline-offset: 2px;
+}
+
+dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px 24px;
+
+  div {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-wrap: anywhere;
+  }
+
+  .breit {
+    grid-column: 1 / -1;
+
+    dd {
+      white-space: pre-line;
+    }
+  }
+}
+
+dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text-gedaempft);
+}
+
+dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.loeschen {
+  margin-top: 8px;
+  min-height: 48px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1.5px solid var(--app-fehler-rand);
+  border-radius: 10px;
+  background: var(--app-flaeche);
+  color: var(--app-fehler);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--app-fehler-grund);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.6;
+  }
+}
+
+// Neben der Liste, bleibt unter der Werkzeugleiste stehen und scrollt innen.
+@media (min-width: 901px) {
+  .panel {
+    flex: 0 0 min(440px, 46%);
+    position: sticky;
+    top: 84px;
+    max-height: calc(100vh - 104px);
+    overflow: hidden;
+    border: 1px solid var(--app-trenner);
+    border-radius: 14px;
+  }
+}
+
+// Vollbild über der Liste, unter der Tab-Leiste; schiebt sich von rechts herein.
+@media (max-width: 900px) {
+  .panel {
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    background: var(--app-grund);
+    animation: herein 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .kopf {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    min-height: 52px;
+    box-sizing: border-box;
+    padding: calc(4px + env(safe-area-inset-top)) 8px 4px;
+
+    h2 {
+      max-width: 52vw;
+      text-align: center;
+    }
+  }
+
+  .zur-liste,
+  .bearbeiten {
+    min-height: 44px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--app-gruen);
+    font-size: 16px;
+  }
+
+  .zur-liste {
+    justify-self: start;
+    gap: 2px;
+    font-weight: 600;
+  }
+
+  .bearbeiten {
+    justify-self: end;
+    font-weight: 800;
+  }
+
+  .schliessen {
+    display: none;
+  }
+
+  .inhalt {
+    padding: 16px 16px calc(100px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
+
+@keyframes herein {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}

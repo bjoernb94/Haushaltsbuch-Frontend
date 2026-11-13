@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
+import { abmelden, backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
 
 async function pflichtfelderFuellen(page: Page, anbieter = 'Neuer Anbieter') {
   await page.getByLabel('Anbieter *').fill(anbieter);
@@ -24,9 +24,7 @@ test.describe('Neuer Vertrag', () => {
   }) => {
     await backendSimulieren(page, { angemeldet: true });
     await page.goto('/vertraege');
-    await expect(
-      page.getByText('Lege mit „Neuer Vertrag“ deinen ersten Vertrag an.'),
-    ).toBeVisible();
+    await expect(page.getByText('Noch keine Verträge')).toBeVisible();
 
     await page.getByRole('link', { name: 'Neuer Vertrag' }).click();
     await expect(page).toHaveURL(/\/vertraege\/neu$/);
@@ -39,6 +37,27 @@ test.describe('Neuer Vertrag', () => {
 
   test.describe('ungespeicherte Eingaben', () => {
     const dialog = (page: Page) => page.getByRole('dialog', { name: 'Änderungen verwerfen?' });
+
+    test('Abmelden fragt vor dem Abmelden nach', async ({ page }) => {
+      let abgemeldet = false;
+      page.on('request', (r) => {
+        if (new URL(r.url()).pathname === '/api/abmeldung') abgemeldet = true;
+      });
+      await backendSimulieren(page, { angemeldet: true });
+      await page.goto('/vertraege/neu');
+      await page.getByLabel('Anbieter *').fill('Halb getippt');
+      await abmelden(page);
+      await expect(dialog(page)).toBeVisible();
+      await dialog(page).getByRole('button', { name: 'Weiter bearbeiten' }).click();
+      await expect(page.getByLabel('Anbieter *')).toHaveValue('Halb getippt');
+      expect(abgemeldet).toBe(false);
+
+      await abmelden(page);
+      await dialog(page).getByRole('button', { name: 'Verwerfen' }).click();
+      await expect(page).toHaveURL(/\/login/);
+      await expect(dialog(page)).toHaveCount(0);
+      expect(abgemeldet).toBe(true);
+    });
 
     for (const [name, rolle] of [
       ['Abbrechen', 'button'],
@@ -203,7 +222,10 @@ test.describe('Neuer Vertrag', () => {
       await anlegen(page);
       await expect(meldung(page)).toBeInViewport();
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.getByRole('link', { name: 'Zur Übersicht' }).click();
+      await page
+        .getByRole('navigation', { name: 'Hauptmenü' })
+        .getByRole('link', { name: 'Übersicht' })
+        .click();
       await expect(page).toHaveURL(/\/start$/);
       await page.goBack();
       await expect(page.locator('app-vertrag-zeile').last()).toBeAttached();
@@ -256,7 +278,10 @@ test.describe('Neuer Vertrag', () => {
     const meldung = page.getByText('„Neuer Anbieter“ wurde gespeichert.');
     await expect(meldung).toBeVisible();
 
-    await page.getByRole('link', { name: 'Zur Übersicht' }).click();
+    await page
+      .getByRole('navigation', { name: 'Hauptmenü' })
+      .getByRole('link', { name: 'Übersicht' })
+      .click();
     await expect(page).toHaveURL(/\/start$/);
     await page.goBack();
     await expect(page).toHaveURL(/\/vertraege$/);

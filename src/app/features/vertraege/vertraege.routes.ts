@@ -1,19 +1,36 @@
 import { Routes } from '@angular/router';
 import { ungespeichertGuard } from '../../core/ungespeichert/ungespeichert.guard';
 import { NeuerVertragSeite } from './neuer-vertrag/neuer-vertrag-seite';
+import { VertragBearbeiten } from './vertrag-bearbeiten/vertrag-bearbeiten';
+import { VertragDetails } from './vertrag-details/vertrag-details';
 import { VertraegeSeite } from './vertraege-seite';
 
+// „neu“ vor der Liste, sonst nähme ihre Kind-Route :id es als ID.
 export const VERTRAEGE_ROUTES: Routes = [
-  {
-    path: '',
-    component: VertraegeSeite,
-    canDeactivate: [ungespeichertGuard],
-    title: 'Verträge – Haushaltsbuch',
-  },
   {
     path: 'neu',
     component: NeuerVertragSeite,
     canDeactivate: [ungespeichertGuard],
     title: 'Neuer Vertrag – Haushaltsbuch',
+  },
+  {
+    path: '',
+    component: VertraegeSeite,
+    title: 'Verträge – Haushaltsbuch',
+    children: [
+      {
+        path: ':id',
+        component: VertragDetails,
+        children: [
+          { path: '', children: [] },
+          {
+            path: 'bearbeiten',
+            component: VertragBearbeiten,
+            canDeactivate: [ungespeichertGuard],
+            title: 'Vertrag bearbeiten – Haushaltsbuch',
+          },
+        ],
+      },
+    ],
   },
 ];

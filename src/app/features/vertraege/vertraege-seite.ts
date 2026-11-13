@@ -1,17 +1,20 @@
+import { Location } from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
+  effect,
   ElementRef,
   inject,
   Injector,
   signal,
+  untracked,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
-import { defer, forkJoin, shareReplay, Subscription } from 'rxjs';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { NavigationCancel, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { defer, filter, forkJoin, map, shareReplay, Subscription } from 'rxjs';
 import { VertragAntwort, VertragsuebersichtAntwort } from '../../core/api/api';
 import { problemCode } from '../../core/fehler/problem';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
@@ -29,41 +32,67 @@ interface Daten {
   uebersicht: VertragsuebersichtAntwort;
 }
 
-type Ansicht = 'details' | 'bearbeiten';
-
-interface Offen {
-  id: string;
-  ansicht: Ansicht;
-}
-
-/** Meldung an der Zeile dieses Vertrags; ohne {@code id} oben auf der Seite. */
-interface Meldung extends ZeilenMeldung {
+/** Meldung an der Zeile bzw. in den Details dieses Vertrags; ohne {@code id} oben auf der Seite. */
+export interface Meldung extends ZeilenMeldung {
   id: string | null;
   /** Die ganze Zeile ins Bild holen, z. B. weil die Seite nach dem Anlegen oben beginnt. */
   zeileZeigen?: boolean;
 }
 
-/** Kennzahlen und Liste der Verträge; lädt beim Öffnen und nach Änderungen. */
+/** Was die Kind-Routen gerade zeigen. */
+interface Ansicht {
+  id: string;
+  bearbeiten: boolean;
+}
+
+/**
+ * Im Navigations-State: Diese Seite hat den Eintrag selbst geöffnet, der vorige im Verlauf ist also
+ * ihr Ziel beim Schließen. Ohne (Link geteilt, neu geladen) ersetzt das Schließen den Eintrag.
+ */
+const INTERN = 'intern';
+
+const NEU = '/vertraege/neu';
+
+/**
+ * Kennzahlen und Liste der Verträge; lädt beim Öffnen und nach Änderungen. Details ({@code :id}) und
+ * Bearbeiten ({@code :id/bearbeiten}) sind Kind-Routen: am Desktop ein Panel neben der Liste bzw. ein
+ * Sheet in der Fenstermitte, bis 900 px Vollbild. Die Kinder holen ihre Daten von hier.
+ */
 @Component({
   selector: 'app-vertraege-seite',
-  imports: [RouterLink, HinweisBox, BetraegePipe, VertragZeile, BestaetigenDialog],
+  imports: [RouterLink, RouterOutlet, HinweisBox, BetraegePipe, VertragZeile, BestaetigenDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertraege-seite.html',
   styleUrl: './vertraege-seite.scss',
+  host: { '(document:keydown)': 'taste($event)' },
 })
 export class VertraegeSeite {
   private readonly vertraege = inject(VertragService);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly destroyRef = inject(DestroyRef);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly ungespeichert = inject(UngespeicherteEingaben);
 
-  protected readonly daten = signal<Daten | null>(null);
-  protected readonly fehler = signal(false);
-  /** Höchstens ein Vertrag zeigt seine Details oder sein Formular. */
-  protected readonly offen = signal<Offen | null>(null);
+  readonly daten = signal<Daten | null>(null);
+  readonly fehler = signal(false);
 
-  protected readonly meldung = signal<Meldung | null>(this.meldungDerNavigation());
+  readonly meldung = signal<Meldung | null>(this.meldungDerNavigation());
+
+  /** Erst beim ersten Bearbeiten laden; nach einem Fehler lädt der nächste Versuch neu. */
+  readonly kategorien$ = defer(() => this.vertraege.kategorien()).pipe(shareReplay(1));
+
+  readonly ansicht = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.ansichtDerRoute()),
+    ),
+    { initialValue: this.ansichtDerRoute() },
+  );
+
+  /** Details oder Bearbeiten schließen sich gerade; sie sollen bis dahin nichts mehr melden. */
+  readonly schliesst = signal(false);
 
   /** Der Vertrag, nach dessen Löschen gefragt wird. */
   protected readonly loeschFrage = signal<VertragAntwort | null>(null);
@@ -72,7 +101,7 @@ export class VertraegeSeite {
     return vertrag ? `„${vertragName(vertrag)}“ löschen?` : '';
   });
   /** Dessen Anfrage gerade läuft. */
-  protected readonly loeschendId = signal<string | null>(null);
+  readonly loeschendId = signal<string | null>(null);
 
   /** Oben steht auch, was keine Zeile mehr hat, z. B. weil der Vertrag fort ist. */
   protected readonly meldungOben = computed(() => {
@@ -81,17 +110,51 @@ export class VertraegeSeite {
     return anZeile ? null : meldung;
   });
 
-  /** Erst beim ersten Bearbeiten laden; nach einem Fehler lädt der nächste Versuch neu. */
-  protected readonly kategorien$ = defer(() => this.vertraege.kategorien()).pipe(shareReplay(1));
+  protected readonly neu = NEU;
 
   private ladevorgang?: Subscription;
 
   constructor() {
-    seitenaktionenMelden(() => ({ neu: { ziel: '/vertraege/neu', label: 'Neuer Vertrag' } }));
+    seitenaktionenMelden(() => ({ neu: { ziel: NEU, label: 'Neuer Vertrag' } }));
     this.laden(!!this.meldung());
+
+    // Auch abgebrochen (Rückfrage verneint) ist das Schließen vorbei.
+    this.router.events
+      .pipe(
+        filter((e) => e instanceof NavigationEnd || e instanceof NavigationCancel),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.schliesst.set(false));
+
+    // Zur offenen Zeile scrollen (z. B. nach einem geteilten Link). Nach dem Schließen geht der Fokus,
+    // falls er mit den Details verschwunden ist, an die Zeile, von der aus geöffnet wurde.
+    let vorher: string | null = null;
+    effect(() => {
+      const id = this.ansicht()?.id ?? null;
+      const geladen = !!this.daten();
+      untracked(() => {
+        if (id && geladen) {
+          afterNextRender(() => this.zeile(id) && inDenBlick(this.zeile(id)!), {
+            injector: this.injector,
+          });
+        } else if (!id && vorher) {
+          const zuletzt = vorher;
+          afterNextRender(
+            () => {
+              const fokus = document.activeElement;
+              if (!fokus || fokus === document.body) {
+                this.zeile(zuletzt)?.querySelector('button')?.focus();
+              }
+            },
+            { injector: this.injector },
+          );
+        }
+        vorher = id;
+      });
+    });
   }
 
-  protected laden(meldungZeigen = false): void {
+  laden(meldungZeigen = false): void {
     this.fehler.set(false);
     // Ein älterer Stand darf einen neueren nicht überschreiben.
     this.ladevorgang?.unsubscribe();
@@ -114,6 +177,158 @@ export class VertraegeSeite {
           }
         },
       });
+  }
+
+  /** Details öffnen; ein zweiter Klick auf dieselbe Zeile schließt sie wieder. */
+  protected detailsUmschalten(id: string): void {
+    if (this.ansicht()?.id === id) {
+      this.schliessen(['/vertraege']);
+    } else {
+      this.oeffnen(['/vertraege', id]);
+    }
+  }
+
+  bearbeiten(id: string): void {
+    this.oeffnen(['/vertraege', id, 'bearbeiten'], false);
+  }
+
+  /** Tab der Details in der URL, ohne neuen Eintrag im Verlauf. */
+  tabWaehlen(tab: string | null): void {
+    void this.router.navigate([], {
+      queryParams: { tab },
+      replaceUrl: true,
+      scroll: 'manual',
+      state: { [INTERN]: this.intern() },
+    });
+  }
+
+  /**
+   * Schließt Details oder Bearbeiten: zurück im Verlauf, wenn diese Seite sie geöffnet hat (so führt
+   * die Zurück-Taste nicht wieder hinein), sonst nach {@code ziel}. Ungespeicherte Eingaben fragt der
+   * Guard der Route.
+   */
+  schliessen(ziel: string[]): void {
+    this.schliesst.set(true);
+    if (this.intern()) {
+      this.location.back();
+    } else {
+      void this.router.navigate(ziel, { replaceUrl: true, scroll: 'manual' });
+    }
+  }
+
+  loeschenFragen(vertrag: VertragAntwort): void {
+    this.loeschFrage.set(vertrag);
+  }
+
+  gespeichert(vertrag: VertragAntwort): void {
+    this.nachAenderung({
+      id: vertrag.id,
+      text: `„${vertragName(vertrag)}“ wurde gespeichert.`,
+      art: 'info',
+    });
+  }
+
+  konflikt(id: string): void {
+    this.nachAenderung({
+      id,
+      text: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
+      art: 'fehler',
+    });
+  }
+
+  /** Auch für einen Link auf einen Vertrag, den es nicht (mehr) gibt. */
+  nichtGefunden(): void {
+    this.meldung.set({ id: null, text: 'Diesen Vertrag gibt es nicht mehr.', art: 'fehler' });
+    this.schliessen(['/vertraege']);
+    this.laden(true);
+  }
+
+  /** In den Details steht die Meldung des offenen Vertrags dort, nicht an seiner Zeile. */
+  meldungZu(id: string): Meldung | null {
+    const meldung = this.meldung();
+    return meldung?.id === id ? meldung : null;
+  }
+
+  protected zeilenMeldung(id: string): ZeilenMeldung | null {
+    return this.ansicht()?.id === id ? null : this.meldungZu(id);
+  }
+
+  protected loeschAntwort(ja: boolean): void {
+    const vertrag = this.loeschFrage();
+    if (!vertrag) {
+      return;
+    }
+    this.loeschFrage.set(null);
+    if (ja) {
+      this.loeschen(vertrag);
+    }
+  }
+
+  /**
+   * „N“ für „Neuer Vertrag“, nur ohne Modifikator (Strg+N und ⌘N gehören dem Browser), nicht beim
+   * Tippen und nicht, solange ein Dialog, Sheet oder Menü offen ist. Esc schließt die Details.
+   */
+  protected taste(event: KeyboardEvent): void {
+    const taste = event.key.toLowerCase();
+    if (
+      (taste !== 'n' && taste !== 'escape') ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      event.repeat ||
+      event.defaultPrevented ||
+      this.ansicht()?.bearbeiten ||
+      this.loeschFrage() ||
+      this.ungespeichert.frageOffen()
+    ) {
+      return;
+    }
+    const ziel = event.target instanceof Element ? event.target : null;
+    if (
+      this.element.nativeElement.querySelector('[role="menu"]') ||
+      ziel?.closest(
+        'input, textarea, select, [contenteditable]:not([contenteditable="false"]), dialog, [role="dialog"], [role="menu"]',
+      )
+    ) {
+      return;
+    }
+    event.preventDefault();
+    if (taste === 'n') {
+      void this.router.navigateByUrl(NEU);
+    } else if (this.ansicht()) {
+      this.schliessen(['/vertraege']);
+    }
+  }
+
+  private oeffnen(ziel: string[], ersetzen = !!this.ansicht()): void {
+    // Wechsel zwischen Verträgen ersetzen den Eintrag, damit die Zurück-Taste zur Liste führt.
+    void this.router.navigate(ziel, {
+      replaceUrl: ersetzen,
+      scroll: 'manual',
+      state: { [INTERN]: ersetzen ? this.intern() : true },
+    });
+  }
+
+  private intern(): boolean {
+    return !!(this.location.getState() as Record<string, unknown> | null)?.[INTERN];
+  }
+
+  private ansichtDerRoute(): Ansicht | null {
+    let route = this.router.routerState.snapshot.root;
+    while (route.firstChild) {
+      route = route.firstChild;
+      const id = route.paramMap.get('id');
+      if (id) {
+        return { id, bearbeiten: route.firstChild?.routeConfig?.path === 'bearbeiten' };
+      }
+    }
+    return null;
+  }
+
+  private zeile(id: string): HTMLElement | null {
+    return this.element.nativeElement.querySelector<HTMLElement>(
+      `[data-vertrag="${CSS.escape(id)}"] .zeile`,
+    );
   }
 
   /** Nach dem Neuladen, denn die Zeile kann durch die Änderung in der Liste gewandert sein. */
@@ -141,60 +356,6 @@ export class VertraegeSeite {
       : null;
   }
 
-  protected zeilenMeldung(id: string): ZeilenMeldung | null {
-    const meldung = this.meldung();
-    return meldung?.id === id ? meldung : null;
-  }
-
-  protected ansicht(id: string): Ansicht | null {
-    const offen = this.offen();
-    return offen?.id === id ? offen.ansicht : null;
-  }
-
-  /** Geänderte Eingaben gehen nur nach der Rückfrage verloren, nicht durch einen Fehlklick. */
-  protected async umschalten(id: string, ansicht: Ansicht): Promise<void> {
-    const ziel = this.ansicht(id) === ansicht ? null : { id, ansicht };
-    if (await this.ungespeichert.bestaetigen()) {
-      this.oeffnen(ziel);
-    }
-  }
-
-  protected oeffnen(ziel: Offen | null): void {
-    this.offen.set(ziel);
-    this.meldung.set(null);
-  }
-
-  protected gespeichert(vertrag: VertragAntwort): void {
-    this.nachAenderung({
-      id: vertrag.id,
-      text: `„${vertragName(vertrag)}“ wurde gespeichert.`,
-      art: 'info',
-    });
-  }
-
-  protected konflikt(id: string): void {
-    this.nachAenderung({
-      id,
-      text: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
-      art: 'fehler',
-    });
-  }
-
-  protected nichtGefunden(): void {
-    this.nachAenderung({ id: null, text: 'Diesen Vertrag gibt es nicht mehr.', art: 'fehler' });
-  }
-
-  protected loeschAntwort(ja: boolean): void {
-    const vertrag = this.loeschFrage();
-    if (!vertrag) {
-      return;
-    }
-    this.loeschFrage.set(null);
-    if (ja) {
-      this.loeschen(vertrag);
-    }
-  }
-
   private loeschen(vertrag: VertragAntwort): void {
     this.meldung.set(null);
     this.loeschendId.set(vertrag.id);
@@ -210,7 +371,7 @@ export class VertraegeSeite {
   /** Auch nach 404: Der Vertrag ist weg, das ist es, was der Nutzer wollte. */
   private geloescht(vertrag: VertragAntwort): void {
     this.loeschendId.set(null);
-    this.formularSchliessen(vertrag.id);
+    this.ansichtSchliessen(vertrag.id);
     this.meldung.set({
       ...this.stelleDerZeile(vertrag.id),
       text: `„${vertragName(vertrag)}“ wurde gelöscht.`,
@@ -226,7 +387,6 @@ export class VertraegeSeite {
         this.geloescht(vertrag);
         break;
       case 'KONFLIKT':
-        this.formularSchliessen(vertrag.id);
         this.meldung.set({
           id: vertrag.id,
           text: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut löschen.',
@@ -244,10 +404,10 @@ export class VertraegeSeite {
     }
   }
 
-  /** Das Formular eines anderen Vertrags bleibt offen, seine Eingaben sind nicht betroffen. */
-  private formularSchliessen(id: string): void {
-    if (this.offen()?.id === id) {
-      this.offen.set(null);
+  /** Details eines anderen Vertrags bleiben offen. */
+  private ansichtSchliessen(id: string): void {
+    if (this.ansicht()?.id === id) {
+      this.schliessen(['/vertraege']);
     }
   }
 
@@ -262,7 +422,6 @@ export class VertraegeSeite {
   }
 
   private nachAenderung(meldung: Meldung): void {
-    this.oeffnen(null);
     this.meldung.set(meldung);
     this.laden(true);
   }

@@ -83,6 +83,12 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   `ungespeichertGuard` (`canDeactivate`) on routes with a form, `bestaetigen()` for anything else that leaves or
   closes one (logout must ask before the session ends). Redirects that must happen (401, 403) and a successful save
   call `vergessen()` first. Tab close and reload only get the browser's own dialog.
+- Contracts: details (`/vertraege/:id`, tab in `?tab=`) and editing (`/vertraege/:id/bearbeiten`) are child
+  routes of the list page, which loads the data and hands it down; desktop: panel next to the list and a modal
+  sheet (native `dialog`), up to 900 px full screen. Closing goes back in history when the page opened the entry
+  itself (state `intern`), otherwise it replaces it, so the back button closes and shared links work. Navigations
+  inside the page pass `scroll: 'manual'`. Esc, a click outside and the back button all close via the route, so
+  `ungespeichertGuard` asks.
 - Password rules in `features/anmeldung/registrierung/passwort-regeln.ts` mirror the Keycloak realm policy
   (Unicode letter/digit classes like Keycloak). Keep them in sync when the policy changes.
 - Styling: design colours as CSS custom properties `--app-*` in `src/styles.scss`; no UI library, custom markup per

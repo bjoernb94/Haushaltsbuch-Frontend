@@ -1,0 +1,35 @@
+// Scrollt seitlich, wenn die Tabs nicht in die Breite passen.
+:host {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-shadow: inset 0 -1px 0 var(--app-trenner);
+  scrollbar-width: none;
+}
+
+.tab {
+  flex: none;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--app-text-gedaempft);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &[aria-selected='true'] {
+    border-bottom-color: var(--app-gruen);
+    color: var(--app-gruen);
+    font-weight: 800;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: -3px;
+  }
+}
