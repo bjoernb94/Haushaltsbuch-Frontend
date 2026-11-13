@@ -76,11 +76,16 @@ test('Logo und Nutzer-Button stehen wie in der Shell', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await backendSimulieren(page, { angemeldet: true });
   await page.goto('/start');
-  const logo = await page.getByText('Haushaltsbuch', { exact: true }).boundingBox();
+  const logo = await page
+    .getByRole('banner')
+    .getByText('Haushaltsbuch', { exact: true })
+    .boundingBox();
   const knopf = await nutzerKnopf(page).boundingBox();
   await recht(page, 'Impressum').click();
   await expect(page).toHaveURL(/\/impressum$/);
-  expect(await page.getByText('Haushaltsbuch', { exact: true }).boundingBox()).toEqual(logo);
+  expect(
+    await page.getByRole('banner').getByText('Haushaltsbuch', { exact: true }).boundingBox(),
+  ).toEqual(logo);
   expect(await nutzerKnopf(page).boundingBox()).toEqual(knopf);
 });
 

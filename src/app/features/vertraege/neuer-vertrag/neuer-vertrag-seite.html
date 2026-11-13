@@ -1,3 +1,18 @@
+<!-- Bis 900 px statt Kopfzeile und Tab-Leiste. -->
+<div class="leiste">
+  <button type="button" class="leiste-knopf" (click)="zurueck()">Abbrechen</button>
+  <h1>Neuer Vertrag</h1>
+  <button
+    type="submit"
+    class="leiste-knopf sichern"
+    [attr.form]="formularId"
+    [disabled]="!kategorien() || sendet()"
+    [attr.aria-busy]="sendet()"
+  >
+    Sichern
+  </button>
+</div>
+
 <a class="zurueck" routerLink="/vertraege">
   <svg
     width="18"
@@ -16,7 +31,7 @@
 </a>
 
 <div class="kopf">
-  <h1>Neuer Vertrag</h1>
+  <h1 class="titel">Neuer Vertrag</h1>
   <p>
     Felder mit * sind Pflichtfelder. Den nächsten Kündigungstermin berechnen wir aus Laufzeit,
     Verlängerung und Frist.
@@ -33,6 +48,8 @@
     [kategorien]="liste"
     [sendet]="sendet()"
     [fehlerAntwort]="speicherfehler()"
+    [formularId]="formularId"
+    [knoepfeInLeiste]="true"
     (speichern)="speichern($event)"
     (abbrechen)="zurueck()"
   />

@@ -52,6 +52,9 @@ body {
     sans-serif;
   margin: 0;
   height: 100%;
+  // Mit viewport-fit=cover reicht die Seite bis unter Notch und Home-Indikator; Kopf und Leisten
+  // halten oben und unten Abstand, seitlich (Querformat) hier.
+  padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 
 a {

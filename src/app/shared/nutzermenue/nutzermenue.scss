@@ -4,6 +4,7 @@
 
 $handy: 640px;
 
+// Farben des Knopfs setzt die Kopfzeile (--knopf-*, --initialen-*); ohne die für ihren grünen Grund.
 :host {
   position: relative;
   display: block;
@@ -19,21 +20,21 @@ $handy: 640px;
   align-items: center;
   gap: 10px;
   border-radius: 999px;
-  border: 1.5px solid var(--app-kopfzeile-rand);
+  border: 1.5px solid var(--knopf-rand, var(--app-kopfzeile-rand));
   background: transparent;
-  color: var(--app-flaeche);
+  color: var(--knopf-text, var(--app-flaeche));
   font: inherit;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--knopf-hover, rgba(255, 255, 255, 0.1));
   }
 
   // Auf dem Grün der Kopfzeile wäre der grüne Fokusrand der Formulare nicht zu sehen.
   &:focus-visible {
-    outline: 3px solid var(--app-flaeche);
+    outline: 3px solid var(--knopf-fokus, var(--app-flaeche));
     outline-offset: 2px;
   }
 }
@@ -46,8 +47,8 @@ $handy: 640px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--app-grund);
-  color: var(--app-gruen);
+  background: var(--initialen-grund, var(--app-grund));
+  color: var(--initialen-text, var(--app-gruen));
   font-size: 14px;
   font-weight: 800;
 }
@@ -175,23 +176,12 @@ $handy: 640px;
       padding: 6px 10px 6px 6px;
       border: 0;
       border-radius: 10px;
-      color: var(--app-text);
       font-size: 14px;
-
-      &:hover {
-        background: var(--app-seitenleiste-hover);
-      }
-
-      &:focus-visible {
-        outline-color: var(--app-gruen-fokus-rand);
-      }
     }
 
     .nutzer-knopf .initialen {
       width: 30px;
       height: 30px;
-      background: var(--app-gruen);
-      color: var(--app-flaeche);
       font-size: 12px;
     }
 

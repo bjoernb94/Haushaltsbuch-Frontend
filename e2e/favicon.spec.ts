@@ -69,7 +69,8 @@ test.describe('App-Icon', () => {
 });
 
 test.describe('Logo', () => {
-  const logo = (page: Page) => page.locator('app-logo svg');
+  // Auf der Startseite steckt ein zweites Logo in der Tab-Leiste, die dort erst bis 900 px erscheint.
+  const logo = (page: Page) => page.locator('app-logo svg >> visible=true');
 
   async function groesse(page: Page) {
     const box = await logo(page).boundingBox();

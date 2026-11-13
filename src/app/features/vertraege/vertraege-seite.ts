@@ -19,6 +19,7 @@ import { BestaetigenDialog } from '../../shared/bestaetigen-dialog/bestaetigen-d
 import { BetraegePipe } from '../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../shared/hinweis-box/hinweis-box';
 import { inDenBlick } from '../../shared/in-den-blick/in-den-blick';
+import { seitenaktionenMelden } from '../../shared/seitenaktionen/seitenaktionen';
 import { vertragName } from './vertrag-texte';
 import { VertragZeile, ZeilenMeldung } from './vertrag-zeile/vertrag-zeile';
 import { VertragService } from './vertrag.service';
@@ -86,6 +87,7 @@ export class VertraegeSeite {
   private ladevorgang?: Subscription;
 
   constructor() {
+    seitenaktionenMelden(() => ({ neu: { ziel: '/vertraege/neu', label: 'Neuer Vertrag' } }));
     this.laden(!!this.meldung());
   }
 

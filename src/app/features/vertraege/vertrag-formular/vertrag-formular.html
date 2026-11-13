@@ -2,6 +2,8 @@
   #formularElement
   class="formular"
   [class.bearbeiten]="vertrag()"
+  [class.knoepfe-in-leiste]="knoepfeInLeiste()"
+  [attr.id]="formularId()"
   [attr.aria-label]="name() && name() + ' bearbeiten'"
   [formGroup]="formular"
   (ngSubmit)="absenden()"

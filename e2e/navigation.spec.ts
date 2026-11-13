@@ -11,10 +11,20 @@ test('Wurzel leitet auf die Startseite um', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen, Max!');
 });
 
-test('Startseite hat keine Navigation', async ({ page }) => {
+test('Startseite hat am Desktop keine Navigation, auf dem Handy die Tab-Leiste', async ({
+  page,
+}) => {
   await page.goto('/start');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeHidden();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const hauptmenue = page.getByRole('navigation', { name: 'Hauptmenü' });
+  await expect(hauptmenue).toBeVisible();
+  await expect(hauptmenue.getByRole('link', { name: 'Übersicht' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
 });
 
 test('Navigation führt zur Übersicht und markiert den aktiven Bereich', async ({ page }) => {
@@ -29,7 +39,7 @@ test('Navigation führt zur Übersicht und markiert den aktiven Bereich', async 
   await hauptmenue.getByRole('link', { name: 'Übersicht' }).click();
 
   await expect(page).toHaveURL(/\/start$/);
-  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeHidden();
 });
 
 test('auf dem Desktop: Seitenleiste mit Logo statt Kopfzeile, Copyright in der Fußzeile', async ({
@@ -69,7 +79,8 @@ test('auf dem Handy wird die Navigation zur Leiste mit Kurzbezeichnungen', async
   await expect(hauptmenue.getByText('Finanzübersicht')).toBeHidden();
   await expect(hauptmenue.getByText('Komponenten')).toBeHidden();
   await expect(hauptmenue.getByText('© Björn Bochmann')).toBeHidden();
-  await expect(page.getByRole('contentinfo').getByText('© Björn Bochmann')).toBeVisible();
+  // Ohne Fußzeile; Impressum und Datenschutz über die Einstellungen.
+  await expect(page.getByRole('contentinfo')).toBeHidden();
   // Nur für Screenreader: Der Text bleibt im Zugriffsbaum, sichtbar ist nur der graue Eintrag.
   await expect(hauptmenue).toContainText('Demnächst verfügbar');
 

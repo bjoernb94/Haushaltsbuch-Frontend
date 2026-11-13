@@ -218,9 +218,11 @@ src/app/
     vertraege/   je ein Backend-Modul; weitere kommen mit ihren Seiten dazu
   shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, fusszeile/,
                herkunft/, hinweis-box/, in-den-blick/, kopfzeile/, layout/, logo/, nutzermenue/,
-               rechtliche-links/, systemstatus-leiste/, version-anzeige/, verwerfen-dialog/, zustaende/
-  shell/       Rahmen der angemeldeten Bereiche (hauptmenue/ als Seitenleiste, Fußzeile); die Startseite
-               kommt ohne Navigation aus (Route-Data ohneNavigation) und behält die Kopfzeile
+               rechtliche-links/, seitenaktionen/, systemstatus-leiste/, version-anzeige/,
+               verwerfen-dialog/, zustaende/
+  shell/       Rahmen der angemeldeten Bereiche (hauptmenue/ als Seitenleiste, bis 900 px als Tab-Leiste,
+               Fußzeile); die Startseite kommt ab 901 px ohne Navigation aus (Route-Data ohneNavigation)
+               und behält die Kopfzeile
 src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile
 ```
 

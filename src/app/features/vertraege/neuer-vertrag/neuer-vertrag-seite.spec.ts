@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
+import { Seitenaktionen } from '../../../shared/seitenaktionen/seitenaktionen';
 import { VertragService } from '../vertrag.service';
 import { NeuerVertragSeite } from './neuer-vertrag-seite';
 
@@ -51,7 +52,7 @@ describe('NeuerVertragSeite', () => {
     expect(el.querySelector('form')).toBeNull();
     expect(el.textContent).toContain('Die Kategorien konnten nicht geladen werden.');
 
-    el.querySelector<HTMLButtonElement>('button')!.click();
+    el.querySelector<HTMLButtonElement>('.fehler button')!.click();
     await fixture.whenStable();
     expect(el.querySelector('form')).not.toBeNull();
   });
@@ -107,8 +108,47 @@ describe('NeuerVertragSeite', () => {
   it('bricht ohne Anfrage ab', async () => {
     const anlegen = vi.fn();
     const { el, navigieren } = await erstellen({ kategorien: () => of([...KATEGORIEN]), anlegen });
-    el.querySelector<HTMLButtonElement>('button[type="button"]')!.click();
+    el.querySelector<HTMLButtonElement>('form button[type="button"]')!.click();
     expect(anlegen).not.toHaveBeenCalled();
     expect(navigieren).toHaveBeenCalledWith(['/vertraege']);
+  });
+
+  describe('Leiste bis 900 px', () => {
+    const leiste = (el: HTMLElement) => el.querySelector<HTMLElement>('.leiste')!;
+    const sichern = (el: HTMLElement) =>
+      [...leiste(el).querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Sichern')!;
+
+    it('meldet der Shell eine eigene Leiste, bis die Seite geht', async () => {
+      const { fixture } = await erstellen({ kategorien: () => NEVER });
+      const aktionen = TestBed.inject(Seitenaktionen).aktionen;
+      expect(aktionen().eigeneLeiste).toBe(true);
+      fixture.destroy();
+      expect(aktionen()).toEqual({});
+    });
+
+    it('„Sichern“ sendet das Formular ab', async () => {
+      const anlegen = vi.fn().mockReturnValue(NEVER);
+      const { fixture, el } = await erstellen({ kategorien: () => of([...KATEGORIEN]), anlegen });
+      const formular = el.querySelector('form')!;
+      expect(sichern(el).getAttribute('form')).toBe(formular.id);
+      expect(formular.id).not.toBe('');
+
+      const absenden = vi.fn((e: Event) => e.preventDefault());
+      formular.addEventListener('submit', absenden);
+      sichern(el).click();
+      await fixture.whenStable();
+      expect(absenden).toHaveBeenCalledOnce();
+    });
+
+    it('„Sichern“ ist gesperrt, solange die Kategorien fehlen oder gesendet wird', async () => {
+      const { el } = await erstellen({ kategorien: () => NEVER });
+      expect(sichern(el).disabled).toBe(true);
+    });
+
+    it('„Abbrechen“ führt zur Liste', async () => {
+      const { el, navigieren } = await erstellen({ kategorien: () => of([...KATEGORIEN]) });
+      leiste(el).querySelector<HTMLButtonElement>('button[type="button"]')!.click();
+      expect(navigieren).toHaveBeenCalledWith(['/vertraege']);
+    });
   });
 });

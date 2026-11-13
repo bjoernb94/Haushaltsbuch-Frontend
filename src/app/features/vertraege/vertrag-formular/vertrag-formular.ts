@@ -113,6 +113,10 @@ export class VertragFormular implements OnInit {
   readonly sendet = input(false);
   /** Fehler der letzten Anfrage, {@code null} wenn es keinen gibt. */
   readonly fehlerAntwort = input<unknown>(null);
+  /** Für einen Absende-Knopf außerhalb des Formulars ({@code form}-Attribut). */
+  readonly formularId = input<string | null>(null);
+  /** Abbrechen und Speichern stehen bis 900 px in der Leiste der Seite, nicht im Formular. */
+  readonly knoepfeInLeiste = input(false);
 
   readonly speichern = output<Required<VertragEingabe>>();
   readonly abbrechen = output<void>();

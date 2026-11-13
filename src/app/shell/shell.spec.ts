@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { Komponente } from '../core/api/api';
 import { AuthService } from '../core/auth/auth.service';
 import { SystemstatusService } from '../core/systemstatus/systemstatus.service';
+import { Seitenaktionen } from '../shared/seitenaktionen/seitenaktionen';
 import { Shell } from './shell';
 
 const ROUTEN: Routes = [
@@ -98,18 +99,36 @@ describe('Shell', () => {
     expect(eintrag?.querySelector('.kurz')?.textContent).toBe('Finanzen');
   });
 
-  it('richtet das Layout nach der Route', async () => {
+  it('richtet das Layout nach der Route, die Tab-Leiste gibt es immer', async () => {
     const harness = await RouterTestingHarness.create();
     const fixture = TestBed.createComponent(Shell);
     const shellElement = fixture.nativeElement as HTMLElement;
+    const mitNavigation = () =>
+      shellElement.querySelector('.seite')!.classList.contains('mit-navigation');
 
     await harness.navigateByUrl('/start');
     await fixture.whenStable();
-    expect(shellElement.querySelector('nav[aria-label="Hauptmenü"]')).toBeNull();
+    expect(mitNavigation()).toBe(false);
+    expect(shellElement.querySelector('nav[aria-label="Hauptmenü"]')).not.toBeNull();
 
     await harness.navigateByUrl('/vertraege');
     await fixture.whenStable();
-    expect(shellElement.querySelector('nav[aria-label="Hauptmenü"]')).not.toBeNull();
+    expect(mitNavigation()).toBe(true);
+  });
+
+  it('lässt Kopf und Tab-Leiste weg, solange eine Seite eine eigene Leiste meldet', async () => {
+    const fixture = TestBed.createComponent(Shell);
+    const element = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+    expect(element.querySelector('.seite')!.classList.contains('eigene-leiste')).toBe(false);
+
+    const entfernen = TestBed.inject(Seitenaktionen).melden(signal({ eigeneLeiste: true }));
+    await fixture.whenStable();
+    expect(element.querySelector('.seite')!.classList.contains('eigene-leiste')).toBe(true);
+
+    entfernen();
+    await fixture.whenStable();
+    expect(element.querySelector('.seite')!.classList.contains('eigene-leiste')).toBe(false);
   });
 
   it('markiert den aktiven Eintrag', async () => {

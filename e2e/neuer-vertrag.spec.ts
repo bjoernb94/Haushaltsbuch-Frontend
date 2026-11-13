@@ -9,11 +9,12 @@ async function pflichtfelderFuellen(page: Page, anbieter = 'Neuer Anbieter') {
   await page.getByLabel('Nächste Abbuchung *').fill('2027-01-01');
 }
 
-async function speichernUndAnfrageLesen(page: Page) {
+/** Bis 900 px heißt der Knopf in der Leiste oben „Sichern“. */
+async function speichernUndAnfrageLesen(page: Page, knopf = 'Vertrag speichern') {
   const anfrage = page.waitForRequest(
     (r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/vertraege',
   );
-  await page.getByRole('button', { name: 'Vertrag speichern' }).click();
+  await page.getByRole('button', { name: knopf }).click();
   return (await anfrage).postDataJSON();
 }
 
@@ -137,7 +138,7 @@ test.describe('Neuer Vertrag', () => {
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
     await page.goto('/vertraege/neu');
     await pflichtfelderFuellen(page);
-    await speichernUndAnfrageLesen(page);
+    await speichernUndAnfrageLesen(page, 'Sichern');
     await expect(page.getByText('„Neuer Anbieter“ wurde gespeichert.')).toBeInViewport();
   });
 
@@ -151,11 +152,11 @@ test.describe('Neuer Vertrag', () => {
     const scrollY = (page: Page) => page.evaluate(() => Math.round(window.scrollY));
     const meldung = (page: Page) => page.getByText('„Neuer Anbieter“ wurde gespeichert.');
 
-    async function anlegen(page: Page) {
+    async function anlegen(page: Page, knopf?: string) {
       await backendSimulieren(page, { angemeldet: true, vertraege: VIELE });
       await page.goto('/vertraege/neu');
       await pflichtfelderFuellen(page);
-      await speichernUndAnfrageLesen(page);
+      await speichernUndAnfrageLesen(page, knopf);
       await expect(page).toHaveURL(/\/vertraege$/);
     }
 
@@ -183,7 +184,7 @@ test.describe('Neuer Vertrag', () => {
 
     test('Handy: Die feste Navigation verdeckt die Zeile nicht', async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 900 });
-      await anlegen(page);
+      await anlegen(page, 'Sichern');
       const zeile = page.locator('app-vertrag-zeile').last();
       await expect(zeile.locator('.meldung')).toBeFocused();
       const navigation = await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox();

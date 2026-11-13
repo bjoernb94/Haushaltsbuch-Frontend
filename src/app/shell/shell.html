@@ -1,10 +1,12 @@
-<div class="seite" [class.mit-navigation]="mitNavigation()">
+<div
+  class="seite"
+  [class.mit-navigation]="mitNavigation()"
+  [class.eigene-leiste]="aktionen().eigeneLeiste"
+>
   <app-kopfzeile [seitenleiste]="mitNavigation()" />
 
   <div class="rumpf">
-    @if (mitNavigation()) {
-      <app-hauptmenue />
-    }
+    <app-hauptmenue />
 
     <div class="spalte">
       <main>

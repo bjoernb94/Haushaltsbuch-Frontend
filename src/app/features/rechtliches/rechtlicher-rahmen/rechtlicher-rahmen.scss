@@ -37,4 +37,9 @@
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
+
+  // Bis 900 px steht „Zurück“ in der Kopfzeile.
+  @media (max-width: 900px) {
+    display: none;
+  }
 }

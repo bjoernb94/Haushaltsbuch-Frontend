@@ -4,11 +4,15 @@ import { Router, RouterLink } from '@angular/router';
 import { VertragKategorieAntwort } from '../../../core/api/api';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import { seitenaktionenMelden } from '../../../shared/seitenaktionen/seitenaktionen';
 import { VertragFormular } from '../vertrag-formular/vertrag-formular';
 import { vertragName } from '../vertrag-texte';
 import { VertragEingabe, VertragService } from '../vertrag.service';
 
-/** Legt einen Vertrag an und kehrt mit einer Meldung zur Liste zurück, die dort neu lädt. */
+/**
+ * Legt einen Vertrag an und kehrt mit einer Meldung zur Liste zurück, die dort neu lädt. Bis 900 px
+ * mit eigener Leiste oben (Abbrechen, Sichern) statt Kopfzeile und Tab-Leiste.
+ */
 @Component({
   selector: 'app-neuer-vertrag-seite',
   imports: [RouterLink, HinweisBox, VertragFormular],
@@ -26,8 +30,10 @@ export class NeuerVertragSeite {
   protected readonly ladefehler = signal(false);
   protected readonly sendet = signal(false);
   protected readonly speicherfehler = signal<unknown>(null);
+  protected readonly formularId = 'neuer-vertrag';
 
   constructor() {
+    seitenaktionenMelden(() => ({ eigeneLeiste: true }));
     this.laden();
   }
 

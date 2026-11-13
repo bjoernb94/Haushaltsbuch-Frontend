@@ -7,7 +7,7 @@ import {
   ElementRef,
   inject,
   input,
-  signal,
+  model,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -33,9 +33,10 @@ function erstesZeichen(text: string): string {
 
 /**
  * Knopf mit den Initialen des Nutzers, öffnet Name, E-Mail, „Einstellungen“ und „Abmelden“; bis 640 px
- * als Bottom-Sheet, in der Seitenleiste nach oben. Nicht modal wie im Design, daher schließt auch das Verlassen per Tab. Liegt nicht in
- * der Shell, weil auch Seiten außerhalb sie zeigen. Eine Rückfrage zum Abmelden stellt der
- * {@code VerwerfenDialog} der Shell; außerhalb gibt es keine Formulare, die fragen müssten.
+ * als Bottom-Sheet, in der Seitenleiste nach oben. Nicht modal wie im Design, daher schließt auch das
+ * Verlassen per Tab. Liegt nicht in der Shell, weil auch Seiten außerhalb sie zeigen. Eine Rückfrage
+ * zum Abmelden stellt der {@code VerwerfenDialog} der Shell; außerhalb gibt es keine Formulare, die
+ * fragen müssten.
  */
 @Component({
   selector: 'app-nutzermenue',
@@ -59,7 +60,8 @@ export class Nutzermenue {
   private readonly hintergrund = viewChild<ElementRef<HTMLButtonElement>>('hintergrund');
 
   protected readonly nutzer = this.auth.nutzer;
-  protected readonly offen = signal(false);
+  /** Offen oder zu; die Kopfzeile hebt sich bis 900 px, solange es offen ist. */
+  readonly offen = model(false);
 
   private readonly url = toSignal(
     this.router.events.pipe(
