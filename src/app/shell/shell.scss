@@ -51,8 +51,30 @@ main {
   }
 }
 
+// Die Startseite hat ab 901 px keine Navigation, bis 900 px aber die Tab-Leiste wie alle anderen.
+@media (min-width: 901px) {
+  .seite:not(.mit-navigation) app-hauptmenue {
+    display: none;
+  }
+}
+
+// Platz für die Tab-Leiste. Die Fußzeile bleibt im DOM: Sie fragt den Systemstatus ab, von dem das
+// Laden der Version abhängt. Impressum und Datenschutz erreicht man über die Einstellungen.
 @media (max-width: 900px) {
-  .mit-navigation {
-    padding-bottom: 84px;
+  .seite {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
+  app-fusszeile {
+    display: none;
+  }
+
+  .eigene-leiste {
+    padding-bottom: 0;
+
+    app-kopfzeile,
+    app-hauptmenue {
+      display: none;
+    }
   }
 }

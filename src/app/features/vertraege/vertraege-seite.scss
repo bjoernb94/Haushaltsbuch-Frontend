@@ -40,6 +40,13 @@ h1 {
   }
 }
 
+// Bis 900 px steht „Neuer Vertrag“ als „+“ in der Kopfzeile.
+@media (max-width: 900px) {
+  .kopf .knopf {
+    display: none;
+  }
+}
+
 .kennzahlen {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

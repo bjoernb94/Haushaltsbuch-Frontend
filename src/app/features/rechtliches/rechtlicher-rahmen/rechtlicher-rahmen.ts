@@ -7,6 +7,7 @@ import { InstanzService } from '../../../core/instanz/instanz.service';
 import { Fusszeile } from '../../../shared/fusszeile/fusszeile';
 import { herkunftAus, zurueckLabel } from '../../../shared/herkunft/herkunft';
 import { Kopfzeile } from '../../../shared/kopfzeile/kopfzeile';
+import { seitenaktionenMelden } from '../../../shared/seitenaktionen/seitenaktionen';
 import { istRechtlich } from '../../../shared/rechtliche-links/rechtliche-links';
 
 /**
@@ -38,6 +39,9 @@ export class RechtlicherRahmen {
   constructor() {
     // Ohne Guard: Die Session entscheidet nur über Nutzermenü und Ziel von „Zurück“.
     this.auth.sitzungPruefen().subscribe();
+    seitenaktionenMelden(() => ({
+      zurueck: { ziel: this.zurueck(), label: this.zurueckLabel() },
+    }));
     inject(InstanzService).laden();
   }
 }

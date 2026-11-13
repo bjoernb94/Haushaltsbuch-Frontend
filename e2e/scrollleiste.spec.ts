@@ -19,7 +19,10 @@ test('Kopfzeile springt nicht zwischen kurzen und langen Seiten', async ({ page 
     await page.getByRole('heading', { level: 1 }).waitFor();
     await expect(nutzerKnopf(page)).toBeVisible();
     positionen.push({
-      logo: (await page.getByText('Haushaltsbuch', { exact: true }).boundingBox())!.x,
+      logo: (await page
+        .getByRole('banner')
+        .getByText('Haushaltsbuch', { exact: true })
+        .boundingBox())!.x,
       knopf: (await nutzerKnopf(page).boundingBox())!.x,
     });
   }

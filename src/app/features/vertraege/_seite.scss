@@ -20,6 +20,11 @@
     font-size: 15px;
     font-weight: 700;
     text-decoration: none;
+
+    // Bis 900 px führt die Tab-Leiste bzw. die Leiste der Seite zurück.
+    @media (max-width: 900px) {
+      display: none;
+    }
   }
 
   h1 {

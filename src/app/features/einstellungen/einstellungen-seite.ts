@@ -5,6 +5,7 @@ import { STARTSEITE } from '../../core/auth/auth.guards';
 import { systemstatusBeobachten } from '../../core/systemstatus/systemstatus.service';
 import { VersionService } from '../../core/version/version.service';
 import { HERKUNFT, herkunftAus, zurueckLabel } from '../../shared/herkunft/herkunft';
+import { seitenaktionenMelden } from '../../shared/seitenaktionen/seitenaktionen';
 import { EINSTELLUNGEN, istEinstellungen } from '../../shared/nutzermenue/nutzermenue';
 
 /**
@@ -42,4 +43,8 @@ export class EinstellungenSeite {
       { name: 'Anmeldeserver', ok: s?.anmeldeserver },
     ];
   });
+
+  constructor() {
+    seitenaktionenMelden(() => ({ zurueck: { ziel: this.zurueck, label: this.zurueckLabel } }));
+  }
 }

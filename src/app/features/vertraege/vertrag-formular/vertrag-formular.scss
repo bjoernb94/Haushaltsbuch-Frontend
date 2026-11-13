@@ -152,6 +152,12 @@ legend {
   padding-top: 4px;
 }
 
+@media (max-width: 900px) {
+  .knoepfe-in-leiste .aktionen {
+    display: none;
+  }
+}
+
 .knopf {
   flex-basis: 180px;
   height: 52px;

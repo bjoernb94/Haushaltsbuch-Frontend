@@ -39,10 +39,15 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - `core/` services without UI, `features/` lazy-loaded pages (one folder per backend module, plus
   `anmeldung/` for login/registration, `start/` and `einstellungen/`), `shared/` components used by several areas,
   `shell/` layout of the logged-in area (lazy, so login and registration do not load it), header and footer in
-  `shared/kopfzeile` and `shared/fusszeile` (also used by imprint and privacy policy). `/start` has no
-  navigation (route data `ohneNavigation`), its tiles navigate, and keeps the green header; all other areas use
-  `shell/hauptmenue`, from 901 px a sticky sidebar with logo. There the header collapses and only the user menu
-  (`shared/nutzermenue`, one instance) moves to the bottom of the sidebar; below 901 px the header stays.
+  `shared/kopfzeile` and `shared/fusszeile` (also used by imprint and privacy policy). From 901 px `/start` has
+  no navigation (route data `ohneNavigation`), its tiles navigate, and keeps the green header; all other areas
+  use `shell/hauptmenue`, a sticky sidebar with logo. There the header collapses and only the user menu
+  (`shared/nutzermenue`, one instance) moves to the bottom of the sidebar. Up to 900 px every page has a sticky,
+  translucent header without logo (blur on its own layer so the fixed menu is not trapped; raised above the tab
+  bar while the menu is open), the shell adds the tab bar (also on `/start`) and hides its footer. Page actions
+  in that header ("Zurück", "+") come from `shared/seitenaktionen`: pages call `seitenaktionenMelden()`, the
+  content's own "Zurück" is hidden there. A page reporting `eigeneLeiste` (new contract: Abbrechen | Sichern)
+  gets neither header nor tab bar.
 - API types come from the backend's OpenAPI description: `core/api/api.generated.ts` (checked in, never edit by
   hand), named aliases in `core/api/api.ts`. After an API change in the backend, run `npm run api:typen` and commit
   the result. HTTP stays `HttpClient` with interceptors, no generated client.

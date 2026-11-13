@@ -1,0 +1,46 @@
+<header class="kopfzeile">
+  <div class="kopfzeile-innen">
+    @if (aktionen().zurueck; as zurueck) {
+      <a class="aktion zurueck" [routerLink]="zurueck.ziel" [attr.aria-label]="zurueck.label">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M15 18l-6-6 6-6"></path>
+        </svg>
+        Zurück
+      </a>
+    }
+    <div class="logo">
+      <app-logo />
+      <span>Haushaltsbuch</span>
+    </div>
+    <div class="rechts">
+      @if (aktionen().neu; as neu) {
+        <a class="aktion neu" [routerLink]="neu.ziel" [attr.aria-label]="neu.label">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+        </a>
+      }
+      <app-nutzermenue [seitenleiste]="seitenleiste()" [(offen)]="menueOffen" />
+    </div>
+  </div>
+</header>

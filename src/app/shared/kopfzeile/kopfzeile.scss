@@ -1,3 +1,13 @@
+// Nutzer-Button auf hellem Grund: neben der Seitenleiste und bis 900 px.
+@mixin hell {
+  --knopf-rand: var(--app-rand);
+  --knopf-text: var(--app-text);
+  --knopf-hover: var(--app-seitenleiste-hover);
+  --knopf-fokus: var(--app-gruen-fokus-rand);
+  --initialen-grund: var(--app-gruen);
+  --initialen-text: var(--app-flaeche);
+}
+
 :host {
   display: block;
 }
@@ -32,8 +42,49 @@
   }
 }
 
+.rechts {
+  min-width: 0;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// Nur bis 900 px; darüber stehen „Zurück“ und „Neuer Vertrag“ im Inhalt.
+.aktion {
+  display: none;
+  min-height: 44px;
+  align-items: center;
+  color: var(--app-gruen);
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 1px;
+  }
+}
+
+.zurueck {
+  padding: 0 8px 0 2px;
+  gap: 2px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.neu {
+  width: 44px;
+  justify-content: center;
+  border-radius: 999px;
+
+  &:hover {
+    background: var(--app-seitenleiste-hover);
+  }
+}
+
 @media (min-width: 901px) {
   :host(.seitenleiste) {
+    @include hell;
+
     .kopfzeile {
       background: none;
     }
@@ -46,5 +97,54 @@
     .logo {
       display: none;
     }
+  }
+}
+
+// Bleibt oben stehen und lässt den Inhalt durchscheinen.
+@media (max-width: 900px) {
+  :host {
+    @include hell;
+
+    position: sticky;
+    top: 0;
+    z-index: 12;
+  }
+
+  // Offenes Kontomenü: über die Tab-Leiste heben, sonst läge sie über dem Hintergrund des Menüs.
+  :host(.menue-offen) {
+    z-index: 40;
+  }
+
+  .kopfzeile {
+    position: relative;
+    isolation: isolate;
+    border-bottom: 1px solid rgba(23, 32, 27, 0.12);
+    background: none;
+    color: var(--app-text);
+
+    // Unschärfe auf eigener Ebene: Am Kopf selbst würde sie das Kontomenü (position: fixed) einsperren.
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: rgba(243, 245, 242, 0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+    }
+  }
+
+  .kopfzeile-innen {
+    min-height: 52px;
+    padding: calc(6px + env(safe-area-inset-top)) 12px 6px;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .logo {
+    display: none;
+  }
+
+  .aktion {
+    display: inline-flex;
   }
 }
