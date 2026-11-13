@@ -19,6 +19,9 @@
   font: inherit;
   font-size: 15px;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   white-space: nowrap;
   cursor: pointer;
 
@@ -32,4 +35,19 @@
     outline: 3px solid var(--app-gruen-fokus-rand);
     outline-offset: -3px;
   }
+}
+
+.zaehler {
+  min-width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--app-fehler);
+  color: var(--app-flaeche);
+  font-size: 12px;
+  font-weight: 800;
 }

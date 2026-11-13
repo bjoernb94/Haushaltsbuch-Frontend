@@ -12,6 +12,8 @@ import {
 export interface Tab {
   key: string;
   label: string;
+  /** Fehler in diesem Tab; ohne oder 0 kein Zähler. */
+  fehler?: number;
 }
 
 /**
@@ -35,6 +37,10 @@ export interface Tab {
       (keydown)="taste($event, i)"
     >
       {{ tab.label }}
+      @if (tab.fehler) {
+        <span class="zaehler" aria-hidden="true">{{ tab.fehler }}</span>
+        <span class="sr-only">, {{ tab.fehler === 1 ? '1 Fehler' : tab.fehler + ' Fehler' }}</span>
+      }
     </button>
   }`,
   styleUrl: './tabliste.scss',

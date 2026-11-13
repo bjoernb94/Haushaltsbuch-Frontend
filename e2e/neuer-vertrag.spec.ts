@@ -1,9 +1,17 @@
 import { expect, Page, test } from '@playwright/test';
 import { abmelden, backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
 
+/** Der Name des Tabs kann einen Fehlerzähler tragen, z. B. „Kosten 3, 3 Fehler“. */
+async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit') {
+  await page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
+}
+
+/** Endet im Tab „Kosten“. */
 async function pflichtfelderFuellen(page: Page, anbieter = 'Neuer Anbieter') {
+  await tab(page, 'Allgemein');
   await page.getByLabel('Anbieter *').fill(anbieter);
   await page.getByLabel('Kategorie *').selectOption({ label: 'Versicherung' });
+  await tab(page, 'Kosten');
   await page.getByLabel('Betrag in € *').fill('19,99');
   await page.getByLabel('Zahlweise *').selectOption({ label: 'monatlich' });
   await page.getByLabel('Nächste Abbuchung *').fill('2027-01-01');
@@ -111,14 +119,16 @@ test.describe('Neuer Vertrag', () => {
     await page.goto('/vertraege/neu');
 
     await pflichtfelderFuellen(page, ' Neuer Anbieter ');
+    await page.getByLabel('Zahlungsweg').selectOption({ label: 'PayPal' });
+    await tab(page, 'Allgemein');
     await page.getByLabel('Bezeichnung').fill('Mein Vertrag');
     await page.getByLabel('Vertrags- oder Kundennummer').fill('V-1');
-    await page.getByLabel('Zahlungsweg').selectOption({ label: 'PayPal' });
+    await page.getByLabel('Notiz').fill('Familien-Abo');
+    await tab(page, 'Laufzeit');
     await page.getByLabel('Vertragsbeginn').fill('2026-01-01');
     await page.getByLabel('Laufzeitende').fill('2027-12-31');
     await page.getByLabel('Verlängerung').selectOption({ label: 'Nach Laufzeitende um 12 Monate' });
     await page.getByLabel('Kündigungsfrist').selectOption({ label: '3 Monate' });
-    await page.getByLabel('Notiz').fill('Familien-Abo');
 
     expect(await speichernUndAnfrageLesen(page)).toEqual({
       anbieter: 'Neuer Anbieter',
@@ -295,6 +305,7 @@ test.describe('Neuer Vertrag', () => {
     await backendSimulieren(page, { angemeldet: true });
     await page.goto('/vertraege/neu');
     await pflichtfelderFuellen(page);
+    await tab(page, 'Laufzeit');
     await page.getByLabel('Verlängerung').selectOption({ label: 'Nach Laufzeitende monatlich' });
     await page.getByLabel('Kündigungsfrist').selectOption({ label: '3 Monate' });
 
@@ -309,13 +320,18 @@ test.describe('Neuer Vertrag', () => {
       verlaengerung: null,
       kuendigungsfristMonate: null,
     });
-    await expect(page.getByText('Nicht kündbar', { exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByRole('region', { name: 'Vertragsliste' })
+        .getByText('Nicht kündbar', { exact: true }),
+    ).toBeVisible();
   });
 
   test('legt einen gekündigten Vertrag an', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true });
     await page.goto('/vertraege/neu');
     await pflichtfelderFuellen(page);
+    await tab(page, 'Laufzeit');
     await expect(page.getByLabel('Gekündigt zum')).toHaveCount(0);
 
     await page.getByLabel('Gekündigt', { exact: true }).check();
@@ -377,6 +393,7 @@ test.describe('Neuer Vertrag', () => {
       await backendSimulieren(page, { angemeldet: true });
       await page.goto('/vertraege/neu');
       await pflichtfelderFuellen(page);
+      await tab(page, 'Laufzeit');
       await page.getByLabel('Vertragsbeginn').fill('2027-01-01');
       await page.getByLabel('Laufzeitende').fill('2026-01-01');
       await page.getByRole('button', { name: 'Vertrag speichern' }).click();
@@ -442,6 +459,7 @@ test.describe('Neuer Vertrag', () => {
 
     test('startet ohne Termin und folgt den Eingaben', async ({ page }) => {
       await page.goto('/vertraege/neu');
+      await tab(page, 'Laufzeit');
       await expect(zeile(page)).toContainText('Kein Termin bekannt');
       await page.getByLabel('Laufzeitende').fill('2027-12-31');
       await expect(zeile(page)).toContainText('Kündbar bis 31.12.2027');
@@ -453,12 +471,15 @@ test.describe('Neuer Vertrag', () => {
 
     test('fragt je Pause einmal und nicht bei Feldern ohne Einfluss', async ({ page }) => {
       await page.goto('/vertraege/neu');
+      await tab(page, 'Laufzeit');
       await expect(zeile(page)).toContainText('Kein Termin bekannt');
       let anfragen = 0;
       page.on('request', (r) => {
         anfragen += new URL(r.url()).pathname.endsWith('/vorschau') ? 1 : 0;
       });
+      await tab(page, 'Allgemein');
       await page.getByLabel('Anbieter *').pressSequentially('Tippt lange', { delay: 10 });
+      await tab(page, 'Laufzeit');
       await page.getByLabel('Laufzeitende').fill('2027-12-31');
       await page.getByLabel('Laufzeitende').fill('2028-12-31');
       await expect(zeile(page)).toContainText('31.12.2028');
@@ -467,6 +488,7 @@ test.describe('Neuer Vertrag', () => {
 
     test('„Nicht kündbar“ blendet die Zeile aus', async ({ page }) => {
       await page.goto('/vertraege/neu');
+      await tab(page, 'Laufzeit');
       await expect(zeile(page)).toBeVisible();
       await page.getByLabel('Nicht kündbar').check();
       await expect(zeile(page)).toHaveCount(0);
@@ -483,6 +505,7 @@ test.describe('Neuer Vertrag', () => {
           route.fulfill({ status, contentType: 'application/problem+json', json }),
         );
         await page.goto('/vertraege/neu');
+        await tab(page, 'Laufzeit');
         await expect(zeile(page)).toHaveText(/Nächster Kündigungstermin:\s*–/);
         await expect(page.getByRole('alert')).toHaveCount(0);
         await pflichtfelderFuellen(page);
@@ -493,6 +516,7 @@ test.describe('Neuer Vertrag', () => {
 
     test('401: Es geht zum Login, wie bei jeder anderen Anfrage', async ({ page }) => {
       await page.goto('/vertraege/neu');
+      await tab(page, 'Laufzeit');
       await expect(zeile(page)).toBeVisible();
       await page.route(VORSCHAU, (route) =>
         route.fulfill({ status: 401, contentType: 'application/problem+json', json: {} }),
@@ -500,6 +524,73 @@ test.describe('Neuer Vertrag', () => {
       await page.getByLabel('Laufzeitende').fill('2027-12-31');
       await expect(page).toHaveURL(/\/login\?returnUrl=/);
       await expect(page.getByRole('dialog')).toHaveCount(0);
+    });
+  });
+
+  test.describe('Tabs und Zusammenfassung', () => {
+    test.beforeEach(async ({ page }) => {
+      await backendSimulieren(page, { angemeldet: true });
+      await page.goto('/vertraege/neu');
+    });
+
+    test('nennt, wo die Pflichtfelder stehen; Pfeiltasten wechseln den Tab', async ({ page }) => {
+      await expect(
+        page.getByText('Pflichtfelder (*) findest du unter „Allgemein“ und „Kosten“.'),
+      ).toBeVisible();
+      const tabs = page.getByRole('tablist', { name: 'Bereiche des Vertrags' }).getByRole('tab');
+      await expect(tabs).toHaveText(['Allgemein', 'Kosten', 'Laufzeit']);
+      await expect(page.getByLabel('Betrag in € *')).toBeHidden();
+
+      await tabs.first().focus();
+      await page.keyboard.press('ArrowRight');
+      await expect(tabs.nth(1)).toBeFocused();
+      await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+      await expect(page.getByLabel('Betrag in € *')).toBeVisible();
+      await expect(page.getByLabel('Anbieter *')).toBeHidden();
+    });
+
+    test('zählt Fehler je Tab und springt zum ersten Tab mit Fehler', async ({ page }) => {
+      await tab(page, 'Laufzeit');
+      await page.getByRole('button', { name: 'Vertrag speichern' }).click();
+      await expect(page.getByRole('tab', { name: /^Allgemein.*2 Fehler$/ })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(page.getByRole('tab', { name: /^Kosten.*3 Fehler$/ })).toBeVisible();
+      await expect(page.getByRole('tab', { name: 'Laufzeit', exact: true })).toBeVisible();
+      await expect(page.getByLabel('Anbieter *')).toBeFocused();
+
+      await page.getByLabel('Anbieter *').fill('A');
+      await page.getByLabel('Kategorie *').selectOption({ label: 'Versicherung' });
+      await expect(page.getByRole('tab', { name: 'Allgemein', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Vertrag speichern' }).click();
+      await expect(page.getByRole('tab', { name: /^Kosten.*3 Fehler$/ })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(page.getByLabel('Betrag in € *')).toBeFocused();
+    });
+
+    test('die Zusammenfassung folgt den Eingaben', async ({ page }) => {
+      const zusammenfassung = page.getByRole('complementary', { name: 'Zusammenfassung' });
+      await expect(zusammenfassung).toContainText('Neuer Vertrag');
+      await expect(zusammenfassung).toContainText('Noch keine Angaben');
+      await expect(zusammenfassung).toContainText('BetragNoch offen');
+
+      await pflichtfelderFuellen(page, 'Musterversicherung AG');
+      await expect(zusammenfassung).toContainText('Musterversicherung AG');
+      await expect(zusammenfassung).toContainText('Versicherung');
+      await expect(zusammenfassung).toContainText('Betrag19,99 € monatlich');
+      await expect(zusammenfassung).toContainText('KündigungKein Termin bekannt');
+
+      const formular = (await page.locator('form').boundingBox())!;
+      expect((await zusammenfassung.boundingBox())!.x).toBeGreaterThan(formular.x + formular.width);
+    });
+
+    test('bis 900 px ohne Zusammenfassung', async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.getByLabel('Anbieter *')).toBeVisible();
+      await expect(page.getByRole('complementary', { name: 'Zusammenfassung' })).toBeHidden();
     });
   });
 

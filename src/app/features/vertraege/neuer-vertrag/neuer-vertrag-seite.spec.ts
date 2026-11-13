@@ -108,7 +108,7 @@ describe('NeuerVertragSeite', () => {
   it('bricht ohne Anfrage ab', async () => {
     const anlegen = vi.fn();
     const { el, navigieren } = await erstellen({ kategorien: () => of([...KATEGORIEN]), anlegen });
-    el.querySelector<HTMLButtonElement>('form button[type="button"]')!.click();
+    el.querySelector<HTMLButtonElement>('form .aktionen button[type="button"]')!.click();
     expect(anlegen).not.toHaveBeenCalled();
     expect(navigieren).toHaveBeenCalledWith(['/vertraege']);
   });

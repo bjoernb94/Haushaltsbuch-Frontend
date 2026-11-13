@@ -1,0 +1,75 @@
+:host {
+  flex: 1 1 260px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 16px;
+  background: var(--app-flaeche);
+
+  h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--app-text-gedaempft);
+  }
+
+  dl {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  dl > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 12px;
+    border-top: 1px solid var(--app-trenner);
+  }
+
+  dt {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--app-text-gedaempft);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+}
+
+// Wie im Design nur neben dem Formular.
+@media (max-width: 900px) {
+  :host {
+    display: none;
+  }
+}
+
+.titel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .name {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .unter {
+    font-size: 14px;
+    color: var(--app-text-gedaempft);
+  }
+}

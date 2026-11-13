@@ -17,6 +17,12 @@ async function bearbeiten(page: Page, name = KFZ) {
   return formular;
 }
 
+async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit') {
+  await sheet(page)
+    .getByRole('tab', { name: new RegExp(`^${name}`) })
+    .click();
+}
+
 async function speichernUndAnfrageLesen(page: Page) {
   const anfrage = page.waitForRequest((r) => r.method() === 'PUT');
   await sheet(page).getByRole('button', { name: 'Sichern' }).click();
@@ -43,6 +49,12 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(formular.getByLabel('Zahlungsweg')).toHaveValue('LASTSCHRIFT');
     await expect(formular.getByLabel('Verlängerung')).toHaveValue('ZWOELF_MONATE');
     await expect(formular.getByLabel('Kündigungsfrist')).toHaveValue('1');
+    await expect(
+      sheet(page)
+        .getByRole('tablist', { name: 'Bereiche des Vertrags bearbeiten' })
+        .getByRole('tab'),
+    ).toHaveText(['Allgemein', 'Kosten', 'Laufzeit']);
+    await expect(sheet(page).getByRole('complementary')).toHaveCount(0);
     // Abbrechen und Sichern stehen nur in der Leiste.
     await expect(formular.getByRole('button', { name: 'Speichern' })).toBeHidden();
 
@@ -111,6 +123,7 @@ test.describe('Vertrag bearbeiten', () => {
 
   test('ein neues Datum wird Anker, die Zahlweise zeigt den Hinweis', async ({ page }) => {
     const formular = await bearbeiten(page);
+    await tab(page, 'Kosten');
     const hinweis = formular.getByText(
       'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.',
     );
@@ -128,6 +141,7 @@ test.describe('Vertrag bearbeiten', () => {
 
   test('„Nicht kündbar“ und „Gekündigt“ lassen sich setzen und zurücknehmen', async ({ page }) => {
     const formular = await bearbeiten(page, 'Rundfunkbeitrag');
+    await tab(page, 'Laufzeit');
     await expect(formular.getByLabel('Nicht kündbar')).toBeChecked();
     await expect(formular.getByLabel('Verlängerung')).toHaveCount(0);
     await formular.getByLabel('Nicht kündbar').uncheck();
@@ -136,6 +150,7 @@ test.describe('Vertrag bearbeiten', () => {
 
     await expect(sheet(page)).toHaveCount(0);
     const gekuendigt = await bearbeiten(page, 'Zeitschriften-Abo');
+    await tab(page, 'Laufzeit');
     await expect(gekuendigt.getByLabel('Gekündigt', { exact: true })).toBeChecked();
     await expect(gekuendigt.getByLabel('Gekündigt zum')).toHaveValue('2026-12-31');
     await gekuendigt.getByLabel('Gekündigt', { exact: true }).uncheck();
@@ -147,6 +162,7 @@ test.describe('Vertrag bearbeiten', () => {
   }) => {
     const vorschau = page.waitForRequest((r) => r.url().endsWith('/vorschau'));
     const formular = await bearbeiten(page);
+    await tab(page, 'Laufzeit');
     const gespeichert = BEISPIEL_VERTRAEGE.find((v) => v.bezeichnung === KFZ)!;
     expect((await vorschau).postDataJSON().abbuchungAb).toBe(gespeichert.abbuchungAb);
     const termin = formular.getByRole('status').filter({ hasText: 'Nächster Kündigungstermin:' });
@@ -158,6 +174,7 @@ test.describe('Vertrag bearbeiten', () => {
 
   test('Feldfehler: Sheet bleibt offen und zeigt sie am Feld', async ({ page }) => {
     const formular = await bearbeiten(page);
+    await tab(page, 'Kosten');
     await formular.getByLabel('Betrag in € *').fill('19,999');
     await sheet(page).getByRole('button', { name: 'Sichern' }).click();
     await expect(formular.getByRole('alert')).toHaveText('Bitte prüfe die markierten Felder.');
