@@ -197,10 +197,12 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     kategorie: kategorie('SOFTWARE_APPS'),
     betrag: betrag(5),
     preise: einPreis(5),
+    anteilProzent: 50,
     zahlweise: 'MONATLICH',
     abbuchungAb: '2026-01-05',
     berechnet: {
       ...BERECHNET_LEER,
+      eigenerAnteil: { betrag: betrag(2.5), kostenProMonat: betrag(2.5), kostenImJahr: betrag(30) },
       einmalkosten: betrag(0),
       status: 'AKTIV',
       kostenProMonat: betrag(5),
@@ -268,11 +270,15 @@ function uebersicht(vertraege: VertragAntwort[]): VertragsuebersichtAntwort {
   const laufend = vertraege.filter((v) => v.berechnet.status !== 'BEENDET');
   return {
     laufendeVertraege: laufend.length,
-    kostenProMonat: summeJeWaehrung(laufend.map((v) => v.berechnet.kostenProMonat)),
-    kostenImJahr: summeJeWaehrung(vertraege.map((v) => v.berechnet.kostenImJahr)),
+    kostenProMonat: summeJeWaehrung(
+      laufend.map((v) => (v.berechnet.eigenerAnteil ?? v.berechnet).kostenProMonat),
+    ),
+    kostenImJahr: summeJeWaehrung(
+      vertraege.map((v) => (v.berechnet.eigenerAnteil ?? v.berechnet).kostenImJahr),
+    ),
     kostenImJahrMitPrognose: false,
     einmalkostenImJahr: [],
-    hatAnteile: false,
+    hatAnteile: vertraege.some((v) => v.berechnet.eigenerAnteil),
     jahr: 2026,
     naechsteKuendigungsfristen: laufend
       .flatMap(({ id, anbieter, bezeichnung, betrag, zahlweise, berechnet }) => {
@@ -332,15 +338,34 @@ function preiseMitArt(preise: PreisAnfrage[]): VertragPreisAntwort[] {
   }));
 }
 
+/** Anteil eines Betrags, kaufmännisch auf Cent gerundet wie das Backend (19,99 € × 50 % = 10,00 €). */
+function anteilVon({ wert, waehrung }: Betrag, prozent: number): Betrag {
+  return { wert: Math.round(wert * prozent + 1e-9) / 100, waehrung };
+}
+
 function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwort {
   const preise = preiseMitArt(anfrage.preise ?? []);
   const aktuell = preise.find((p) => p.art === 'AKTUELL')?.betrag ?? null;
   const angekuendigt = preise.find((p) => p.art === 'ANGEKUENDIGT');
+  const prozent = anfrage.anteilProzent ?? 100;
+  const proMonat =
+    aktuell && anfrage.zahlweise
+      ? {
+          ...aktuell,
+          wert: Math.round((aktuell.wert * 100) / MONATE_JE_ZAHLUNG[anfrage.zahlweise]) / 100,
+        }
+      : null;
   return {
     betrag: aktuell,
     preise,
-    kostenProMonat: null,
-    eigenerAnteil: null,
+    kostenProMonat: proMonat,
+    eigenerAnteil:
+      aktuell && prozent < 100
+        ? {
+            betrag: anteilVon(aktuell, prozent),
+            kostenProMonat: proMonat && anteilVon(proMonat, prozent),
+          }
+        : null,
     einmalkosten: null,
     naechsteAbbuchung: null,
     naechstePreisaenderung: angekuendigt
@@ -357,9 +382,15 @@ function ausAnfrage(
   version: number,
 ): VertragAntwort {
   const { kategorieId, ...felder } = anfrage;
-  const { betrag: aktuell, preise, naechstePreisaenderung } = vorschauAntwort(anfrage);
+  const {
+    betrag: aktuell,
+    preise,
+    naechstePreisaenderung,
+    eigenerAnteil,
+  } = vorschauAntwort(anfrage);
   const { wert, waehrung } = aktuell!;
   const proJahr = Math.round((wert * 1200) / MONATE_JE_ZAHLUNG[anfrage.zahlweise]) / 100;
+  const prozent = anfrage.anteilProzent ?? 100;
   return {
     ...VERTRAG_LEER,
     ...felder,
@@ -367,11 +398,13 @@ function ausAnfrage(
     version,
     betrag: aktuell!,
     preise,
-    preissteigerung: anfrage.preissteigerung && {
-      ...anfrage.preissteigerung,
-      betrag: anfrage.preissteigerung.betrag ?? null,
-      prozent: anfrage.preissteigerung.prozent ?? null,
-    },
+    preissteigerung: anfrage.preissteigerung
+      ? {
+          ...anfrage.preissteigerung,
+          betrag: anfrage.preissteigerung.betrag ?? null,
+          prozent: anfrage.preissteigerung.prozent ?? null,
+        }
+      : null,
     kategorie: KATEGORIEN.find((k) => k.id === kategorieId) ?? KATEGORIEN[0],
     berechnet: {
       ...BERECHNET_LEER,
@@ -381,6 +414,11 @@ function ausAnfrage(
       kostenImJahr: { wert: proJahr, waehrung },
       naechsteAbbuchung: { am: anfrage.abbuchungAb, betrag: aktuell! },
       naechstePreisaenderung,
+      eigenerAnteil: eigenerAnteil && {
+        betrag: eigenerAnteil.betrag,
+        kostenProMonat: eigenerAnteil.kostenProMonat!,
+        kostenImJahr: anteilVon({ wert: proJahr, waehrung }, prozent),
+      },
       kuendigung: vorschau(anfrage),
     },
   };

@@ -139,6 +139,18 @@ const MIT_PREISEN: VertragAntwort = {
   },
 };
 
+/** Zur Hälfte geteilt. */
+const GETEILT: VertragAntwort = {
+  ...JAEHRLICH,
+  id: 'geteilt',
+  bezeichnung: 'Geteilt',
+  anteilProzent: 33.3,
+  berechnet: {
+    ...JAEHRLICH.berechnet,
+    eigenerAnteil: { betrag: EUR(195.4), kostenProMonat: EUR(16.28), kostenImJahr: EUR(195.4) },
+  },
+};
+
 const UEBERSICHT: VertragsuebersichtAntwort = {
   laufendeVertraege: 2,
   kostenProMonat: [EUR(58.9), { wert: 5, waehrung: 'USD' }],
@@ -246,6 +258,17 @@ describe('VertraegeSeite', () => {
       expect(text(kennzahlen[0])).toBe('Laufende Verträge2');
       expect(text(kennzahlen[1])).toBe('Kosten pro Monat58,90 € · 5,00 $');
       expect(text(kennzahlen[2])).toBe('Kosten 2026706,80 €Alle Abbuchungen im Kalenderjahr');
+    });
+
+    it('nennt bei geteilten Verträgen unter beiden Kosten „nur dein Anteil“', async () => {
+      uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatAnteile: true }));
+      const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
+      expect(text(kennzahlen[1])).toBe(
+        'Kosten pro Monat58,90 € · 5,00 $Bei geteilten Verträgen nur dein Anteil',
+      );
+      expect(text(kennzahlen[2])).toBe(
+        'Kosten 2026706,80 €Alle Abbuchungen im KalenderjahrBei geteilten Verträgen nur dein Anteil',
+      );
     });
 
     it('behält die Reihenfolge des Backends', async () => {
@@ -480,6 +503,23 @@ describe('VertraegeSeite', () => {
       );
       expect(text(zeilen(element)[0].querySelector('.chip'))).toBe('Preis ↑ ab 01.01.2027');
       expect(zeilen(element)[1].querySelector('.chip')).toBeNull();
+    });
+
+    it('geteilter Vertrag: Chip, Kachel „Pro Monat“ und „Dein Anteil“ im Tab Kosten', async () => {
+      auflisten.mockReturnValue(of([GETEILT, BEENDET]));
+      const { element } = await seite('/vertraege/geteilt?tab=kosten');
+      expect(text(zeilen(element)[0].querySelector('app-vertrag-chips'))).toBe('Anteil 33,3 %');
+      expect(zeilen(element)[1].querySelector('app-vertrag-chips')).toBeNull();
+      expect(text(element.querySelectorAll('.kachel')[0])).toBe(
+        'Pro Monat48,90 €Dein Anteil 16,28 € (33,3 %)',
+      );
+      expect(eintraege(element)['Dein Anteil']).toBe('33,3 % = 16,28 € pro Monat');
+    });
+
+    it('ohne Anteil kein Untertitel und keine Zeile „Dein Anteil“', async () => {
+      const { element } = await seite('/vertraege/kfz?tab=kosten');
+      expect(text(element.querySelectorAll('.kachel')[0])).toBe('Pro Monat48,90 €');
+      expect(eintraege(element)['Dein Anteil']).toBeUndefined();
     });
 
     it('Chip: Pfeil nach unten bei günstigerem Preis, Hinweis bei Prognose', async () => {

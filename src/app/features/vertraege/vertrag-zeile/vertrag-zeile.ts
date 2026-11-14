@@ -16,7 +16,14 @@ import { VertragAntwort } from '../../../core/api/api';
 import { BetragPipe, betragText } from '../../../shared/format/betrag.pipe';
 import { datumText } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
-import { kategorieText, kuendigungAnzeige, vertragName, ZAHLWEISE_TEXT } from '../vertrag-texte';
+import { Chip, VertragChips } from '../vertrag-chips/vertrag-chips';
+import {
+  kategorieText,
+  kuendigungAnzeige,
+  prozentText,
+  vertragName,
+  ZAHLWEISE_TEXT,
+} from '../vertrag-texte';
 
 export const KEINE_ABBUCHUNG = 'Keine weiteren Abbuchungen';
 
@@ -40,7 +47,7 @@ let letzteZeile = 0;
  */
 @Component({
   selector: 'app-vertrag-zeile',
-  imports: [BetragPipe, HinweisBox],
+  imports: [BetragPipe, HinweisBox, VertragChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-zeile.html',
   styleUrl: './vertrag-zeile.scss',
@@ -99,16 +106,26 @@ export class VertragZeile {
       : KEINE_ABBUCHUNG;
   });
 
-  /** „Preis ↑ ab 01.01.2027“; der Pfeil vergleicht nur die beiden Beträge des Backends. */
-  protected readonly preisaenderung = computed(() => {
-    const { betrag, berechnet } = this.vertrag();
+  /**
+   * „Preis ↑ ab 01.01.2027“ (der Pfeil vergleicht nur die beiden Beträge des Backends) und bei
+   * geteilten Verträgen „Anteil 50 %“, wie das Backend nur unter 100 %.
+   */
+  protected readonly chips = computed(() => {
+    const { betrag, anteilProzent, berechnet } = this.vertrag();
+    const chips: Chip[] = [];
     const aenderung = berechnet.naechstePreisaenderung;
-    if (!aenderung) {
-      return null;
+    if (aenderung) {
+      const pfeil = aenderung.betrag.wert < betrag.wert ? '↓' : '↑';
+      const prognose = aenderung.art === 'PROGNOSE' ? ' (Prognose)' : '';
+      chips.push({
+        text: `Preis ${pfeil} ab ${datumText(aenderung.ab)}${prognose}`,
+        art: 'hinweis',
+      });
     }
-    const pfeil = aenderung.betrag.wert < betrag.wert ? '↓' : '↑';
-    const prognose = aenderung.art === 'PROGNOSE' ? ' (Prognose)' : '';
-    return `Preis ${pfeil} ab ${datumText(aenderung.ab)}${prognose}`;
+    if (berechnet.eigenerAnteil && anteilProzent !== null) {
+      chips.push({ text: `Anteil ${prozentText(anteilProzent, this.locale)} %`, art: 'info' });
+    }
+    return chips;
   });
 
   protected menueUmschalten(): void {

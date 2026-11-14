@@ -383,6 +383,7 @@ export interface components {
             status: components["schemas"]["Vertragsstatus"];
         };
         VertragEigenerAnteil: {
+            betrag: components["schemas"]["Betrag"];
             kostenImJahr: components["schemas"]["Betrag"];
             kostenProMonat: components["schemas"]["Betrag"];
         };
@@ -466,7 +467,8 @@ export interface components {
             prognose: components["schemas"]["Prognosepreis"][];
         };
         VertragVorschauEigenerAnteil: {
-            kostenProMonat: components["schemas"]["Betrag"];
+            betrag: components["schemas"]["Betrag"];
+            kostenProMonat: components["schemas"]["Betrag"] | null;
         };
         VertragVorschauEinmalkosten: {
             betrag?: components["schemas"]["Betrag"] | null;

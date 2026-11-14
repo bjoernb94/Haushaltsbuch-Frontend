@@ -560,6 +560,27 @@ test.describe('Neuer Vertrag', () => {
     ]);
   });
 
+  test('Anteil: Statuszeile aus der Vorschau, Anfrage mit Zahl, Feldfehler am Feld', async ({
+    page,
+  }) => {
+    await backendSimulieren(page, { angemeldet: true });
+    await page.goto('/vertraege/neu');
+    await pflichtfelderFuellen(page);
+    const anteil = page.getByLabel('Mein Anteil in %');
+    await anteil.fill('50');
+    await expect(page.getByRole('status').filter({ hasText: 'Dein Anteil' })).toHaveText(
+      /Dein Anteil:\s*50 % von 19,99\s€ = 10,00\s€ monatlich/,
+    );
+    await anteil.fill('abc');
+    await page.getByRole('button', { name: 'Vertrag speichern' }).click();
+    await expect(anteil).toBeFocused();
+    await expect(anteil).toHaveAccessibleDescription(
+      /^Bitte eine Zahl von 1 bis 100 mit höchstens einer Nachkommastelle\./,
+    );
+    await anteil.fill('33,3');
+    expect((await speichernUndAnfrageLesen(page)).anteilProzent).toBe(33.3);
+  });
+
   test.describe('Tabs und Zusammenfassung', () => {
     test.beforeEach(async ({ page }) => {
       await backendSimulieren(page, { angemeldet: true });

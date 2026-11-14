@@ -217,6 +217,38 @@
               <p class="feldfehler" [id]="id('gueltigSeit') + '-fehler'">{{ text }}</p>
             }
           </div>
+          <div class="feld">
+            <label [for]="id('anteilProzent')"
+              >Mein Anteil in % <span class="optional">(optional)</span></label
+            >
+            <input
+              [id]="id('anteilProzent')"
+              type="text"
+              inputmode="decimal"
+              placeholder="100"
+              formControlName="anteilProzent"
+              [attr.aria-invalid]="!!fehlerText('anteilProzent')"
+              [attr.aria-describedby]="
+                beschreibung('anteilProzent', id('anteilProzent') + '-hinweis')
+              "
+            />
+            @if (fehlerText('anteilProzent'); as text) {
+              <p class="feldfehler" [id]="id('anteilProzent') + '-fehler'">{{ text }}</p>
+            }
+            <span class="feldhinweis" [id]="id('anteilProzent') + '-hinweis'"
+              >Bei geteilten Verträgen, z. B. 50 oder 33,3. Übersichten zählen dann nur deinen
+              Anteil.</span
+            >
+            <!-- Die Live-Region steht immer da, sonst sagen Screenreader die erste Zeile nicht an. -->
+            <div role="status">
+              @if (anteilText(); as text) {
+                <div class="vorschau">
+                  <b>Dein Anteil:</b>
+                  <span>{{ text }}</span>
+                </div>
+              }
+            </div>
+          </div>
         </div>
       </fieldset>
     </div>

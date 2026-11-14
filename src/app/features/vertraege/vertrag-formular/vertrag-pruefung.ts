@@ -27,6 +27,8 @@ export interface VertragWerte {
   gueltigSeit: string;
   /** Alle übrigen Preise, in der Reihenfolge der Antwort bzw. der Eingabe. */
   preise: PreisWerte[];
+  /** Leer = 100 %. */
+  anteilProzent: string;
   zahlweise: Zahlweise | '';
   abbuchungAb: string;
   zahlungsweg: Zahlungsweg | '';
@@ -67,6 +69,26 @@ export function betragLesen(eingabe: string): number | null {
   return Number(text.replaceAll('.', '').replace(',', '.'));
 }
 
+// Mit Komma wie im Design; was sich nicht lesen lässt, darf nicht still zu 100 % werden.
+const ANTEIL_MUSTER = /^\d+(,\d+)?$/;
+
+// Wie das Backend (1 bis 100, höchstens eine Nachkommastelle); nur damit die Vorschau nicht scheitert.
+const ANTEIL_VORSCHAU = /^\d{1,3}(,\d)?$/;
+
+function anteilFuerVorschau(eingabe: string, anteil: number | null): number | null {
+  return ANTEIL_VORSCHAU.test(eingabe.trim()) && anteil !== null && anteil >= 1 && anteil <= 100
+    ? anteil
+    : null;
+}
+
+const ANTEIL_TEXT = 'Bitte eine Zahl von 1 bis 100 mit höchstens einer Nachkommastelle.';
+
+/** Liest den Anteil mit Komma, {@code null} wenn das nicht geht. Grenzen prüft das Backend. */
+export function anteilLesen(eingabe: string): number | null {
+  const text = eingabe.trim();
+  return ANTEIL_MUSTER.test(text) ? Number(text.replace(',', '.')) : null;
+}
+
 const PFLICHT_TEXT = {
   anbieter: 'Bitte gib den Anbieter ein.',
   kategorieId: 'Bitte wähle eine Kategorie.',
@@ -93,6 +115,9 @@ export function vertragPruefen(w: VertragWerte): ReadonlyMap<VertragFeld, string
   const fehler = new Map<VertragFeld, string>(leer.map((feld) => [feld, PFLICHT_TEXT[feld]]));
   if (w.preise.length && !w.gueltigSeit && !w.beginn) {
     fehler.set('gueltigSeit', GUELTIG_SEIT_TEXT);
+  }
+  if (w.anteilProzent.trim() && anteilLesen(w.anteilProzent) === null) {
+    fehler.set('anteilProzent', ANTEIL_TEXT);
   }
   let ohneDatum = !w.gueltigSeit;
   w.preise.forEach((preis, i) => {
@@ -134,6 +159,7 @@ export function werteAus(v: VertragAntwort): VertragWerte {
     preise: v.preise
       .filter((preis) => preis !== aktuell)
       .map((preis) => ({ gueltigAb: preis.gueltigAb ?? '', betrag: betragEingabe(preis.betrag) })),
+    anteilProzent: v.anteilProzent?.toString().replace('.', ',') ?? '',
     zahlweise: v.zahlweise,
     abbuchungAb: v.berechnet.naechsteAbbuchung?.am ?? v.abbuchungAb,
     zahlungsweg: v.zahlungsweg ?? '',
@@ -170,7 +196,7 @@ function preisEingabe(gueltigAb: string, betrag: string, waehrung: string): Prei
  * Anfrage aus den Formularwerten. Leere Felder gehen als {@code null}, denn {@code ""} wäre bei Enums
  * und Datum {@code ANFRAGE_UNGUELTIG} ohne Bezug zum Feld, ebenso {@code { wert: null }} beim Betrag.
  * Der Betrag ist der erste Preis, die Liste folgt ({@code preise[i]} der Feldfehler). Felder, die das
- * Formular noch nicht zeigt (Anteil, Einmalkosten, Preissteigerung), bleiben wie gespeichert, denn
+ * Formular noch nicht zeigt (Einmalkosten, Preissteigerung), bleiben wie gespeichert, denn
  * {@code PUT} ersetzt alle Felder.
  */
 export function anfrageAus(
@@ -198,7 +224,7 @@ export function anfrageAus(
       w.nichtKuendbar || !w.kuendigungsfristMonate ? null : Number(w.kuendigungsfristMonate),
     gekuendigtZum: w.gekuendigt ? w.gekuendigtZum || null : null,
     notiz: textOderNull(w.notiz),
-    anteilProzent: gespeichert?.anteilProzent ?? null,
+    anteilProzent: anteilLesen(w.anteilProzent),
     einmalkosten: gespeichert?.einmalkosten ?? [],
     preissteigerung: gespeichert?.preissteigerung ?? null,
     preisgarantieBis: gespeichert?.preisgarantieBis ?? null,
@@ -207,8 +233,9 @@ export function anfrageAus(
 }
 
 /**
- * Das ganze Formular für die Vorschau. Preise, die das Backend sicher ablehnt (ohne Betrag, Betrag
- * nicht größer 0, ein zweiter ohne Datum), fehlen, damit die übrigen Werte beim Tippen bleiben.
+ * Das ganze Formular für die Vorschau. Preise und ein Anteil, die das Backend sicher ablehnt (ohne
+ * Betrag, Betrag nicht größer 0, ein zweiter ohne Datum; Anteil nicht wie „33,3“), fehlen, damit die
+ * übrigen Werte beim Tippen bleiben.
  */
 export function vorschauAus(
   w: VertragWerte,
@@ -226,7 +253,7 @@ export function vorschauAus(
   return {
     kuendbar: !w.nichtKuendbar,
     preise,
-    anteilProzent: a.anteilProzent,
+    anteilProzent: anteilFuerVorschau(w.anteilProzent, a.anteilProzent),
     einmalkosten: a.einmalkosten,
     preissteigerung: a.preissteigerung,
     preisgarantieBis: a.preisgarantieBis,
@@ -256,6 +283,7 @@ const FELD_ZUM_API_FELD: Readonly<Record<string, VertragFeld>> = {
   kuendigungsfristMonate: 'kuendigungsfristMonate',
   gekuendigtZum: 'gekuendigtZum',
   notiz: 'notiz',
+  anteilProzent: 'anteilProzent',
 };
 
 const PREIS_MUSTER = /^preise\[(\d+)\]\.(gueltigAb|betrag)\b/;
@@ -279,6 +307,9 @@ function istBetrag(feld: VertragFeld): boolean {
 }
 
 function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: Feldfehler): string {
+  if (feld === 'anteilProzent' && ['DecimalMin', 'DecimalMax', 'Digits'].includes(code)) {
+    return ANTEIL_TEXT;
+  }
   switch (code) {
     case 'NotBlank':
     case 'NotNull':

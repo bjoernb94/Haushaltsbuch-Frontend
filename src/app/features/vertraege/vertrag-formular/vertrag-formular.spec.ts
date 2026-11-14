@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, LOCALE_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { NEVER, Subject } from 'rxjs';
+import { NEVER, ReplaySubject, Subject } from 'rxjs';
 import {
   Kuendigung,
   VertragAntwort,
@@ -309,6 +309,36 @@ describe('VertragFormular', () => {
       expect(zeile()).toContain('Kündbar bis 30.11.2026');
       vi.advanceTimersByTime(400);
       expect(vorschau).toHaveBeenCalledTimes(2);
+    });
+
+    it('zeigt „Dein Anteil“ mit den Beträgen der Vorschau, ohne Anteil keine Zeile', async () => {
+      TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
+      const { el, setzen } = await offen();
+      const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
+      const status = () => {
+        TestBed.tick();
+        const feld = el.querySelector('[formcontrolname="anteilProzent"]')!.closest('.feld')!;
+        return feld.querySelector('[role="status"]')?.textContent?.replace(/\s+/g, ' ').trim();
+      };
+      setzen('betrag', '586,80');
+      setzen('zahlweise', 'JAEHRLICH');
+      setzen('anteilProzent', '33,3');
+      vi.advanceTimersByTime(400);
+      expect(vorschau).toHaveBeenLastCalledWith(
+        expect.objectContaining({ anteilProzent: 33.3, zahlweise: 'JAEHRLICH' }),
+      );
+      anfragen.at(-1)!.next(
+        vorschauAntwort(ERGEBNIS, {
+          betrag: EUR(586.8),
+          eigenerAnteil: { betrag: EUR(195.4), kostenProMonat: EUR(16.28) },
+        }),
+      );
+      expect(status()).toBe('Dein Anteil:33,3 % von 586,80 € = 195,40 € jährlich');
+
+      setzen('anteilProzent', '');
+      vi.advanceTimersByTime(400);
+      anfragen.at(-1)!.next(vorschauAntwort(ERGEBNIS, { betrag: EUR(586.8) }));
+      expect(status()).toBe('');
     });
 
     it('schickt ein eingetragenes Kündigungsdatum nur, solange „Gekündigt“ gesetzt ist', async () => {
@@ -743,7 +773,8 @@ describe('VertragFormular', () => {
 
     it('zeigt den Preisverlauf der Vorschau, sobald es weitere Preise gibt', async () => {
       TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
-      const antwort = new Subject<VertragVorschauAntwort>();
+      // Die erste Anfrage startet erst nach timer(0); die Antwort darf nicht vorher verloren gehen.
+      const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
       vorschau.mockReturnValue(antwort);
       const { el, fixture, hinzufuegen } = await imTabPreise();
       const verlauf = () =>
@@ -936,6 +967,15 @@ describe('VertragFormular', () => {
       await setzen('notiz', 'x');
       fixture.destroy();
       expect(eingaben.vorhanden()).toBe(false);
+    });
+
+    it('belegt den Anteil vor und schickt ihn geändert zurück', async () => {
+      const { fixture, el, feld, setzen, host } = await offen({ ...VERTRAG, anteilProzent: 50 });
+      expect(feld('anteilProzent').value).toBe('50');
+      await setzen('anteilProzent', '33,3');
+      el.querySelector('form')!.dispatchEvent(new Event('submit'));
+      await fixture.whenStable();
+      expect(host.gespeichert[0].anteilProzent).toBe(33.3);
     });
 
     describe('Preise', () => {

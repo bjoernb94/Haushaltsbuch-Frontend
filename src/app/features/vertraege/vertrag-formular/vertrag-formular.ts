@@ -92,6 +92,7 @@ const TAB_VON: Record<EinzelFeld, TabKey> = {
   notiz: 'allgemein',
   betrag: 'kosten',
   gueltigSeit: 'kosten',
+  anteilProzent: 'kosten',
   zahlweise: 'kosten',
   abbuchungAb: 'kosten',
   zahlungsweg: 'kosten',
@@ -230,6 +231,7 @@ export class VertragFormular implements OnInit {
     betrag: [''],
     gueltigSeit: [''],
     preise: this.fb.array<PreisZeile>([]),
+    anteilProzent: [''],
     zahlweise: this.fb.control<Zahlweise | ''>(''),
     abbuchungAb: [''],
     zahlungsweg: this.fb.control<Zahlungsweg | ''>(''),
@@ -270,6 +272,23 @@ export class VertragFormular implements OnInit {
   protected readonly vorschauText = computed(() => {
     const vorschau = this.vorschau();
     return vorschau ? kuendigungText(vorschau.kuendigung) : '–';
+  });
+
+  /**
+   * „50 % von 586,80 € = 293,40 € jährlich“: Prozent wie eingegeben, beide Beträge aus der Vorschau.
+   * Ohne Anteil unter 100 % (oder ohne Preis) keine Zeile.
+   */
+  protected readonly anteilText = computed(() => {
+    const vorschau = this.vorschau();
+    const w = this.werte();
+    if (!vorschau?.eigenerAnteil || !vorschau.betrag || !w.anteilProzent.trim()) {
+      return null;
+    }
+    const zahlweise = w.zahlweise ? ` ${ZAHLWEISE_TEXT[w.zahlweise]}` : '';
+    return (
+      `${w.anteilProzent.trim()} % von ${betragText(vorschau.betrag, this.locale)} = ` +
+      `${betragText(vorschau.eigenerAnteil.betrag, this.locale)}${zahlweise}`
+    );
   });
 
   /** Alle Preise mit „aktuell“ und „angekündigt“ aus der Vorschau, sobald es weitere Preise gibt. */

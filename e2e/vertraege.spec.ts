@@ -60,6 +60,25 @@ test.describe('Seite Verträge', () => {
     ]);
   });
 
+  test('geteilter Vertrag: Chip, „nur dein Anteil“ an den Kennzahlen, Anteil in den Details', async ({
+    page,
+  }) => {
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/vertraege');
+    const app = page.locator('app-vertrag-zeile').filter({ hasText: 'Software GmbH' });
+    await expect(app.getByText('Anteil 50 %')).toBeVisible();
+    await expect(page.getByText('Bei geteilten Verträgen nur dein Anteil')).toHaveCount(2);
+
+    await page.goto('/vertraege/app?tab=kosten');
+    const panel = page.getByRole('complementary', { name: 'Software GmbH' });
+    await expect(panel.locator('.kachel').first()).toHaveText(
+      /Pro Monat\s*5,00\s€\s*Dein Anteil 2,50\s€ \(50 %\)/,
+    );
+    await expect(panel.getByRole('tabpanel')).toContainText(
+      /Dein Anteil\s*50 % = 2,50\s€ pro Monat/,
+    );
+  });
+
   test('kürzt lange Angaben in der Zeile, die Details zeigen alles', async ({ page }) => {
     const lang = 'Sehr langer Text '.repeat(30).trim();
     await backendSimulieren(page, {
