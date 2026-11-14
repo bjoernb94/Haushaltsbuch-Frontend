@@ -13,10 +13,44 @@ import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicher
 import { VertragEingabe, VertragService } from '../vertrag.service';
 import { VertragFormular } from './vertrag-formular';
 
+const KEINE: Kuendigung = {
+  art: 'KEINE_LAUFZEIT',
+  dringend: false,
+  fristMonate: null,
+  kuendigenBis: null,
+  zum: null,
+};
+
+/** Mit Vertragsbeginn ist „Betrag gilt seit“ auch bei weiteren Preisen optional. */
+function setzenBeginn(el: HTMLElement) {
+  const beginn = el.querySelector<HTMLInputElement>('[formcontrolname="beginn"]')!;
+  beginn.value = '2026-01-01';
+  beginn.dispatchEvent(new Event('input'));
+}
+
 const KATEGORIEN: VertragKategorieAntwort[] = [
   { id: 'k1', schluessel: 'VERSICHERUNG', name: null },
   { id: 'k2', schluessel: null, name: 'Eigene Kategorie' },
 ];
+
+/** Vorschau, in der nur die Kündigung und ggf. die Preise zählen. */
+function vorschauAntwort(
+  kuendigung: Kuendigung,
+  mehr: Partial<VertragVorschauAntwort> = {},
+): VertragVorschauAntwort {
+  return {
+    betrag: null,
+    eigenerAnteil: null,
+    einmalkosten: null,
+    kostenProMonat: null,
+    naechsteAbbuchung: null,
+    naechstePreisaenderung: null,
+    preise: [],
+    prognose: [],
+    kuendigung,
+    ...mehr,
+  };
+}
 
 function validierung(...felder: [string, string][]): HttpErrorResponse {
   return new HttpErrorResponse({
@@ -122,6 +156,11 @@ describe('VertragFormular', () => {
     };
     const OHNE_EINGABEN = {
       kuendbar: true,
+      preise: [],
+      anteilProzent: null,
+      einmalkosten: [],
+      preissteigerung: null,
+      preisgarantieBis: null,
       zahlweise: null,
       abbuchungAb: null,
       beginn: null,
@@ -150,7 +189,7 @@ describe('VertragFormular', () => {
       const hilfen = await erstellen();
       vi.advanceTimersByTime(0);
       const antworten = (i: number, kuendigung: Kuendigung) => {
-        anfragen[i].next({ kuendigung });
+        anfragen[i].next(vorschauAntwort(kuendigung));
         anfragen[i].complete();
       };
       const zeile = () => {
@@ -160,7 +199,7 @@ describe('VertragFormular', () => {
       return { ...hilfen, antworten, zeile };
     }
 
-    it('fragt beim Öffnen sofort und nur nach den Werten für den Termin', async () => {
+    it('fragt beim Öffnen sofort mit allen Werten', async () => {
       const { zeile, antworten, el } = await offen();
       expect(vorschau).toHaveBeenCalledExactlyOnceWith(OHNE_EINGABEN);
       expect(zeile()).toBe('Nächster Kündigungstermin:–');
@@ -196,10 +235,19 @@ describe('VertragFormular', () => {
       const { setzen } = await offen();
       vorschau.mockClear();
       setzen('anbieter', 'Anbieter');
-      setzen('betrag', '19,99');
       setzen('notiz', 'Notiz');
       vi.advanceTimersByTime(1000);
       expect(vorschau).not.toHaveBeenCalled();
+    });
+
+    it('schickt den Betrag als ersten Preis mit', async () => {
+      const { setzen } = await offen();
+      setzen('betrag', '19,99');
+      vi.advanceTimersByTime(400);
+      expect(vorschau).toHaveBeenLastCalledWith({
+        ...OHNE_EINGABEN,
+        preise: [{ gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } }],
+      });
     });
 
     it('ein veraltetes Ergebnis überschreibt kein neueres, die alte Anfrage wird abgebrochen', async () => {
@@ -210,7 +258,7 @@ describe('VertragFormular', () => {
       const alte = anfragen[1];
       setzen('laufzeitende', '2027-02-01');
       expect(alte.observed).toBe(false);
-      alte.next({ kuendigung: { ...ERGEBNIS, kuendigenBis: '2000-01-01' } });
+      alte.next(vorschauAntwort({ ...ERGEBNIS, kuendigenBis: '2000-01-01' }));
       expect(zeile()).toContain('Kündbar bis 30.11.2026');
       vi.advanceTimersByTime(400);
       antworten(2, { ...ERGEBNIS, kuendigenBis: '2027-01-15' });
@@ -248,19 +296,19 @@ describe('VertragFormular', () => {
       expect(host.gespeichert).toHaveLength(1);
     });
 
-    it('„Nicht kündbar“ blendet die Zeile aus und fragt nicht, zurück fragt es wieder', async () => {
+    it('„Nicht kündbar“ blendet die Zeile aus und fragt ohne Kündigung weiter', async () => {
       const { feld, zeile, antworten } = await offen();
       antworten(0, ERGEBNIS);
       vorschau.mockClear();
       feld('nichtKuendbar').click();
       expect(zeile()).toBeUndefined();
-      vi.advanceTimersByTime(1000);
-      expect(vorschau).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(400);
+      expect(vorschau).toHaveBeenCalledExactlyOnceWith({ ...OHNE_EINGABEN, kuendbar: false });
 
       feld('nichtKuendbar').click();
-      expect(zeile()).toBe('Nächster Kündigungstermin:–');
+      expect(zeile()).toContain('Kündbar bis 30.11.2026');
       vi.advanceTimersByTime(400);
-      expect(vorschau).toHaveBeenCalledOnce();
+      expect(vorschau).toHaveBeenCalledTimes(2);
     });
 
     it('schickt ein eingetragenes Kündigungsdatum nur, solange „Gekündigt“ gesetzt ist', async () => {
@@ -295,7 +343,7 @@ describe('VertragFormular', () => {
     expect(host.gespeichert[0]).toMatchObject({
       anbieter: 'Anbieter',
       kategorieId: 'k1',
-      betrag: { wert: 19.99, waehrung: 'EUR' },
+      preise: [{ gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } }],
       kuendbar: true,
       notiz: null,
     });
@@ -316,7 +364,10 @@ describe('VertragFormular', () => {
   it('bildet Feldfehler des Backends auf die Felder ab und fokussiert das erste', async () => {
     const { host, fixture, feld, fehlerText, box } = await erstellen();
     host.fehler.set(
-      validierung(['betrag.wert', 'PositiverBetrag'], ['laufzeitende', 'LaufzeitendeNachBeginn']),
+      validierung(
+        ['preise[0].betrag', 'PositiverBetrag'],
+        ['laufzeitende', 'LaufzeitendeNachBeginn'],
+      ),
     );
     await fixture.whenStable();
     expect(box()).toBe('Bitte prüfe die markierten Felder.');
@@ -327,7 +378,7 @@ describe('VertragFormular', () => {
 
   it('entfernt beim Ändern nur den Fehler dieses Feldes, die Box erst mit dem letzten', async () => {
     const { host, fixture, setzen, fehlerText, box } = await erstellen();
-    host.fehler.set(validierung(['anbieter', 'NotBlank'], ['betrag', 'NotNull']));
+    host.fehler.set(validierung(['anbieter', 'NotBlank'], ['preise[0].betrag', 'NotNull']));
     await fixture.whenStable();
 
     setzen('anbieter', 'A');
@@ -432,9 +483,9 @@ describe('VertragFormular', () => {
       !el.querySelector(`[formcontrolname="${name}"]`)!.closest('[hidden]');
     const text = (e: Element) => e.textContent?.replace(/\s+/g, ' ').trim();
 
-    it('zeigt Allgemein, Kosten und Laufzeit, je Tab nur seine Felder', async () => {
+    it('zeigt Allgemein, Kosten, Laufzeit und Preise, je Tab nur seine Felder', async () => {
       const { el, fixture } = await erstellen();
-      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit']);
+      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preise']);
       expect(tabs(el)[0].getAttribute('aria-selected')).toBe('true');
       expect(sichtbar(el, 'anbieter')).toBe(true);
       expect(sichtbar(el, 'notiz')).toBe(true);
@@ -463,7 +514,7 @@ describe('VertragFormular', () => {
       await fixture.whenStable();
       await absenden();
 
-      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten 3, 3 Fehler', 'Laufzeit']);
+      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten 3, 3 Fehler', 'Laufzeit', 'Preise']);
       expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
       expect(document.activeElement).toBe(el.querySelector('[formcontrolname="betrag"]'));
 
@@ -555,15 +606,15 @@ describe('VertragFormular', () => {
       await setzen('zahlweise', 'MONATLICH');
       await setzen('abbuchungAb', '2027-01-01');
       await new Promise((fertig) => setTimeout(fertig, 450));
-      antwort.next({
-        kuendigung: {
+      antwort.next(
+        vorschauAntwort({
           art: 'MONATLICH_KUENDBAR',
           dringend: false,
           fristMonate: null,
           kuendigenBis: null,
           zum: '2027-01-31',
-        },
-      });
+        }),
+      );
       await fixture.whenStable();
       expect(zeilen()['Kündigung']).toBe('Monatlich kündbar. Kündbar zum 31.01.2027');
 
@@ -597,6 +648,126 @@ describe('VertragFormular', () => {
     }
   });
 
+  describe('Preisliste', () => {
+    async function imTabPreise() {
+      const hilfen = await erstellen();
+      const { el, fixture } = hilfen;
+      el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[3].click();
+      await fixture.whenStable();
+      const hinzufuegen = async () => {
+        [...el.querySelectorAll<HTMLButtonElement>('button')]
+          .find((b) => b.textContent?.includes('Preis hinzufügen'))!
+          .click();
+        await fixture.whenStable();
+      };
+      const zeile = (i: number) => el.querySelectorAll<HTMLElement>('.preis')[i];
+      const eingeben = async (i: number, feld: 'gueltigAb' | 'betrag', wert: string) => {
+        const input = zeile(i).querySelector<HTMLInputElement>(`[formcontrolname="${feld}"]`)!;
+        input.value = wert;
+        input.dispatchEvent(new Event('input'));
+        await fixture.whenStable();
+      };
+      const zeilenFehler = (i: number) =>
+        zeile(i).querySelector('.feldfehler')?.textContent?.trim();
+      return { ...hilfen, hinzufuegen, zeile, eingeben, zeilenFehler };
+    }
+
+    it('fügt Zeilen hinzu, fokussiert das Datum und schickt sie nach dem Betrag', async () => {
+      const { host, hinzufuegen, zeile, eingeben, pflichtfelderFuellen, setzen, absenden } =
+        await imTabPreise();
+      await hinzufuegen();
+      expect(document.activeElement).toBe(zeile(0).querySelector('input[type="date"]'));
+      await eingeben(0, 'gueltigAb', '2027-01-01');
+      await eingeben(0, 'betrag', '24,99');
+      pflichtfelderFuellen();
+      setzen('gueltigSeit', '2026-01-01');
+      await absenden();
+      expect(host.gespeichert[0].preise).toEqual([
+        { gueltigAb: '2026-01-01', betrag: { wert: 19.99, waehrung: 'EUR' } },
+        { gueltigAb: '2027-01-01', betrag: { wert: 24.99, waehrung: 'EUR' } },
+      ]);
+    });
+
+    it('meldet fehlende Angaben an der Zeile, zählt sie im Tab und springt dorthin', async () => {
+      const { el, hinzufuegen, zeile, pflichtfelderFuellen, absenden, zeilenFehler, fehlerText } =
+        await imTabPreise();
+      await hinzufuegen();
+      pflichtfelderFuellen();
+      setzenBeginn(el);
+      await absenden();
+      const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
+        t.textContent?.replace(/\s+/g, ' ').trim(),
+      );
+      expect(tabs).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preise 2, 2 Fehler']);
+      expect(zeilenFehler(0)).toBe('Bitte gib an, ab wann dieser Preis gilt.');
+      const datum = zeile(0).querySelector('input[type="date"]')!;
+      expect(datum.getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(datum);
+      expect(fehlerText('gueltigSeit')).toBeUndefined();
+    });
+
+    it('ordnet Feldfehler des Backends der Zeile zu, preise[0] dem Betrag', async () => {
+      const { host, fixture, hinzufuegen, zeilenFehler, fehlerText } = await imTabPreise();
+      await hinzufuegen();
+      await hinzufuegen();
+      host.fehler.set(
+        validierung(
+          ['preise[0].gueltigAb', 'PreisNichtVorBeginn'],
+          ['preise[2].gueltigAb', 'GueltigAbEindeutig'],
+        ),
+      );
+      await fixture.whenStable();
+      expect(fehlerText('gueltigSeit')).toBe('Ein Preis kann nicht vor dem Vertragsbeginn gelten.');
+      expect(zeilenFehler(0)).toBeUndefined();
+      expect(zeilenFehler(1)).toBe('Für dieses Datum gibt es schon einen Preis.');
+    });
+
+    it('Entfernen nimmt die Zeile samt Fehler weg, die Fehler darunter rücken nach', async () => {
+      const { host, fixture, el, hinzufuegen, zeilenFehler, eingeben } = await imTabPreise();
+      await hinzufuegen();
+      await hinzufuegen();
+      await eingeben(1, 'gueltigAb', '2028-01-01');
+      host.fehler.set(
+        validierung(['preise[1].betrag', 'NotNull'], ['preise[2].gueltigAb', 'GueltigAbEindeutig']),
+      );
+      await fixture.whenStable();
+      const entfernen = el.querySelectorAll<HTMLButtonElement>('.preis .entfernen');
+      expect(entfernen[1].getAttribute('aria-label')).toBe('Preis ab 01.01.2028 entfernen');
+      expect(entfernen[0].getAttribute('aria-label')).toBe('Preis entfernen');
+      entfernen[0].click();
+      await fixture.whenStable();
+      expect(el.querySelectorAll('.preis')).toHaveLength(1);
+      expect(zeilenFehler(0)).toBe('Für dieses Datum gibt es schon einen Preis.');
+      expect(document.activeElement).toBe(el.querySelector('.preis input[type="date"]'));
+    });
+
+    it('zeigt den Preisverlauf der Vorschau, sobald es weitere Preise gibt', async () => {
+      TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
+      const antwort = new Subject<VertragVorschauAntwort>();
+      vorschau.mockReturnValue(antwort);
+      const { el, fixture, hinzufuegen } = await imTabPreise();
+      const verlauf = () =>
+        [...el.querySelectorAll('.verlauf span')].map((s) => [
+          s.textContent?.replace(/\s/g, ' '),
+          s.className,
+        ]);
+      const preise: VertragVorschauAntwort['preise'] = [
+        { gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' }, art: 'AKTUELL' },
+        { gueltigAb: '2027-01-01', betrag: { wert: 24.99, waehrung: 'EUR' }, art: 'ANGEKUENDIGT' },
+      ];
+      antwort.next(vorschauAntwort(KEINE, { preise }));
+      await fixture.whenStable();
+      expect(el.querySelector('.verlauf')).toBeNull();
+
+      await hinzufuegen();
+      expect(el.querySelector('.verlauf')?.getAttribute('role')).toBe('status');
+      expect(verlauf()).toEqual([
+        ['ab Vertragsbeginn: 19,99 € · aktuell', 'aktuell'],
+        ['ab 01.01.2027: 24,99 € · angekündigt', ''],
+      ]);
+    });
+  });
+
   describe('zum Bearbeiten', () => {
     const VERTRAG: VertragAntwort = {
       id: 'v1',
@@ -606,6 +777,12 @@ describe('VertragFormular', () => {
       kategorie: KATEGORIEN[1],
       vertragsnummer: null,
       betrag: { wert: 586.8, waehrung: 'USD' },
+      preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'USD' }, art: 'AKTUELL' }],
+      anteilProzent: null,
+      einmalkosten: [],
+      preissteigerung: null,
+      preisgarantieBis: null,
+      erinnerungSonderkuendigung: true,
       zahlweise: 'MONATLICH',
       abbuchungAb: '2026-01-31',
       zahlungsweg: 'PAYPAL',
@@ -619,8 +796,15 @@ describe('VertragFormular', () => {
       berechnet: {
         status: 'GEKUENDIGT',
         kostenProMonat: { wert: 586.8, waehrung: 'USD' },
-        kostenProJahr: { wert: 7041.6, waehrung: 'USD' },
-        naechsteAbbuchung: '2026-11-30',
+        kostenImJahr: { wert: 7041.6, waehrung: 'USD' },
+        kostenImJahrMitPrognose: false,
+        jahr: 2026,
+        eigenerAnteil: null,
+        einmalkosten: { wert: 0, waehrung: 'USD' },
+        naechsteAbbuchung: { am: '2026-11-30', betrag: { wert: 586.8, waehrung: 'USD' } },
+        naechstePreisaenderung: null,
+        preisverlauf: [],
+        prognose: [],
         kuendigung: {
           art: 'GEKUENDIGT',
           dringend: false,
@@ -636,18 +820,21 @@ describe('VertragFormular', () => {
       template: `<app-vertrag-formular
         [vertrag]="vertrag()"
         [kategorien]="kategorien"
+        [neuerPreis]="neuerPreis()"
         (speichern)="gespeichert.push($event)"
       />`,
     })
     class BearbeitenHost {
       readonly kategorien = KATEGORIEN;
       readonly vertrag = signal<VertragAntwort>(VERTRAG);
+      readonly neuerPreis = signal(false);
       readonly gespeichert: Required<VertragEingabe>[] = [];
     }
 
-    async function offen(vertrag: VertragAntwort = VERTRAG) {
+    async function offen(vertrag: VertragAntwort = VERTRAG, neuerPreis = false) {
       const fixture = TestBed.createComponent(BearbeitenHost);
       fixture.componentInstance.vertrag.set(vertrag);
+      fixture.componentInstance.neuerPreis.set(neuerPreis);
       document.body.appendChild(fixture.nativeElement);
       await fixture.whenStable();
       const el: HTMLElement = fixture.nativeElement;
@@ -719,7 +906,7 @@ describe('VertragFormular', () => {
       expect(host.gespeichert[0]).toMatchObject({
         abbuchungAb: '2026-01-31',
         kuendigungsfristMonate: 4,
-        betrag: { wert: 586.8, waehrung: 'USD' },
+        preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'USD' } }],
       });
     });
 
@@ -749,6 +936,50 @@ describe('VertragFormular', () => {
       await setzen('notiz', 'x');
       fixture.destroy();
       expect(eingaben.vorhanden()).toBe(false);
+    });
+
+    describe('Preise', () => {
+      const USD = (wert: number) => ({ wert, waehrung: 'USD' });
+      const MIT_PREISEN: VertragAntwort = {
+        ...VERTRAG,
+        betrag: USD(20),
+        preise: [
+          { gueltigAb: null, betrag: USD(10), art: 'FRUEHER' },
+          { gueltigAb: '2026-01-01', betrag: USD(20), art: 'AKTUELL' },
+          { gueltigAb: '2027-01-01', betrag: USD(25), art: 'ANGEKUENDIGT' },
+        ],
+      };
+      const zeilen = (el: HTMLElement) =>
+        [...el.querySelectorAll('.preis')].map((zeile) =>
+          [...zeile.querySelectorAll('input')].map((input) => input.value),
+        );
+
+      it('trennt den aktuellen Preis von den übrigen und schickt sie in dieser Reihenfolge', async () => {
+        const { fixture, el, feld, host } = await offen(MIT_PREISEN);
+        expect(feld('betrag').value).toBe('20,00');
+        expect(feld('gueltigSeit').value).toBe('2026-01-01');
+        expect(zeilen(el)).toEqual([
+          ['', '10,00'],
+          ['2027-01-01', '25,00'],
+        ]);
+        el.querySelector('form')!.dispatchEvent(new Event('submit'));
+        await fixture.whenStable();
+        expect(host.gespeichert[0].preise).toEqual([
+          { gueltigAb: '2026-01-01', betrag: USD(20) },
+          { gueltigAb: null, betrag: USD(10) },
+          { gueltigAb: '2027-01-01', betrag: USD(25) },
+        ]);
+      });
+
+      it('„Preis hinzufügen“ der Details: Tab Preise, leere Zeile mit Fokus, nicht ungespeichert', async () => {
+        const { el, fixture } = await offen(VERTRAG, true);
+        await fixture.whenStable();
+        const aktiv = el.querySelector('[role="tab"][aria-selected="true"]');
+        expect(aktiv?.textContent?.trim()).toBe('Preise');
+        expect(zeilen(el)).toEqual([['', '']]);
+        expect(document.activeElement).toBe(el.querySelector('.preis input[type="date"]'));
+        expect(TestBed.inject(UngespeicherteEingaben).vorhanden()).toBe(false);
+      });
     });
 
     it('belegt nicht neu vor, wenn der Vertrag im offenen Formular neu geladen wird', async () => {

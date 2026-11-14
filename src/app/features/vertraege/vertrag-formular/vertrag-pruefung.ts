@@ -1,4 +1,5 @@
 import {
+  Betrag,
   Feldfehler,
   Verlaengerung,
   VertragAntwort,
@@ -6,7 +7,13 @@ import {
   Zahlungsweg,
   Zahlweise,
 } from '../../../core/api/api';
-import { VertragEingabe } from '../vertrag.service';
+import { PreisEingabe, VertragEingabe } from '../vertrag.service';
+
+/** Eine Zeile der Liste „Frühere und angekündigte Preise“. */
+export interface PreisWerte {
+  gueltigAb: string;
+  betrag: string;
+}
 
 /** Werte der Formularfelder, unverändert wie eingegeben. */
 export interface VertragWerte {
@@ -14,7 +21,12 @@ export interface VertragWerte {
   bezeichnung: string;
   kategorieId: string;
   vertragsnummer: string;
+  /** Der heute gültige Preis (Art {@code AKTUELL}). */
   betrag: string;
+  /** Leer = ab Vertragsbeginn. */
+  gueltigSeit: string;
+  /** Alle übrigen Preise, in der Reihenfolge der Antwort bzw. der Eingabe. */
+  preise: PreisWerte[];
   zahlweise: Zahlweise | '';
   abbuchungAb: string;
   zahlungsweg: Zahlungsweg | '';
@@ -28,7 +40,16 @@ export interface VertragWerte {
   notiz: string;
 }
 
-export type VertragFeld = keyof VertragWerte;
+export type EinzelFeld = Exclude<keyof VertragWerte, 'preise'>;
+
+/** Feld einer Zeile der Preisliste, z. B. {@code preise.0.gueltigAb}. */
+export type PreisFeld = `preise.${number}.${keyof PreisWerte}`;
+
+export type VertragFeld = EinzelFeld | PreisFeld;
+
+export function preisFeld(index: number, feld: keyof PreisWerte): PreisFeld {
+  return `preise.${index}.${feld}`;
+}
 
 // Ohne Tausenderpunkte oder mit korrekt gesetzten. „12.50“ passt absichtlich nicht: Das ist weder
 // deutsch noch eindeutig und darf nicht still zu 1250 werden.
@@ -55,28 +76,66 @@ const PFLICHT_TEXT = {
   gekuendigtZum: 'Bitte gib an, zu wann der Vertrag gekündigt ist.',
 } as const;
 
-/** Nur Pflichtfelder, zur Bedienung; alles Weitere entscheidet das Backend (ADR 0010). */
+const GUELTIG_AB_TEXT = 'Bitte gib an, ab wann dieser Preis gilt.';
+
+const GUELTIG_SEIT_TEXT = 'Bitte gib an, seit wann der Betrag oben gilt.';
+
+/**
+ * Nur Pflichtfelder, zur Bedienung; alles Weitere entscheidet das Backend (ADR 0010). Ohne Datum darf
+ * nur ein Preis sein (er gilt ab Vertragsbeginn): zuerst der Betrag, sonst die erste Zeile ohne Datum.
+ * „Betrag gilt seit“ braucht es bei weiteren Preisen ohne Vertragsbeginn, sonst ist unklar, wie die
+ * Preise zueinander stehen (wie im Design).
+ */
 export function vertragPruefen(w: VertragWerte): ReadonlyMap<VertragFeld, string> {
   const leer = (Object.keys(PFLICHT_TEXT) as (keyof typeof PFLICHT_TEXT)[]).filter(
     (feld) => !w[feld].trim() && (feld !== 'gekuendigtZum' || w.gekuendigt),
   );
-  return new Map(leer.map((feld) => [feld, PFLICHT_TEXT[feld]]));
+  const fehler = new Map<VertragFeld, string>(leer.map((feld) => [feld, PFLICHT_TEXT[feld]]));
+  if (w.preise.length && !w.gueltigSeit && !w.beginn) {
+    fehler.set('gueltigSeit', GUELTIG_SEIT_TEXT);
+  }
+  let ohneDatum = !w.gueltigSeit;
+  w.preise.forEach((preis, i) => {
+    if (!preis.gueltigAb) {
+      if (ohneDatum) {
+        fehler.set(preisFeld(i, 'gueltigAb'), GUELTIG_AB_TEXT);
+      }
+      ohneDatum = true;
+    }
+    if (!preis.betrag.trim()) {
+      fehler.set(preisFeld(i, 'betrag'), PFLICHT_TEXT.betrag);
+    }
+  });
+  return fehler;
+}
+
+/** Wie das Backend ihn speichert, mit Komma und zwei Stellen. */
+function betragEingabe({ wert }: Betrag): string {
+  return wert.toFixed(2).replace('.', ',');
 }
 
 function textOderNull(eingabe: string): string | null {
   return eingabe.trim() || null;
 }
 
-/** Vorbelegung zum Bearbeiten. „Nächste Abbuchung“ zeigt den nächsten Termin, nicht den Anker. */
+/**
+ * Vorbelegung zum Bearbeiten. „Nächste Abbuchung“ zeigt den nächsten Termin, nicht den Anker. Welcher
+ * Preis heute gilt, sagt das Backend ({@code art}); er steht unter „Betrag“, die übrigen in der Liste.
+ */
 export function werteAus(v: VertragAntwort): VertragWerte {
+  const aktuell = v.preise.find(({ art }) => art === 'AKTUELL');
   return {
     anbieter: v.anbieter,
     bezeichnung: v.bezeichnung ?? '',
     kategorieId: v.kategorie.id,
     vertragsnummer: v.vertragsnummer ?? '',
-    betrag: v.betrag.wert.toFixed(2).replace('.', ','),
+    betrag: betragEingabe(aktuell?.betrag ?? v.betrag),
+    gueltigSeit: aktuell?.gueltigAb ?? '',
+    preise: v.preise
+      .filter((preis) => preis !== aktuell)
+      .map((preis) => ({ gueltigAb: preis.gueltigAb ?? '', betrag: betragEingabe(preis.betrag) })),
     zahlweise: v.zahlweise,
-    abbuchungAb: v.berechnet.naechsteAbbuchung ?? v.abbuchungAb,
+    abbuchungAb: v.berechnet.naechsteAbbuchung?.am ?? v.abbuchungAb,
     zahlungsweg: v.zahlungsweg ?? '',
     nichtKuendbar: !v.kuendbar,
     beginn: v.beginn ?? '',
@@ -102,21 +161,32 @@ function abbuchungAb(w: VertragWerte, gespeichert: VertragAntwort | null): strin
   return unveraendert ? gespeichert.abbuchungAb : w.abbuchungAb || null;
 }
 
+function preisEingabe(gueltigAb: string, betrag: string, waehrung: string): PreisEingabe {
+  const wert = betragLesen(betrag);
+  return { gueltigAb: gueltigAb || null, betrag: wert === null ? null : { wert, waehrung } };
+}
+
 /**
  * Anfrage aus den Formularwerten. Leere Felder gehen als {@code null}, denn {@code ""} wäre bei Enums
  * und Datum {@code ANFRAGE_UNGUELTIG} ohne Bezug zum Feld, ebenso {@code { wert: null }} beim Betrag.
+ * Der Betrag ist der erste Preis, die Liste folgt ({@code preise[i]} der Feldfehler). Felder, die das
+ * Formular noch nicht zeigt (Anteil, Einmalkosten, Preissteigerung), bleiben wie gespeichert, denn
+ * {@code PUT} ersetzt alle Felder.
  */
 export function anfrageAus(
   w: VertragWerte,
   gespeichert: VertragAntwort | null = null,
 ): Required<VertragEingabe> {
-  const wert = betragLesen(w.betrag);
+  const waehrung = gespeichert?.betrag.waehrung ?? 'EUR';
   return {
     anbieter: textOderNull(w.anbieter),
     bezeichnung: textOderNull(w.bezeichnung),
     kategorieId: textOderNull(w.kategorieId),
     vertragsnummer: textOderNull(w.vertragsnummer),
-    betrag: wert === null ? null : { wert, waehrung: gespeichert?.betrag.waehrung ?? 'EUR' },
+    preise: [
+      preisEingabe(w.gueltigSeit, w.betrag, waehrung),
+      ...w.preise.map((preis) => preisEingabe(preis.gueltigAb, preis.betrag, waehrung)),
+    ],
     zahlweise: w.zahlweise || null,
     abbuchungAb: abbuchungAb(w, gespeichert),
     zahlungsweg: w.zahlungsweg || null,
@@ -128,20 +198,38 @@ export function anfrageAus(
       w.nichtKuendbar || !w.kuendigungsfristMonate ? null : Number(w.kuendigungsfristMonate),
     gekuendigtZum: w.gekuendigt ? w.gekuendigtZum || null : null,
     notiz: textOderNull(w.notiz),
+    anteilProzent: gespeichert?.anteilProzent ?? null,
+    einmalkosten: gespeichert?.einmalkosten ?? [],
+    preissteigerung: gespeichert?.preissteigerung ?? null,
+    preisgarantieBis: gespeichert?.preisgarantieBis ?? null,
+    erinnerungSonderkuendigung: gespeichert?.erinnerungSonderkuendigung ?? true,
   };
 }
 
-/** Die Werte, von denen der Kündigungstermin abhängt; bei „Nicht kündbar“ gibt es keine Vorschau. */
+/**
+ * Das ganze Formular für die Vorschau. Preise, die das Backend sicher ablehnt (ohne Betrag, Betrag
+ * nicht größer 0, ein zweiter ohne Datum), fehlen, damit die übrigen Werte beim Tippen bleiben.
+ */
 export function vorschauAus(
   w: VertragWerte,
   gespeichert: VertragAntwort | null = null,
-): VertragVorschauAnfrage | null {
-  if (w.nichtKuendbar) {
-    return null;
-  }
+): VertragVorschauAnfrage {
   const a = anfrageAus(w, gespeichert);
+  let ohneDatum = false;
+  const preise = a.preise.filter(({ betrag, gueltigAb }) => {
+    if (!betrag || betrag.wert <= 0 || (!gueltigAb && ohneDatum)) {
+      return false;
+    }
+    ohneDatum ||= !gueltigAb;
+    return true;
+  });
   return {
-    kuendbar: true,
+    kuendbar: !w.nichtKuendbar,
+    preise,
+    anteilProzent: a.anteilProzent,
+    einmalkosten: a.einmalkosten,
+    preissteigerung: a.preissteigerung,
+    preisgarantieBis: a.preisgarantieBis,
     zahlweise: a.zahlweise,
     abbuchungAb: a.abbuchungAb,
     beginn: a.beginn,
@@ -157,9 +245,7 @@ const FELD_ZUM_API_FELD: Readonly<Record<string, VertragFeld>> = {
   bezeichnung: 'bezeichnung',
   kategorieId: 'kategorieId',
   vertragsnummer: 'vertragsnummer',
-  betrag: 'betrag',
-  'betrag.wert': 'betrag',
-  'betrag.waehrung': 'betrag',
+  preise: 'betrag',
   zahlweise: 'zahlweise',
   abbuchungAb: 'abbuchungAb',
   zahlungsweg: 'zahlungsweg',
@@ -172,15 +258,49 @@ const FELD_ZUM_API_FELD: Readonly<Record<string, VertragFeld>> = {
   notiz: 'notiz',
 };
 
-function feldfehlerText(feld: VertragFeld, { code, parameter }: Feldfehler): string {
+const PREIS_MUSTER = /^preise\[(\d+)\]\.(gueltigAb|betrag)\b/;
+
+/** {@code preise[0]} ist der Betrag, {@code preise[i]} sonst die Zeile i − 1 der Liste. */
+function formularFeld(apiFeld: string): VertragFeld | undefined {
+  const preis = PREIS_MUSTER.exec(apiFeld);
+  if (!preis) {
+    return FELD_ZUM_API_FELD[apiFeld];
+  }
+  const index = Number(preis[1]);
+  const teil = preis[2] as keyof PreisWerte;
+  if (index > 0) {
+    return preisFeld(index - 1, teil);
+  }
+  return teil === 'betrag' ? 'betrag' : 'gueltigSeit';
+}
+
+function istBetrag(feld: VertragFeld): boolean {
+  return feld === 'betrag' || feld.endsWith('.betrag');
+}
+
+function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: Feldfehler): string {
   switch (code) {
     case 'NotBlank':
     case 'NotNull':
+    case 'NotEmpty':
+      if (istBetrag(feld)) {
+        return PFLICHT_TEXT.betrag;
+      }
       return feld in PFLICHT_TEXT
         ? PFLICHT_TEXT[feld as keyof typeof PFLICHT_TEXT]
         : 'Bitte fülle dieses Feld aus.';
     case 'Size':
-      return `Höchstens ${parameter['max']} Zeichen.`;
+      return apiFeld === 'preise'
+        ? `Höchstens ${parameter['max']} Preise.`
+        : `Höchstens ${parameter['max']} Zeichen.`;
+    case 'GueltigAbPflicht':
+      return feld === 'gueltigSeit' ? GUELTIG_SEIT_TEXT : GUELTIG_AB_TEXT;
+    case 'GueltigAbEindeutig':
+      return 'Für dieses Datum gibt es schon einen Preis.';
+    case 'PreisNichtVorBeginn':
+      return 'Ein Preis kann nicht vor dem Vertragsbeginn gelten.';
+    case 'GleicheWaehrung':
+      return 'Alle Preise brauchen dieselbe Währung.';
     case 'PositiverBetrag':
       return 'Der Betrag muss größer als 0 sein.';
     case 'Digits':
@@ -206,7 +326,7 @@ function feldfehlerText(feld: VertragFeld, { code, parameter }: Feldfehler): str
 export function feldfehlerTexte(felder: Feldfehler[]): ReadonlyMap<VertragFeld, string> {
   const texte = new Map<VertragFeld, string>();
   for (const fehler of felder) {
-    const feld = fehler.feld ? FELD_ZUM_API_FELD[fehler.feld] : undefined;
+    const feld = fehler.feld ? formularFeld(fehler.feld) : undefined;
     if (feld && !texte.has(feld)) {
       texte.set(feld, feldfehlerText(feld, fehler));
     }

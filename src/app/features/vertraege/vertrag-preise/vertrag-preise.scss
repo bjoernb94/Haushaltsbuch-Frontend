@@ -1,0 +1,70 @@
+.preise {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .aktuell {
+    font-weight: 700;
+  }
+
+  .frueher,
+  .prognose {
+    color: var(--app-text-gedaempft);
+  }
+
+  .prognose {
+    font-style: italic;
+  }
+}
+
+.keine-preise {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1.5px dashed var(--app-rand);
+  border-radius: 12px;
+  background: var(--app-flaeche);
+  font-size: 15px;
+  color: var(--app-text-gedaempft);
+}
+
+.preis-hinzufuegen {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1.5px solid var(--app-gruen);
+  border-radius: 10px;
+  background: var(--app-flaeche);
+  color: var(--app-gruen);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
+  }
+}

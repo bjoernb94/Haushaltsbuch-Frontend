@@ -94,14 +94,18 @@
         tabindex="0"
         [attr.aria-labelledby]="tabliste.tabId(aktiverTab())"
       >
-        <dl>
-          @for (eintrag of eintraege(); track eintrag.label) {
-            <div [class.breit]="eintrag.breit">
-              <dt>{{ eintrag.label }}</dt>
-              <dd>{{ eintrag.wert }}</dd>
-            </div>
-          }
-        </dl>
+        @if (aktiverTab() === 'preise') {
+          <app-vertrag-preise [vertrag]="vertrag()!" (hinzufuegen)="preisHinzufuegen()" />
+        } @else {
+          <dl>
+            @for (eintrag of eintraege(); track eintrag.label) {
+              <div [class.breit]="eintrag.breit">
+                <dt>{{ eintrag.label }}</dt>
+                <dd>{{ eintrag.wert }}</dd>
+              </div>
+            }
+          </dl>
+        }
       </div>
 
       <button

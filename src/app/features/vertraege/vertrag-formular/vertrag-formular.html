@@ -198,6 +198,25 @@
               <p class="feldfehler" [id]="id('zahlungsweg') + '-fehler'">{{ text }}</p>
             }
           </div>
+          <div class="feld">
+            <label [for]="id('gueltigSeit')"
+              >Betrag gilt seit <span class="optional">(optional)</span></label
+            >
+            <input
+              [id]="id('gueltigSeit')"
+              type="date"
+              formControlName="gueltigSeit"
+              [attr.aria-invalid]="!!fehlerText('gueltigSeit')"
+              [attr.aria-describedby]="beschreibung('gueltigSeit', id('gueltigSeit') + '-hinweis')"
+            />
+            <span class="feldhinweis" [id]="id('gueltigSeit') + '-hinweis'"
+              >Leer = ab Vertragsbeginn. Ohne Vertragsbeginn nötig, sobald du weitere Preise
+              einträgst.</span
+            >
+            @if (fehlerText('gueltigSeit'); as text) {
+              <p class="feldfehler" [id]="id('gueltigSeit') + '-fehler'">{{ text }}</p>
+            }
+          </div>
         </div>
       </fieldset>
     </div>
@@ -335,6 +354,21 @@
             </div>
           }
         </div>
+      </fieldset>
+    </div>
+    <div class="tabinhalt" [hidden]="tab() !== 'preise'">
+      <fieldset>
+        <legend>Preisentwicklung</legend>
+        <app-vertrag-preisliste
+          [zeilen]="formular.controls.preise"
+          [waehrung]="waehrung()"
+          [verlauf]="verlauf()"
+          [fehler]="feldFehler()"
+          [idPrefix]="idPrefix"
+          (hinzufuegen)="preisHinzufuegen()"
+          (entfernen)="preisEntfernen($event)"
+          (geaendert)="preisGeaendert($event.index, $event.feld)"
+        />
       </fieldset>
     </div>
   </div>

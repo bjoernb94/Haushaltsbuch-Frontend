@@ -43,7 +43,9 @@
       <span>Kosten pro Monat</span><b>{{ stand.uebersicht.kostenProMonat | betraege }}</b>
     </div>
     <div class="kennzahl">
-      <span>Kosten pro Jahr</span><b>{{ stand.uebersicht.kostenProJahr | betraege }}</b>
+      <span>Kosten {{ stand.uebersicht.jahr }}</span
+      ><b>{{ stand.uebersicht.kostenImJahr | betraege }}</b>
+      <small>Alle Abbuchungen im Kalenderjahr</small>
     </div>
   </div>
 } @else {

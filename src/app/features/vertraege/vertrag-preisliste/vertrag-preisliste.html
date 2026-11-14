@@ -1,0 +1,94 @@
+<div class="abschnitt">
+  <h3>Frühere und angekündigte Preise <span class="optional">(optional)</span></h3>
+  <p class="feldhinweis">
+    Ein Preis gilt bis zum nächsten Eintrag. Auch Aktionspreise lassen sich so abbilden, z. B. 9,99
+    € ab Vertragsbeginn und 19,99 € ab dem 7. Monat.
+  </p>
+</div>
+<div class="preise">
+  @for (zeile of zeilen().controls; track zeile; let i = $index) {
+    <div class="preis" [formGroup]="zeile">
+      <div class="feld">
+        <label [for]="id(i, 'gueltigAb')">Gilt ab *</label>
+        <input
+          [id]="id(i, 'gueltigAb')"
+          type="date"
+          formControlName="gueltigAb"
+          [attr.aria-invalid]="!!fehlerText(i, 'gueltigAb')"
+          [attr.aria-describedby]="zeilenFehler(i) ? id(i, 'gueltigAb') + '-fehler' : null"
+          (input)="geaendert.emit({ index: i, feld: 'gueltigAb' })"
+        />
+      </div>
+      <div class="feld">
+        <label [for]="id(i, 'betrag')">Betrag in {{ waehrung() }} *</label>
+        <input
+          [id]="id(i, 'betrag')"
+          type="text"
+          inputmode="decimal"
+          placeholder="0,00"
+          formControlName="betrag"
+          [attr.aria-invalid]="!!fehlerText(i, 'betrag')"
+          [attr.aria-describedby]="zeilenFehler(i) ? id(i, 'gueltigAb') + '-fehler' : null"
+          (input)="geaendert.emit({ index: i, feld: 'betrag' })"
+        />
+      </div>
+      <button
+        type="button"
+        class="entfernen"
+        [attr.aria-label]="entfernenLabel(i)"
+        (click)="entfernen.emit(i)"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 7h16"></path>
+          <path d="M9 7V4h6v3"></path>
+          <path d="M6 7l1 13h10l1-13"></path>
+        </svg>
+        Entfernen
+      </button>
+      @if (zeilenFehler(i); as text) {
+        <p class="feldfehler" [id]="id(i, 'gueltigAb') + '-fehler'">
+          {{ text }}
+        </p>
+      }
+    </div>
+  }
+</div>
+<button
+  type="button"
+  class="hinzufuegen"
+  [id]="idPrefix() + '-preis-hinzufuegen'"
+  (click)="hinzufuegen.emit()"
+>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
+    <path d="M12 5v14"></path>
+    <path d="M5 12h14"></path>
+  </svg>
+  Preis hinzufügen
+</button>
+@if (verlauf().length) {
+  <div class="verlauf" role="status">
+    <b>Preisverlauf</b>
+    @for (eintrag of verlauf(); track $index) {
+      <span [class.aktuell]="eintrag.aktuell">{{ eintrag.text }}</span>
+    }
+  </div>
+}

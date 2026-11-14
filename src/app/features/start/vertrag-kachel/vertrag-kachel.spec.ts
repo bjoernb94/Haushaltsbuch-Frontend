@@ -10,7 +10,11 @@ import { VertragKachel } from './vertrag-kachel';
 const UEBERSICHT: VertragsuebersichtAntwort = {
   laufendeVertraege: 9,
   kostenProMonat: [{ wert: 202.08, waehrung: 'EUR' }],
-  kostenProJahr: [{ wert: 2424.96, waehrung: 'EUR' }],
+  kostenImJahr: [{ wert: 2424.96, waehrung: 'EUR' }],
+  kostenImJahrMitPrognose: false,
+  einmalkostenImJahr: [],
+  hatAnteile: false,
+  jahr: 2026,
   naechsteKuendigungsfristen: [
     {
       id: 'kfz',

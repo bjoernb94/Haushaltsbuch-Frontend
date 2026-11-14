@@ -51,6 +51,9 @@ interface Ansicht {
  */
 const INTERN = 'intern';
 
+/** Bearbeiten öffnet im Tab Preise mit einer leeren Zeile („Preis hinzufügen“ in den Details). */
+const NEUER_PREIS = 'neuerPreis';
+
 const NEU = '/vertraege/neu';
 
 /**
@@ -188,8 +191,17 @@ export class VertraegeSeite {
     }
   }
 
-  bearbeiten(id: string): void {
-    this.oeffnen(['/vertraege', id, 'bearbeiten'], false);
+  bearbeiten(id: string, neuerPreis = false): void {
+    this.oeffnen(
+      ['/vertraege', id, 'bearbeiten'],
+      false,
+      neuerPreis ? { [NEUER_PREIS]: true } : {},
+    );
+  }
+
+  /** Für Bearbeiten: Kam es über „Preis hinzufügen“? */
+  neuerPreis(): boolean {
+    return !!(this.location.getState() as Record<string, unknown> | null)?.[NEUER_PREIS];
   }
 
   /** Tab der Details in der URL, ohne neuen Eintrag im Verlauf. */
@@ -300,12 +312,12 @@ export class VertraegeSeite {
     }
   }
 
-  private oeffnen(ziel: string[], ersetzen = !!this.ansicht()): void {
+  private oeffnen(ziel: string[], ersetzen = !!this.ansicht(), state = {}): void {
     // Wechsel zwischen Verträgen ersetzen den Eintrag, damit die Zurück-Taste zur Liste führt.
     void this.router.navigate(ziel, {
       replaceUrl: ersetzen,
       scroll: 'manual',
-      state: { [INTERN]: ersetzen ? this.intern() : true },
+      state: { ...state, [INTERN]: ersetzen ? this.intern() : true },
     });
   }
 

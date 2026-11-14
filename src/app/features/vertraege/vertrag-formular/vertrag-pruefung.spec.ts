@@ -15,6 +15,8 @@ const LEER: VertragWerte = {
   kategorieId: '',
   vertragsnummer: '',
   betrag: '',
+  gueltigSeit: '',
+  preise: [],
   zahlweise: '',
   abbuchungAb: '',
   zahlungsweg: '',
@@ -84,6 +86,38 @@ describe('vertragPruefen', () => {
     expect([...vertragPruefen({ ...PFLICHT, gekuendigt: true }).keys()]).toEqual(['gekuendigtZum']);
   });
 
+  describe('Preise', () => {
+    const MIT_BEGINN = { ...PFLICHT, beginn: '2026-01-01' };
+
+    it('verlangt in jeder Zeile Datum und Betrag', () => {
+      const fehler = vertragPruefen({
+        ...MIT_BEGINN,
+        gueltigSeit: '2026-01-01',
+        preise: [
+          { gueltigAb: '', betrag: '' },
+          { gueltigAb: '', betrag: '5' },
+        ],
+      });
+      expect([...fehler.keys()]).toEqual(['preise.0.betrag', 'preise.1.gueltigAb']);
+      expect(fehler.get('preise.1.gueltigAb')).toBe('Bitte gib an, ab wann dieser Preis gilt.');
+    });
+
+    it('lässt einen Preis ohne Datum zu: den Betrag oder die erste Zeile', () => {
+      const ohneSeit = { ...MIT_BEGINN, preise: [{ gueltigAb: '', betrag: '5' }] };
+      expect([...vertragPruefen(ohneSeit).keys()]).toEqual(['preise.0.gueltigAb']);
+      const mitSeit = { ...ohneSeit, gueltigSeit: '2026-06-01' };
+      expect(vertragPruefen(mitSeit).size).toBe(0);
+    });
+
+    it('verlangt „Betrag gilt seit“ bei weiteren Preisen nur ohne Vertragsbeginn', () => {
+      const preise = [{ gueltigAb: '2027-01-01', betrag: '25' }];
+      expect(vertragPruefen({ ...MIT_BEGINN, preise }).size).toBe(0);
+      const fehler = vertragPruefen({ ...PFLICHT, preise });
+      expect(fehler.get('gueltigSeit')).toBe('Bitte gib an, seit wann der Betrag oben gilt.');
+      expect(vertragPruefen(PFLICHT).has('gueltigSeit')).toBe(false);
+    });
+  });
+
   it('überlässt fachliche Regeln und nicht lesbare Beträge dem Backend', () => {
     const werte = {
       ...PFLICHT,
@@ -103,7 +137,7 @@ describe('anfrageAus', () => {
       bezeichnung: null,
       kategorieId: 'k1',
       vertragsnummer: null,
-      betrag: { wert: 19.99, waehrung: 'EUR' },
+      preise: [{ gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } }],
       zahlweise: 'MONATLICH',
       abbuchungAb: '2027-01-01',
       zahlungsweg: null,
@@ -114,6 +148,11 @@ describe('anfrageAus', () => {
       kuendigungsfristMonate: null,
       gekuendigtZum: null,
       notiz: null,
+      anteilProzent: null,
+      einmalkosten: [],
+      preissteigerung: null,
+      preisgarantieBis: null,
+      erinnerungSonderkuendigung: true,
     });
     expect(Object.values(anfrageAus(LEER))).not.toContain('');
   });
@@ -124,7 +163,23 @@ describe('anfrageAus', () => {
   });
 
   it.each(['', 'abc', '12.50'])('schickt den Betrag „%s“ als null, nie als { wert: null }', (b) => {
-    expect(anfrageAus({ ...PFLICHT, betrag: b }).betrag).toBeNull();
+    expect(anfrageAus({ ...PFLICHT, betrag: b }).preise[0].betrag).toBeNull();
+  });
+
+  it('der Betrag ist der erste Preis, die Liste folgt in ihrer Reihenfolge', () => {
+    const anfrage = anfrageAus({
+      ...PFLICHT,
+      gueltigSeit: '2026-01-01',
+      preise: [
+        { gueltigAb: '2027-01-01', betrag: '24,99' },
+        { gueltigAb: '2025-01-01', betrag: '' },
+      ],
+    });
+    expect(anfrage.preise).toEqual([
+      { gueltigAb: '2026-01-01', betrag: { wert: 19.99, waehrung: 'EUR' } },
+      { gueltigAb: '2027-01-01', betrag: { wert: 24.99, waehrung: 'EUR' } },
+      { gueltigAb: '2025-01-01', betrag: null },
+    ]);
   });
 
   it('schickt die Frist als Zahl, auch 0', () => {
@@ -162,10 +217,66 @@ describe('feldfehlerTexte', () => {
     feldfehlerTexte([{ feld, code, parameter }]);
 
   it.each([
-    ['betrag', 'NotNull', {}, 'betrag', 'Bitte gib einen gültigen Betrag ein, z. B. 19,99.'],
-    ['betrag', 'PositiverBetrag', {}, 'betrag', 'Der Betrag muss größer als 0 sein.'],
-    ['betrag.wert', 'Digits', { fraction: 2 }, 'betrag', 'Höchstens 2 Nachkommastellen.'],
-    ['betrag.waehrung', 'ErlaubteWaehrung', {}, 'betrag', 'Diese Währung ist nicht möglich.'],
+    [
+      'preise[0].betrag',
+      'NotNull',
+      {},
+      'betrag',
+      'Bitte gib einen gültigen Betrag ein, z. B. 19,99.',
+    ],
+    ['preise[0].betrag', 'PositiverBetrag', {}, 'betrag', 'Der Betrag muss größer als 0 sein.'],
+    ['preise[0].betrag.wert', 'Digits', { fraction: 2 }, 'betrag', 'Höchstens 2 Nachkommastellen.'],
+    [
+      'preise[0].betrag.waehrung',
+      'ErlaubteWaehrung',
+      {},
+      'betrag',
+      'Diese Währung ist nicht möglich.',
+    ],
+    ['preise', 'NotEmpty', {}, 'betrag', 'Bitte gib einen gültigen Betrag ein, z. B. 19,99.'],
+    ['preise', 'Size', { max: 100 }, 'betrag', 'Höchstens 100 Preise.'],
+    [
+      'preise[0].gueltigAb',
+      'GueltigAbPflicht',
+      {},
+      'gueltigSeit',
+      'Bitte gib an, seit wann der Betrag oben gilt.',
+    ],
+    [
+      'preise[0].gueltigAb',
+      'PreisNichtVorBeginn',
+      {},
+      'gueltigSeit',
+      'Ein Preis kann nicht vor dem Vertragsbeginn gelten.',
+    ],
+    [
+      'preise[1].gueltigAb',
+      'GueltigAbPflicht',
+      {},
+      'preise.0.gueltigAb',
+      'Bitte gib an, ab wann dieser Preis gilt.',
+    ],
+    [
+      'preise[2].gueltigAb',
+      'GueltigAbEindeutig',
+      {},
+      'preise.1.gueltigAb',
+      'Für dieses Datum gibt es schon einen Preis.',
+    ],
+    [
+      'preise[1].betrag',
+      'NotNull',
+      {},
+      'preise.0.betrag',
+      'Bitte gib einen gültigen Betrag ein, z. B. 19,99.',
+    ],
+    [
+      'preise[1].betrag.waehrung',
+      'GleicheWaehrung',
+      {},
+      'preise.0.betrag',
+      'Alle Preise brauchen dieselbe Währung.',
+    ],
     ['anbieter', 'NotBlank', {}, 'anbieter', 'Bitte gib den Anbieter ein.'],
     ['notiz', 'Size', { max: 1000 }, 'notiz', 'Höchstens 1000 Zeichen.'],
     [
@@ -215,8 +326,8 @@ describe('feldfehlerTexte', () => {
 
   it('zeigt je Feld den ersten Fehler', () => {
     const texte = feldfehlerTexte([
-      { feld: 'betrag', code: 'PositiverBetrag', parameter: {} },
-      { feld: 'betrag.wert', code: 'Digits', parameter: { fraction: 2 } },
+      { feld: 'preise[0].betrag', code: 'PositiverBetrag', parameter: {} },
+      { feld: 'preise[0].betrag.wert', code: 'Digits', parameter: { fraction: 2 } },
     ]);
     expect(texte.get('betrag')).toBe('Der Betrag muss größer als 0 sein.');
   });
@@ -231,6 +342,12 @@ describe('Bearbeiten', () => {
     kategorie: { id: 'k1', schluessel: 'VERSICHERUNG', name: null },
     vertragsnummer: null,
     betrag: { wert: 586.8, waehrung: 'USD' },
+    preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'USD' }, art: 'AKTUELL' }],
+    anteilProzent: null,
+    einmalkosten: [],
+    preissteigerung: null,
+    preisgarantieBis: null,
+    erinnerungSonderkuendigung: true,
     zahlweise: 'MONATLICH',
     abbuchungAb: '2026-01-31',
     zahlungsweg: null,
@@ -244,8 +361,15 @@ describe('Bearbeiten', () => {
     berechnet: {
       status: 'AKTIV',
       kostenProMonat: { wert: 586.8, waehrung: 'USD' },
-      kostenProJahr: { wert: 7041.6, waehrung: 'USD' },
-      naechsteAbbuchung: '2026-11-30',
+      kostenImJahr: { wert: 7041.6, waehrung: 'USD' },
+      kostenImJahrMitPrognose: false,
+      jahr: 2026,
+      eigenerAnteil: null,
+      einmalkosten: { wert: 0, waehrung: 'USD' },
+      naechsteAbbuchung: { am: '2026-11-30', betrag: { wert: 586.8, waehrung: 'USD' } },
+      naechstePreisaenderung: null,
+      preisverlauf: [],
+      prognose: [],
       kuendigung: {
         art: 'KEINE_LAUFZEIT',
         dringend: false,
@@ -266,6 +390,27 @@ describe('Bearbeiten', () => {
         kuendigungsfristMonate: '',
         nichtKuendbar: false,
         gekuendigt: false,
+      });
+    });
+
+    it('der aktuelle Preis steht unter „Betrag“, die übrigen in der Liste', () => {
+      const usd = (wert: number) => ({ wert, waehrung: 'USD' });
+      const werte = werteAus({
+        ...VERTRAG,
+        betrag: usd(20),
+        preise: [
+          { gueltigAb: null, betrag: usd(10), art: 'FRUEHER' },
+          { gueltigAb: '2026-01-01', betrag: usd(20), art: 'AKTUELL' },
+          { gueltigAb: '2027-01-01', betrag: usd(25.5), art: 'ANGEKUENDIGT' },
+        ],
+      });
+      expect(werte).toMatchObject({
+        betrag: '20,00',
+        gueltigSeit: '2026-01-01',
+        preise: [
+          { gueltigAb: '', betrag: '10,00' },
+          { gueltigAb: '2027-01-01', betrag: '25,50' },
+        ],
       });
     });
 
@@ -294,9 +439,14 @@ describe('Bearbeiten', () => {
   });
 
   describe('vorschauAus', () => {
-    it('schickt nur die Werte für den Termin, leere als null', () => {
+    it('schickt das Formular, leere Werte als null', () => {
       expect(vorschauAus(LEER)).toEqual({
         kuendbar: true,
+        preise: [],
+        anteilProzent: null,
+        einmalkosten: [],
+        preissteigerung: null,
+        preisgarantieBis: null,
         zahlweise: null,
         abbuchungAb: null,
         beginn: null,
@@ -307,8 +457,38 @@ describe('Bearbeiten', () => {
       });
     });
 
-    it('bei „Nicht kündbar“ gibt es keine Anfrage', () => {
-      expect(vorschauAus({ ...PFLICHT, nichtKuendbar: true })).toBeNull();
+    it('fragt auch bei „Nicht kündbar“, ohne Verlängerung und Frist', () => {
+      expect(
+        vorschauAus({ ...PFLICHT, nichtKuendbar: true, kuendigungsfristMonate: '3' }),
+      ).toMatchObject({ kuendbar: false, kuendigungsfristMonate: null });
+    });
+
+    it('lässt Preise weg, die das Backend sicher ablehnt', () => {
+      const anfrage = vorschauAus({
+        ...PFLICHT,
+        betrag: '0',
+        preise: [
+          { gueltigAb: '2027-01-01', betrag: '25' },
+          { gueltigAb: '', betrag: '30' },
+          { gueltigAb: '2028-01-01', betrag: '' },
+        ],
+      });
+      expect(anfrage.preise).toEqual([
+        { gueltigAb: '2027-01-01', betrag: { wert: 25, waehrung: 'EUR' } },
+        { gueltigAb: null, betrag: { wert: 30, waehrung: 'EUR' } },
+      ]);
+    });
+
+    it('behält nur den ersten Preis ohne Datum', () => {
+      const anfrage = vorschauAus({
+        ...PFLICHT,
+        gueltigSeit: '2026-01-01',
+        preise: [
+          { gueltigAb: '', betrag: '10' },
+          { gueltigAb: '', betrag: '30' },
+        ],
+      });
+      expect(anfrage.preise?.map(({ betrag }) => betrag?.wert)).toEqual([19.99, 10]);
     });
 
     it('nimmt den gespeicherten Anker, solange Datum und Zahlweise unverändert sind', () => {
@@ -330,7 +510,7 @@ describe('Bearbeiten', () => {
         bezeichnung: null,
         kategorieId: 'k1',
         vertragsnummer: null,
-        betrag: { wert: 586.8, waehrung: 'USD' },
+        preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'USD' } }],
         zahlweise: 'MONATLICH',
         abbuchungAb: '2026-01-31',
         zahlungsweg: null,
@@ -341,6 +521,41 @@ describe('Bearbeiten', () => {
         kuendigungsfristMonate: null,
         gekuendigtZum: null,
         notiz: null,
+        anteilProzent: null,
+        einmalkosten: [],
+        preissteigerung: null,
+        preisgarantieBis: null,
+        erinnerungSonderkuendigung: true,
+      });
+    });
+
+    it('übernimmt Felder, die das Formular noch nicht zeigt, wie gespeichert', () => {
+      const gespeichert: VertragAntwort = {
+        ...VERTRAG,
+        anteilProzent: 50,
+        einmalkosten: [
+          {
+            bezeichnung: 'Anschluss',
+            faelligAm: '2026-02-01',
+            betrag: { wert: 49, waehrung: 'USD' },
+          },
+        ],
+        preissteigerung: {
+          art: 'PROZENT',
+          prozent: 2.5,
+          betrag: null,
+          rhythmus: 'JAEHRLICH',
+          naechsteAm: '2027-01-01',
+        },
+        preisgarantieBis: '2026-12-31',
+        erinnerungSonderkuendigung: false,
+      };
+      expect(anfrageAus(werteAus(gespeichert), gespeichert)).toMatchObject({
+        anteilProzent: 50,
+        einmalkosten: gespeichert.einmalkosten,
+        preissteigerung: gespeichert.preissteigerung,
+        preisgarantieBis: '2026-12-31',
+        erinnerungSonderkuendigung: false,
       });
     });
 
@@ -370,7 +585,7 @@ describe('Bearbeiten', () => {
 
     it('übernimmt die Währung des Vertrags, nicht EUR', () => {
       const werte = { ...werteAus(VERTRAG), betrag: '10,00' };
-      expect(anfrageAus(werte, VERTRAG).betrag).toEqual({ wert: 10, waehrung: 'USD' });
+      expect(anfrageAus(werte, VERTRAG).preise[0].betrag).toEqual({ wert: 10, waehrung: 'USD' });
     });
   });
 });

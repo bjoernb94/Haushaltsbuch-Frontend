@@ -2,6 +2,7 @@ import { expect, Page, test } from '@playwright/test';
 import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
 
 const KFZ = 'Kfz-Versicherung';
+const FITNESS = 'Fitnessstudio am Park';
 
 const zeile = (page: Page, name: string) =>
   page.locator('app-vertrag-zeile').filter({ hasText: name });
@@ -17,7 +18,7 @@ async function bearbeiten(page: Page, name = KFZ) {
   return formular;
 }
 
-async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit') {
+async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit' | 'Preise') {
   await sheet(page)
     .getByRole('tab', { name: new RegExp(`^${name}`) })
     .click();
@@ -33,6 +34,74 @@ test.describe('Vertrag bearbeiten', () => {
   test.beforeEach(async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
     await page.goto('/vertraege');
+  });
+
+  test('Preise: aktueller unter „Betrag“, übrige in der Liste; ändern, entfernen, hinzufügen', async ({
+    page,
+  }) => {
+    const formular = await bearbeiten(page, FITNESS);
+    await tab(page, 'Kosten');
+    await expect(formular.getByLabel('Betrag in € *').first()).toHaveValue('34,90');
+    await expect(formular.getByLabel('Betrag gilt seit')).toHaveValue('2026-01-01');
+
+    await tab(page, 'Preise');
+    const zeilen = formular.locator('.preis');
+    await expect(zeilen).toHaveCount(2);
+    await expect(zeilen.nth(0).getByLabel('Betrag in € *')).toHaveValue('29,90');
+    await expect(zeilen.nth(1).getByLabel('Gilt ab *')).toHaveValue('2027-03-01');
+    const verlauf = formular.getByRole('status').filter({ hasText: 'Preisverlauf' });
+    await expect(verlauf).toContainText('ab Vertragsbeginn: 29,90 €');
+    await expect(verlauf).toContainText('ab 01.01.2026: 34,90 € · aktuell');
+    await expect(verlauf).toContainText('ab 01.03.2027: 39,90 € · angekündigt');
+
+    await formular.getByRole('button', { name: 'Preis ab 01.03.2027 entfernen' }).click();
+    await expect(zeilen).toHaveCount(1);
+    await formular.getByRole('button', { name: 'Preis hinzufügen' }).click();
+    await expect(zeilen.nth(1).getByLabel('Gilt ab *')).toBeFocused();
+    await zeilen.nth(1).getByLabel('Gilt ab *').fill('2027-06-01');
+    await zeilen.nth(1).getByLabel('Betrag in € *').fill('42');
+    await expect(verlauf).toContainText('ab 01.06.2027: 42,00 € · angekündigt');
+
+    expect((await speichernUndAnfrageLesen(page)).preise).toEqual([
+      { gueltigAb: '2026-01-01', betrag: { wert: 34.9, waehrung: 'EUR' } },
+      { gueltigAb: null, betrag: { wert: 29.9, waehrung: 'EUR' } },
+      { gueltigAb: '2027-06-01', betrag: { wert: 42, waehrung: 'EUR' } },
+    ]);
+    await expect(zeile(page, FITNESS).getByText('Preis ↑ ab 01.06.2027')).toBeVisible();
+  });
+
+  test('Fehler einer Preiszeile stehen an der Zeile, der Tab zählt sie', async ({ page }) => {
+    const formular = await bearbeiten(page, FITNESS);
+    await tab(page, 'Preise');
+    await formular.getByRole('button', { name: 'Preis hinzufügen' }).click();
+    await formular.locator('.preis').nth(2).getByLabel('Gilt ab *').fill('2027-03-01');
+    await formular.locator('.preis').nth(2).getByLabel('Betrag in € *').fill('45');
+    await sheet(page).getByRole('button', { name: 'Sichern' }).click();
+
+    await expect(sheet(page).getByRole('tab', { name: /^Preise.*1 Fehler$/ })).toBeVisible();
+    const datum = formular.locator('.preis').nth(2).getByLabel('Gilt ab *');
+    await expect(datum).toBeFocused();
+    await expect(datum).toHaveAccessibleDescription('Für dieses Datum gibt es schon einen Preis.');
+  });
+
+  test('„Preis hinzufügen“ in den Details öffnet den Tab Preise mit leerer Zeile', async ({
+    page,
+  }) => {
+    await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
+    const panel = details(page, KFZ);
+    await panel.getByRole('tab', { name: 'Preise' }).click();
+    await expect(panel.getByText('Noch keine Preisänderungen hinterlegt.')).toBeVisible();
+    await panel.getByRole('button', { name: 'Preis hinzufügen' }).click();
+
+    await expect(sheet(page).getByRole('tab', { name: 'Preise' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(sheet(page).locator('.preis').getByLabel('Gilt ab *')).toBeFocused();
+    // Die leere Zeile allein ist keine Änderung: Abbrechen fragt nicht.
+    await sheet(page).getByRole('button', { name: 'Abbrechen' }).click();
+    await expect(sheet(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/vertraege\/kfz\?tab=preise$/);
   });
 
   test('öffnet als Sheet in der Fenstermitte mit den gespeicherten Werten', async ({ page }) => {
@@ -53,7 +122,7 @@ test.describe('Vertrag bearbeiten', () => {
       sheet(page)
         .getByRole('tablist', { name: 'Bereiche des Vertrags bearbeiten' })
         .getByRole('tab'),
-    ).toHaveText(['Allgemein', 'Kosten', 'Laufzeit']);
+    ).toHaveText(['Allgemein', 'Kosten', 'Laufzeit', 'Preise']);
     await expect(sheet(page).getByRole('complementary')).toHaveCount(0);
     // Abbrechen und Sichern stehen nur in der Leiste.
     await expect(formular.getByRole('button', { name: 'Speichern' })).toBeHidden();
@@ -73,7 +142,7 @@ test.describe('Vertrag bearbeiten', () => {
       bezeichnung: KFZ,
       kategorieId: 'kategorie-2',
       vertragsnummer: 'KFZ-4711-23',
-      betrag: { wert: 586.8, waehrung: 'EUR' },
+      preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'EUR' } }],
       zahlweise: 'JAEHRLICH',
       abbuchungAb: '2024-01-01',
       zahlungsweg: 'LASTSCHRIFT',
@@ -84,6 +153,11 @@ test.describe('Vertrag bearbeiten', () => {
       kuendigungsfristMonate: 1,
       gekuendigtZum: null,
       notiz: null,
+      anteilProzent: null,
+      einmalkosten: [],
+      preissteigerung: null,
+      preisgarantieBis: null,
+      erinnerungSonderkuendigung: true,
     });
 
     // Aus der Liste geöffnet, geht es zur Liste zurück.

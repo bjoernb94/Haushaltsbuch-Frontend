@@ -6,6 +6,7 @@ import {
   VertragAnfrage,
   VertragAntwort,
   VertragKategorieAntwort,
+  VertragPreisAnfrage,
   VertragsuebersichtAntwort,
   VertragVorschauAnfrage,
   VertragVorschauAntwort,
@@ -17,7 +18,10 @@ import {
  */
 export type Eingabe<T> = { [F in keyof T]: T[F] | null };
 
-export type VertragEingabe = Eingabe<VertragAnfrage>;
+/** Ein Preis der Liste; wie {@link Eingabe}, auch der Betrag fehlt als {@code null}. */
+export type PreisEingabe = Eingabe<VertragPreisAnfrage>;
+
+export type VertragEingabe = Eingabe<Omit<VertragAnfrage, 'preise'>> & { preise: PreisEingabe[] };
 
 const VERTRAEGE_URL = '/api/vertraege';
 
@@ -39,7 +43,10 @@ export class VertragService {
   }
 
   /** Veraltete {@code version}: 409 KONFLIKT. */
-  aendern(id: string, vertrag: Eingabe<VertragAenderung>): Observable<VertragAntwort> {
+  aendern(
+    id: string,
+    vertrag: VertragEingabe & Pick<VertragAenderung, 'version'>,
+  ): Observable<VertragAntwort> {
     return this.http.put<VertragAntwort>(`${VERTRAEGE_URL}/${id}`, vertrag);
   }
 
@@ -56,7 +63,7 @@ export class VertragService {
     return this.http.get<VertragsuebersichtAntwort>(`${VERTRAEGE_URL}/uebersicht`);
   }
 
-  /** Kündigungstermin für das Formular, speichert nichts. */
+  /** Berechnete Werte für das Formular, speichert nichts. */
   vorschau(anfrage: VertragVorschauAnfrage): Observable<VertragVorschauAntwort> {
     return this.http.post<VertragVorschauAntwort>(`${VERTRAEGE_URL}/vorschau`, anfrage);
   }

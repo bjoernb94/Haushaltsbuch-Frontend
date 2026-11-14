@@ -226,6 +226,22 @@
   font-style: italic;
 }
 
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--app-hinweis-grund);
+  color: var(--app-hinweis-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .kosten {
   flex: 0 0 180px;
   display: flex;

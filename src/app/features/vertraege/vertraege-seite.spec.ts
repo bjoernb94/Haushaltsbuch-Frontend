@@ -30,7 +30,27 @@ const LEER = {
   kategorie: { id: 'k', schluessel: 'VERSICHERUNG', name: null },
   zahlweise: 'MONATLICH',
   betrag: EUR(10),
+  preise: [{ gueltigAb: null, betrag: EUR(10), art: 'AKTUELL' }] as VertragAntwort['preise'],
+  anteilProzent: null,
+  einmalkosten: [] as VertragAntwort['einmalkosten'],
+  preissteigerung: null,
+  preisgarantieBis: null,
+  erinnerungSonderkuendigung: true,
 } as const;
+
+/** Was in `berechnet` für diese Tests keine Rolle spielt. */
+const BERECHNET: Omit<
+  VertragAntwort['berechnet'],
+  'status' | 'kostenProMonat' | 'kostenImJahr' | 'naechsteAbbuchung' | 'kuendigung'
+> = {
+  kostenImJahrMitPrognose: false,
+  jahr: 2026,
+  eigenerAnteil: null,
+  einmalkosten: EUR(0),
+  naechstePreisaenderung: null,
+  preisverlauf: [],
+  prognose: [],
+};
 
 const KEINE_KUENDIGUNG = {
   art: 'KEINE_LAUFZEIT',
@@ -54,11 +74,13 @@ const JAEHRLICH: VertragAntwort = {
   notiz: 'Wichtig',
   zahlweise: 'JAEHRLICH',
   betrag: EUR(586.8),
+  preise: [{ gueltigAb: null, betrag: EUR(586.8), art: 'AKTUELL' }],
   berechnet: {
+    ...BERECHNET,
     status: 'AKTIV',
     kostenProMonat: EUR(48.9),
-    kostenProJahr: EUR(586.8),
-    naechsteAbbuchung: '2027-01-01',
+    kostenImJahr: EUR(586.8),
+    naechsteAbbuchung: { am: '2027-01-01', betrag: EUR(586.8) },
     kuendigung: {
       art: 'KUENDIGEN_BIS',
       dringend: true,
@@ -74,9 +96,10 @@ const BEENDET: VertragAntwort = {
   id: 'alt',
   anbieter: 'Alt GmbH',
   berechnet: {
+    ...BERECHNET,
     status: 'BEENDET',
     kostenProMonat: EUR(10),
-    kostenProJahr: EUR(120),
+    kostenImJahr: EUR(120),
     naechsteAbbuchung: null,
     kuendigung: { ...KEINE_KUENDIGUNG, art: 'BEENDET' },
   },
@@ -88,18 +111,42 @@ const PFLICHT: VertragAntwort = {
   anbieter: 'Beitragsservice',
   kuendbar: false,
   berechnet: {
+    ...BERECHNET,
     status: 'AKTIV',
     kostenProMonat: EUR(10),
-    kostenProJahr: EUR(120),
-    naechsteAbbuchung: '2027-01-15',
+    kostenImJahr: EUR(120),
+    naechsteAbbuchung: { am: '2027-01-15', betrag: EUR(10) },
     kuendigung: { ...KEINE_KUENDIGUNG, art: 'NICHT_KUENDBAR' },
+  },
+};
+
+/** Mit früherem, angekündigtem und nie geltendem Preis sowie Prognose. */
+const MIT_PREISEN: VertragAntwort = {
+  ...JAEHRLICH,
+  id: 'strom',
+  bezeichnung: 'Strom',
+  betrag: EUR(600),
+  preise: [
+    { gueltigAb: null, betrag: EUR(549), art: 'FRUEHER' },
+    { gueltigAb: '2026-01-01', betrag: EUR(600), art: 'AKTUELL' },
+    { gueltigAb: '2027-01-01', betrag: EUR(620), art: 'ANGEKUENDIGT' },
+    { gueltigAb: '2031-01-01', betrag: EUR(700), art: 'NACH_ENDE' },
+  ],
+  berechnet: {
+    ...JAEHRLICH.berechnet,
+    naechstePreisaenderung: { ab: '2027-01-01', betrag: EUR(620), art: 'ANGEKUENDIGT' },
+    prognose: [{ ab: '2028-01-01', betrag: EUR(635.5) }],
   },
 };
 
 const UEBERSICHT: VertragsuebersichtAntwort = {
   laufendeVertraege: 2,
   kostenProMonat: [EUR(58.9), { wert: 5, waehrung: 'USD' }],
-  kostenProJahr: [EUR(706.8)],
+  kostenImJahr: [EUR(706.8)],
+  kostenImJahrMitPrognose: false,
+  einmalkostenImJahr: [],
+  hatAnteile: false,
+  jahr: 2026,
   naechsteKuendigungsfristen: [],
 };
 
@@ -198,7 +245,7 @@ describe('VertraegeSeite', () => {
       const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
       expect(text(kennzahlen[0])).toBe('Laufende Verträge2');
       expect(text(kennzahlen[1])).toBe('Kosten pro Monat58,90 € · 5,00 $');
-      expect(text(kennzahlen[2])).toBe('Kosten pro Jahr706,80 €');
+      expect(text(kennzahlen[2])).toBe('Kosten 2026706,80 €Alle Abbuchungen im Kalenderjahr');
     });
 
     it('behält die Reihenfolge des Backends', async () => {
@@ -358,15 +405,16 @@ describe('VertraegeSeite', () => {
       expect(document.activeElement).toBe(tippen);
     });
 
-    it('zeigt Kacheln und die Tabs Allgemein, Kosten und Laufzeit', async () => {
+    it('zeigt Kacheln und die Tabs Allgemein, Kosten, Laufzeit und Preise', async () => {
       const { element, stabil, url } = await seite('/vertraege/kfz');
       expect([...element.querySelectorAll('.kachel')].map(text)).toEqual([
         'Pro Monat48,90 €',
-        'Nächste Abbuchung01.01.2027',
+        'Nächste Abbuchung01.01.2027586,80 €',
         'KündigungKündbar bis 30.11.2026Vertrag endet zum 31.12.2026',
+        'Nächste PreisänderungKeine bekannt',
       ]);
       const tabs = [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-      expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit']);
+      expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preise']);
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
       expect(element.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
         tabs[0].id,
@@ -383,11 +431,11 @@ describe('VertraegeSeite', () => {
       await stabil();
       expect(url()).toBe('/vertraege/kfz?tab=kosten');
       expect(eintraege(element)).toEqual({
-        Betrag: '586,80 € jährlich',
+        'Aktueller Betrag': '586,80 € jährlich',
         'Pro Monat': '48,90 €',
-        'Pro Jahr': '586,80 €',
+        'Kosten 2026': '586,80 €',
         Zahlungsweg: 'Lastschrift',
-        'Nächste Abbuchung': '01.01.2027',
+        'Nächste Abbuchung': '01.01.2027, 586,80 €',
       });
 
       tabs[2].click();
@@ -412,13 +460,68 @@ describe('VertraegeSeite', () => {
       const tabs = () => [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
       tabs()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
       await stabil();
-      expect(url()).toBe('/vertraege/kfz?tab=laufzeit');
-      expect(document.activeElement).toBe(tabs()[2]);
-      expect(tabs().map((t) => t.tabIndex)).toEqual([-1, -1, 0]);
+      expect(url()).toBe('/vertraege/kfz?tab=preise');
+      expect(document.activeElement).toBe(tabs()[3]);
+      expect(tabs().map((t) => t.tabIndex)).toEqual([-1, -1, -1, 0]);
+    });
+
+    it('Tab Preise: alle Preise mit Art und Prognose, Kachel und Chip zur nächsten Änderung', async () => {
+      auflisten.mockReturnValue(of([MIT_PREISEN, BEENDET]));
+      const { element } = await seite('/vertraege/strom?tab=preise');
+      expect([...element.querySelectorAll('app-vertrag-preise li')].map(text)).toEqual([
+        'ab Vertragsbeginn: 549,00 €',
+        'ab 01.01.2026: 600,00 € · aktuell',
+        'ab 01.01.2027: 620,00 € · angekündigt',
+        'ab 01.01.2031: 700,00 € · nach Vertragsende',
+        'ab 01.01.2028: 635,50 € · Prognose',
+      ]);
+      expect(text(element.querySelectorAll('.kachel')[3])).toBe(
+        'Nächste Preisänderungab 01.01.2027620,00 € · angekündigt',
+      );
+      expect(text(zeilen(element)[0].querySelector('.chip'))).toBe('Preis ↑ ab 01.01.2027');
+      expect(zeilen(element)[1].querySelector('.chip')).toBeNull();
+    });
+
+    it('Chip: Pfeil nach unten bei günstigerem Preis, Hinweis bei Prognose', async () => {
+      const guenstiger = {
+        ...MIT_PREISEN,
+        berechnet: {
+          ...MIT_PREISEN.berechnet,
+          naechstePreisaenderung: { ab: '2027-01-01', betrag: EUR(500), art: 'ANGEKUENDIGT' },
+        },
+      } satisfies VertragAntwort;
+      const prognose = {
+        ...MIT_PREISEN,
+        id: 'prognose',
+        berechnet: {
+          ...MIT_PREISEN.berechnet,
+          naechstePreisaenderung: { ab: '2028-01-01', betrag: EUR(635.5), art: 'PROGNOSE' },
+        },
+      } satisfies VertragAntwort;
+      auflisten.mockReturnValue(of([guenstiger, prognose]));
+      const { element } = await seite();
+      expect([...zeilen(element)].map((z) => text(z.querySelector('.chip')))).toEqual([
+        'Preis ↓ ab 01.01.2027',
+        'Preis ↑ ab 01.01.2028 (Prognose)',
+      ]);
+    });
+
+    it('Tab Preise ohne Änderungen: „Preis hinzufügen“ öffnet Bearbeiten im Tab Preise', async () => {
+      const { element, stabil, url } = await seite('/vertraege/kfz?tab=preise');
+      expect(element.querySelector('app-vertrag-preise li')).toBeNull();
+      expect(text(element.querySelector('.keine-preise span'))).toBe(
+        'Noch keine Preisänderungen hinterlegt.',
+      );
+      schaltflaeche(element.querySelector('app-vertrag-preise')!, 'Preis hinzufügen').click();
+      await stabil();
+      expect(url()).toBe('/vertraege/kfz/bearbeiten');
+      const formular = element.querySelector('app-vertrag-bearbeiten')!;
+      expect(text(formular.querySelector('[role="tab"][aria-selected="true"]'))).toBe('Preise');
+      expect(formular.querySelectorAll('.preis')).toHaveLength(1);
     });
 
     it('zeigt bei unbekanntem Tab „Allgemein“', async () => {
-      const { element } = await seite('/vertraege/kfz?tab=preise');
+      const { element } = await seite('/vertraege/kfz?tab=unbekannt');
       expect(text(element.querySelector('[role="tab"][aria-selected="true"]'))).toBe('Allgemein');
     });
 

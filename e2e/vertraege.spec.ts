@@ -38,6 +38,28 @@ test.describe('Seite Verträge', () => {
     await expect(page.getByRole('link', { name: 'Zur Übersicht' })).toHaveCount(0);
   });
 
+  test('zeigt die nächste Preisänderung in Zeile und Details, alle Preise im Tab Preise', async ({
+    page,
+  }) => {
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/vertraege');
+    const fitness = page.locator('app-vertrag-zeile').filter({ hasText: 'Fitnessstudio am Park' });
+    await expect(fitness.getByText('Preis ↑ ab 01.03.2027')).toBeVisible();
+    await expect(page.getByText('Kosten 2026')).toBeVisible();
+    await expect(page.getByText('Alle Abbuchungen im Kalenderjahr')).toBeVisible();
+
+    await page.goto('/vertraege/fitness?tab=preise');
+    const panel = page.getByRole('complementary', { name: 'Fitnessstudio am Park' });
+    await expect(panel.locator('.kachel').filter({ hasText: 'Nächste Preisänderung' })).toHaveText(
+      /ab 01\.03\.2027\s*39,90\s€ · angekündigt/,
+    );
+    await expect(panel.getByRole('tabpanel').getByRole('listitem')).toHaveText([
+      'ab Vertragsbeginn: 29,90 €',
+      'ab 01.01.2026: 34,90 € · aktuell',
+      'ab 01.03.2027: 39,90 € · angekündigt',
+    ]);
+  });
+
   test('kürzt lange Angaben in der Zeile, die Details zeigen alles', async ({ page }) => {
     const lang = 'Sehr langer Text '.repeat(30).trim();
     await backendSimulieren(page, {

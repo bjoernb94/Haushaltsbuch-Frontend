@@ -1,0 +1,132 @@
+@use '../../../shared/formular/formular';
+
+@include formular.felder($hoehe: 52px);
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feld {
+  min-width: 0;
+
+  input {
+    width: 100%;
+  }
+}
+
+.optional {
+  font-weight: 500;
+  color: var(--app-text-gedaempft);
+}
+
+.feldfehler,
+.feldhinweis {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.feldfehler {
+  font-weight: 600;
+  color: var(--app-fehler-text);
+}
+
+.feldhinweis {
+  color: var(--app-text-gedaempft);
+}
+
+.abschnitt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+  }
+}
+
+.preise {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.preis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  align-items: end;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 12px;
+  background: var(--app-details-grund);
+
+  .feldfehler {
+    grid-column: 1 / -1;
+  }
+}
+
+.entfernen,
+.hinzufuegen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  background: var(--app-flaeche);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
+  }
+}
+
+.entfernen {
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1.5px solid var(--app-fehler-rand);
+  color: var(--app-fehler);
+  font-size: 14px;
+}
+
+.hinzufuegen {
+  align-self: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px dashed var(--app-gruen);
+  color: var(--app-gruen);
+  font-size: 15px;
+}
+
+.verlauf {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-trenner);
+  border-radius: 10px;
+  background: var(--app-details-grund);
+  font-size: 14px;
+  line-height: 1.45;
+
+  span {
+    color: var(--app-text-gedaempft);
+  }
+
+  .aktuell {
+    font-weight: 700;
+    color: var(--app-text);
+  }
+}

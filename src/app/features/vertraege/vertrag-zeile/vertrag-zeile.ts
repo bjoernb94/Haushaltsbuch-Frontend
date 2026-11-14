@@ -95,8 +95,20 @@ export class VertragZeile {
   protected readonly abbuchung = computed(() => {
     const { naechsteAbbuchung } = this.vertrag().berechnet;
     return naechsteAbbuchung
-      ? `Nächste Abbuchung ${datumText(naechsteAbbuchung)}`
+      ? `Nächste Abbuchung ${datumText(naechsteAbbuchung.am)}`
       : KEINE_ABBUCHUNG;
+  });
+
+  /** „Preis ↑ ab 01.01.2027“; der Pfeil vergleicht nur die beiden Beträge des Backends. */
+  protected readonly preisaenderung = computed(() => {
+    const { betrag, berechnet } = this.vertrag();
+    const aenderung = berechnet.naechstePreisaenderung;
+    if (!aenderung) {
+      return null;
+    }
+    const pfeil = aenderung.betrag.wert < betrag.wert ? '↓' : '↑';
+    const prognose = aenderung.art === 'PROGNOSE' ? ' (Prognose)' : '';
+    return `Preis ${pfeil} ab ${datumText(aenderung.ab)}${prognose}`;
   });
 
   protected menueUmschalten(): void {

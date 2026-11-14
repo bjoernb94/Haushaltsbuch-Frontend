@@ -7,7 +7,9 @@ import { VertragService } from './vertrag.service';
 const ANFRAGE: VertragAnfrage = {
   anbieter: 'Musterversicherung AG',
   kategorieId: '7cb7a2b8-38a6-432d-8546-03b3d74f76ec',
-  betrag: { wert: 586.8, waehrung: 'EUR' },
+  preise: [{ betrag: { wert: 586.8, waehrung: 'EUR' } }],
+  einmalkosten: [],
+  erinnerungSonderkuendigung: true,
   zahlweise: 'JAEHRLICH',
   abbuchungAb: '2027-01-01',
   kuendbar: true,

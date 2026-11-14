@@ -24,7 +24,9 @@ function api(page: Page, methode: string, pfad: string, body?: unknown) {
 const ANFRAGE = {
   anbieter: 'Neuer Anbieter',
   kategorieId: KATEGORIEN[0].id,
-  betrag: { wert: 120, waehrung: 'EUR' },
+  preise: [{ gueltigAb: null, betrag: { wert: 120, waehrung: 'EUR' } }],
+  einmalkosten: [],
+  erinnerungSonderkuendigung: true,
   zahlweise: 'JAEHRLICH',
   abbuchungAb: '2027-01-01',
   kuendbar: true,

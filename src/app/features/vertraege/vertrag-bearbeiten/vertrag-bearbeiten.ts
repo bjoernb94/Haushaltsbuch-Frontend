@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { VertragAenderung, VertragKategorieAntwort } from '../../../core/api/api';
+import { VertragKategorieAntwort } from '../../../core/api/api';
 import { problemCode } from '../../../core/fehler/problem';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
@@ -18,7 +18,7 @@ import { VertragDetails } from '../vertrag-details/vertrag-details';
 import { VertragFormular } from '../vertrag-formular/vertrag-formular';
 import { vertragName } from '../vertrag-texte';
 import { VertraegeSeite } from '../vertraege-seite';
-import { Eingabe, VertragEingabe, VertragService } from '../vertrag.service';
+import { VertragEingabe, VertragService } from '../vertrag.service';
 
 /**
  * Bearbeiten als Sheet (Route {@code :id/bearbeiten} unter den Details): am Desktop in der
@@ -43,6 +43,7 @@ export class VertragBearbeiten {
   private readonly details = inject(VertragDetails);
 
   protected readonly formularId = 'vertrag-bearbeiten';
+  protected readonly neuerPreis = this.seite.neuerPreis();
   protected readonly vertrag = this.details.vertrag;
   protected readonly name = computed(() => {
     const vertrag = this.vertrag();
@@ -112,7 +113,7 @@ export class VertragBearbeiten {
     if (!vertrag) {
       return;
     }
-    const aenderung: Required<Eingabe<VertragAenderung>> = { ...eingabe, version: vertrag.version };
+    const aenderung = { ...eingabe, version: vertrag.version };
     this.sendet.set(true);
     this.speicherfehler.set(null);
     this.vertraege

@@ -2,7 +2,7 @@ import { expect, Page, test } from '@playwright/test';
 import { abmelden, backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
 
 /** Der Name des Tabs kann einen Fehlerzähler tragen, z. B. „Kosten 3, 3 Fehler“. */
-async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit') {
+async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit' | 'Preise') {
   await page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
 }
 
@@ -135,7 +135,7 @@ test.describe('Neuer Vertrag', () => {
       bezeichnung: 'Mein Vertrag',
       kategorieId: 'kategorie-2',
       vertragsnummer: 'V-1',
-      betrag: { wert: 19.99, waehrung: 'EUR' },
+      preise: [{ gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } }],
       zahlweise: 'MONATLICH',
       abbuchungAb: '2027-01-01',
       zahlungsweg: 'PAYPAL',
@@ -146,6 +146,11 @@ test.describe('Neuer Vertrag', () => {
       kuendigungsfristMonate: 3,
       gekuendigtZum: null,
       notiz: 'Familien-Abo',
+      anteilProzent: null,
+      einmalkosten: [],
+      preissteigerung: null,
+      preisgarantieBis: null,
+      erinnerungSonderkuendigung: true,
     });
 
     await expect(page).toHaveURL(/\/vertraege$/);
@@ -381,7 +386,7 @@ test.describe('Neuer Vertrag', () => {
         await pflichtfelderFuellen(page);
         await page.getByLabel('Betrag in € *').fill(eingabe);
 
-        expect((await speichernUndAnfrageLesen(page)).betrag).toEqual(betrag);
+        expect((await speichernUndAnfrageLesen(page)).preise[0].betrag).toEqual(betrag);
         await expect(page.getByRole('alert')).toHaveText('Bitte prüfe die markierten Felder.');
         await expect(page.getByLabel('Betrag in € *')).toHaveAccessibleDescription(text);
         await expect(page.getByLabel('Betrag in € *')).toBeFocused();
@@ -527,6 +532,34 @@ test.describe('Neuer Vertrag', () => {
     });
   });
 
+  test('Preise: ohne Vertragsbeginn braucht „Betrag gilt seit“ ein Datum, danach geht alles mit', async ({
+    page,
+  }) => {
+    await backendSimulieren(page, { angemeldet: true });
+    await page.goto('/vertraege/neu');
+    await pflichtfelderFuellen(page);
+    await tab(page, 'Preise');
+    await page.getByRole('button', { name: 'Preis hinzufügen' }).click();
+    const zeile = page.locator('.preis');
+    await zeile.getByLabel('Gilt ab *').fill('2027-06-01');
+    await zeile.getByLabel('Betrag in € *').fill('24,99');
+    await page.getByRole('button', { name: 'Vertrag speichern' }).click();
+
+    await expect(page.getByRole('tab', { name: /^Kosten.*1 Fehler$/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(page.getByLabel('Betrag gilt seit')).toBeFocused();
+    await expect(page.getByLabel('Betrag gilt seit')).toHaveAccessibleDescription(
+      /^Bitte gib an, seit wann der Betrag oben gilt\./,
+    );
+    await page.getByLabel('Betrag gilt seit').fill('2026-01-01');
+    expect((await speichernUndAnfrageLesen(page)).preise).toEqual([
+      { gueltigAb: '2026-01-01', betrag: { wert: 19.99, waehrung: 'EUR' } },
+      { gueltigAb: '2027-06-01', betrag: { wert: 24.99, waehrung: 'EUR' } },
+    ]);
+  });
+
   test.describe('Tabs und Zusammenfassung', () => {
     test.beforeEach(async ({ page }) => {
       await backendSimulieren(page, { angemeldet: true });
@@ -538,7 +571,7 @@ test.describe('Neuer Vertrag', () => {
         page.getByText('Pflichtfelder (*) findest du unter „Allgemein“ und „Kosten“.'),
       ).toBeVisible();
       const tabs = page.getByRole('tablist', { name: 'Bereiche des Vertrags' }).getByRole('tab');
-      await expect(tabs).toHaveText(['Allgemein', 'Kosten', 'Laufzeit']);
+      await expect(tabs).toHaveText(['Allgemein', 'Kosten', 'Laufzeit', 'Preise']);
       await expect(page.getByLabel('Betrag in € *')).toBeHidden();
 
       await tabs.first().focus();
