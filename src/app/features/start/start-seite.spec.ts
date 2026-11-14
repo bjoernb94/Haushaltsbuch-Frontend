@@ -20,7 +20,11 @@ describe('StartSeite', () => {
       of({
         laufendeVertraege: 0,
         kostenProMonat: [],
-        kostenProJahr: [],
+        kostenImJahr: [],
+        kostenImJahrMitPrognose: false,
+        einmalkostenImJahr: [],
+        hatAnteile: false,
+        jahr: 2026,
         naechsteKuendigungsfristen: [],
       }),
     );

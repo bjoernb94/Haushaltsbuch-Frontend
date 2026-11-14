@@ -112,6 +112,11 @@ h1 {
     font-size: 24px;
     font-weight: 800;
   }
+
+  small {
+    font-size: 12px;
+    color: var(--app-text-gedaempft);
+  }
 }
 
 .liste {

@@ -1,13 +1,18 @@
 import {
   Kuendigung,
   Kuendigungsart,
+  Preisaenderung,
+  Preiszeilenart,
+  Prognosepreis,
   Verlaengerung,
+  VertragPreisAntwort,
   VertragKategorieAntwort,
   VertragKategorieSchluessel,
   Vertragsstatus,
   Zahlungsweg,
   Zahlweise,
 } from '../../core/api/api';
+import { betragText } from '../../shared/format/betrag.pipe';
 import { datumText } from '../../shared/format/datum.pipe';
 
 // Texte je Code, wie im Design. Record stellt sicher, dass kein Code vergessen wird.
@@ -126,3 +131,26 @@ export function kuendigungText(kuendigung: Kuendigung): string {
   const { text, zusatz } = kuendigungAnzeige(kuendigung);
   return zusatz ? `${text}. ${zusatz}` : text;
 }
+
+const PREISZEILE_ZUSATZ: Record<Preiszeilenart, string> = {
+  FRUEHER: '',
+  AKTUELL: ' · aktuell',
+  ANGEKUENDIGT: ' · angekündigt',
+  NACH_ENDE: ' · nach Vertragsende',
+};
+
+/** „ab 01.01.2026: 586,80 € · aktuell“; ohne Datum gilt der Preis ab Vertragsbeginn. */
+export function preisText({ gueltigAb, betrag, art }: VertragPreisAntwort, locale: string): string {
+  const ab = gueltigAb ? `ab ${datumText(gueltigAb)}` : 'ab Vertragsbeginn';
+  return `${ab}: ${betragText(betrag, locale)}${PREISZEILE_ZUSATZ[art]}`;
+}
+
+/** „ab 01.01.2027: 601,47 € · Prognose“. */
+export function prognoseText({ ab, betrag }: Prognosepreis, locale: string): string {
+  return `ab ${datumText(ab)}: ${betragText(betrag, locale)} · Prognose`;
+}
+
+export const PREISAENDERUNG_ART_TEXT: Record<Preisaenderung['art'], string> = {
+  ANGEKUENDIGT: 'angekündigt',
+  PROGNOSE: 'Prognose',
+};

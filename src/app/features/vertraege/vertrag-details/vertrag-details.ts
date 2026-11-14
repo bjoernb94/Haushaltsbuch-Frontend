@@ -18,12 +18,14 @@ import { betragText } from '../../../shared/format/betrag.pipe';
 import { datumText } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
+import { VertragPreise } from '../vertrag-preise/vertrag-preise';
 import { VertraegeSeite } from '../vertraege-seite';
 import {
   fristDauerText,
   kategorieText,
   kuendigungAnzeige,
   kuendigungText,
+  PREISAENDERUNG_ART_TEXT,
   STATUS_TEXT,
   VERLAENGERUNG_TEXT,
   vertragName,
@@ -34,11 +36,11 @@ import { KEINE_ABBUCHUNG } from '../vertrag-zeile/vertrag-zeile';
 
 const NICHT_HINTERLEGT = 'Nicht hinterlegt';
 
-/** „Preise“ kommt mit den Preisänderungen dazu. */
 const TABS = [
   { key: 'allgemein', label: 'Allgemein' },
   { key: 'kosten', label: 'Kosten' },
   { key: 'laufzeit', label: 'Laufzeit' },
+  { key: 'preise', label: 'Preise' },
 ] as const;
 
 type Tab = (typeof TABS)[number]['key'];
@@ -57,7 +59,7 @@ interface Eintrag {
  */
 @Component({
   selector: 'app-vertrag-details',
-  imports: [HinweisBox, RouterOutlet, Tabliste],
+  imports: [HinweisBox, RouterOutlet, Tabliste, VertragPreise],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-details.html',
   styleUrl: './vertrag-details.scss',
@@ -94,17 +96,25 @@ export class VertragDetails {
     if (!v) {
       return [];
     }
-    const { kostenProMonat, naechsteAbbuchung, kuendigung } = v.berechnet;
+    const { kostenProMonat, naechsteAbbuchung, kuendigung, naechstePreisaenderung } = v.berechnet;
     const anzeige = kuendigungAnzeige(kuendigung);
     return [
       { label: 'Pro Monat', wert: betragText(kostenProMonat, this.locale), zusatz: '', ton: '' },
       {
         label: 'Nächste Abbuchung',
-        wert: naechsteAbbuchung ? datumText(naechsteAbbuchung) : KEINE_ABBUCHUNG,
-        zusatz: '',
+        wert: naechsteAbbuchung ? datumText(naechsteAbbuchung.am) : KEINE_ABBUCHUNG,
+        zusatz: naechsteAbbuchung ? betragText(naechsteAbbuchung.betrag, this.locale) : '',
         ton: '',
       },
       { label: 'Kündigung', wert: anzeige.text, zusatz: anzeige.zusatz, ton: anzeige.ton },
+      naechstePreisaenderung
+        ? {
+            label: 'Nächste Preisänderung',
+            wert: `ab ${datumText(naechstePreisaenderung.ab)}`,
+            zusatz: `${betragText(naechstePreisaenderung.betrag, this.locale)} · ${PREISAENDERUNG_ART_TEXT[naechstePreisaenderung.art]}`,
+            ton: 'warnung',
+          }
+        : { label: 'Nächste Preisänderung', wert: 'Keine bekannt', zusatz: '', ton: '' },
     ];
   });
 
@@ -120,6 +130,8 @@ export class VertragDetails {
         return this.kosten(v);
       case 'laufzeit':
         return this.laufzeit(v);
+      case 'preise':
+        return [];
     }
   });
 
@@ -157,6 +169,10 @@ export class VertragDetails {
     this.seite.bearbeiten(this.id());
   }
 
+  protected preisHinzufuegen(): void {
+    this.seite.bearbeiten(this.id(), true);
+  }
+
   protected loeschen(): void {
     const vertrag = this.vertrag();
     if (vertrag) {
@@ -179,21 +195,23 @@ export class VertragDetails {
   }
 
   private kosten(v: VertragAntwort): Eintrag[] {
-    const { kostenProMonat, kostenProJahr, naechsteAbbuchung } = v.berechnet;
+    const { kostenProMonat, kostenImJahr, jahr, naechsteAbbuchung } = v.berechnet;
     return [
       {
-        label: 'Betrag',
+        label: 'Aktueller Betrag',
         wert: `${betragText(v.betrag, this.locale)} ${ZAHLWEISE_TEXT[v.zahlweise]}`,
       },
       { label: 'Pro Monat', wert: betragText(kostenProMonat, this.locale) },
-      { label: 'Pro Jahr', wert: betragText(kostenProJahr, this.locale) },
+      { label: `Kosten ${jahr}`, wert: betragText(kostenImJahr, this.locale) },
       {
         label: 'Zahlungsweg',
         wert: v.zahlungsweg ? ZAHLUNGSWEG_TEXT[v.zahlungsweg] : NICHT_HINTERLEGT,
       },
       {
         label: 'Nächste Abbuchung',
-        wert: naechsteAbbuchung ? datumText(naechsteAbbuchung) : KEINE_ABBUCHUNG,
+        wert: naechsteAbbuchung
+          ? `${datumText(naechsteAbbuchung.am)}, ${betragText(naechsteAbbuchung.betrag, this.locale)}`
+          : KEINE_ABBUCHUNG,
       },
     ];
   }

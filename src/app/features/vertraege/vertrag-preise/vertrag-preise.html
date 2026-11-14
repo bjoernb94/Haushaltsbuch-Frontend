@@ -1,0 +1,30 @@
+@if (preise().length) {
+  <div class="preise">
+    <h3>Preise</h3>
+    <ul>
+      @for (preis of preise(); track $index) {
+        <li [class]="preis.art">{{ preis.text }}</li>
+      }
+    </ul>
+  </div>
+} @else {
+  <div class="keine-preise">
+    <span>Noch keine Preisänderungen hinterlegt.</span>
+    <button type="button" class="preis-hinzufuegen" (click)="hinzufuegen.emit()">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M12 5v14"></path>
+        <path d="M5 12h14"></path>
+      </svg>
+      Preis hinzufügen
+    </button>
+  </div>
+}

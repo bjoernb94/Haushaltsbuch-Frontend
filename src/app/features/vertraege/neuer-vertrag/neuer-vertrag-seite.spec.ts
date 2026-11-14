@@ -91,7 +91,7 @@ describe('NeuerVertragSeite', () => {
       status: 400,
       error: {
         code: 'VALIDIERUNG',
-        felder: [{ feld: 'betrag.wert', code: 'Digits', parameter: { fraction: 2 } }],
+        felder: [{ feld: 'preise[0].betrag.wert', code: 'Digits', parameter: { fraction: 2 } }],
       },
     });
     const anlegen = vi.fn().mockReturnValue(throwError(() => fehler));

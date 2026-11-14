@@ -24,7 +24,11 @@
   <div class="angaben">
     <span class="name">{{ name() }}</span>
     <span class="meta">{{ meta() }}</span>
-    <!-- Platz für Hinweis-Chips, sobald das Backend welche liefert. -->
+    @if (preisaenderung(); as text) {
+      <span class="chips"
+        ><span class="chip">{{ text }}</span></span
+      >
+    }
     @if (vertrag().notiz; as notiz) {
       <span class="notiz">{{ notiz }}</span>
     }
