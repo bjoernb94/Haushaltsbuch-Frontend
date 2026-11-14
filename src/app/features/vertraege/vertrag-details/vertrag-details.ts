@@ -26,6 +26,7 @@ import {
   kuendigungAnzeige,
   kuendigungText,
   PREISAENDERUNG_ART_TEXT,
+  prozentText,
   STATUS_TEXT,
   VERLAENGERUNG_TEXT,
   vertragName,
@@ -96,10 +97,19 @@ export class VertragDetails {
     if (!v) {
       return [];
     }
-    const { kostenProMonat, naechsteAbbuchung, kuendigung, naechstePreisaenderung } = v.berechnet;
+    const { kostenProMonat, naechsteAbbuchung, kuendigung, naechstePreisaenderung, eigenerAnteil } =
+      v.berechnet;
     const anzeige = kuendigungAnzeige(kuendigung);
     return [
-      { label: 'Pro Monat', wert: betragText(kostenProMonat, this.locale), zusatz: '', ton: '' },
+      {
+        label: 'Pro Monat',
+        wert: betragText(kostenProMonat, this.locale),
+        zusatz:
+          eigenerAnteil && v.anteilProzent !== null
+            ? `Dein Anteil ${betragText(eigenerAnteil.kostenProMonat, this.locale)} (${prozentText(v.anteilProzent, this.locale)} %)`
+            : '',
+        ton: '',
+      },
       {
         label: 'Nächste Abbuchung',
         wert: naechsteAbbuchung ? datumText(naechsteAbbuchung.am) : KEINE_ABBUCHUNG,
@@ -195,7 +205,7 @@ export class VertragDetails {
   }
 
   private kosten(v: VertragAntwort): Eintrag[] {
-    const { kostenProMonat, kostenImJahr, jahr, naechsteAbbuchung } = v.berechnet;
+    const { kostenProMonat, kostenImJahr, jahr, naechsteAbbuchung, eigenerAnteil } = v.berechnet;
     return [
       {
         label: 'Aktueller Betrag',
@@ -203,6 +213,11 @@ export class VertragDetails {
       },
       { label: 'Pro Monat', wert: betragText(kostenProMonat, this.locale) },
       { label: `Kosten ${jahr}`, wert: betragText(kostenImJahr, this.locale) },
+      eigenerAnteil &&
+        v.anteilProzent !== null && {
+          label: 'Dein Anteil',
+          wert: `${prozentText(v.anteilProzent, this.locale)} % = ${betragText(eigenerAnteil.kostenProMonat, this.locale)} pro Monat`,
+        },
       {
         label: 'Zahlungsweg',
         wert: v.zahlungsweg ? ZAHLUNGSWEG_TEXT[v.zahlungsweg] : NICHT_HINTERLEGT,
@@ -213,7 +228,7 @@ export class VertragDetails {
           ? `${datumText(naechsteAbbuchung.am)}, ${betragText(naechsteAbbuchung.betrag, this.locale)}`
           : KEINE_ABBUCHUNG,
       },
-    ];
+    ].filter((eintrag) => !!eintrag);
   }
 
   private laufzeit(v: VertragAntwort): Eintrag[] {

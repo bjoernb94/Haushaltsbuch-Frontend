@@ -24,10 +24,8 @@
   <div class="angaben">
     <span class="name">{{ name() }}</span>
     <span class="meta">{{ meta() }}</span>
-    @if (preisaenderung(); as text) {
-      <span class="chips"
-        ><span class="chip">{{ text }}</span></span
-      >
+    @if (chips().length) {
+      <app-vertrag-chips [chips]="chips()" />
     }
     @if (vertrag().notiz; as notiz) {
       <span class="notiz">{{ notiz }}</span>

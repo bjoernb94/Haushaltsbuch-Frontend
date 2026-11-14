@@ -1,6 +1,7 @@
 import { VertragAntwort } from '../../../core/api/api';
 import {
   anfrageAus,
+  anteilLesen,
   vorschauAus,
   betragLesen,
   feldfehlerTexte,
@@ -17,6 +18,7 @@ const LEER: VertragWerte = {
   betrag: '',
   gueltigSeit: '',
   preise: [],
+  anteilProzent: '',
   zahlweise: '',
   abbuchungAb: '',
   zahlungsweg: '',
@@ -70,7 +72,32 @@ describe('betragLesen', () => {
   });
 });
 
+describe('anteilLesen', () => {
+  it.each([
+    ['50', 50],
+    ['33,3', 33.3],
+    [' 100 ', 100],
+    ['33,33', 33.33],
+    ['0', 0],
+    ['150', 150],
+  ])('liest „%s“, die Grenzen prüft das Backend', (eingabe, wert) => {
+    expect(anteilLesen(eingabe)).toBe(wert);
+  });
+
+  it.each(['', 'abc', '33.3', '50 %', ',5', '-5'])('lehnt „%s“ ab', (eingabe) => {
+    expect(anteilLesen(eingabe)).toBeNull();
+  });
+});
+
 describe('vertragPruefen', () => {
+  it('meldet einen Anteil, der sich nicht lesen lässt; leer ist 100 %', () => {
+    expect(vertragPruefen({ ...PFLICHT, anteilProzent: 'abc' }).get('anteilProzent')).toBe(
+      'Bitte eine Zahl von 1 bis 100 mit höchstens einer Nachkommastelle.',
+    );
+    expect(vertragPruefen({ ...PFLICHT, anteilProzent: '' }).size).toBe(0);
+    expect(vertragPruefen({ ...PFLICHT, anteilProzent: '150' }).size).toBe(0);
+  });
+
   it('meldet alle leeren Pflichtfelder, Text bei Leerzeichen genügt nicht', () => {
     expect([...vertragPruefen({ ...LEER, anbieter: '  ' }).keys()]).toEqual([
       'anbieter',
@@ -180,6 +207,11 @@ describe('anfrageAus', () => {
       { gueltigAb: '2027-01-01', betrag: { wert: 24.99, waehrung: 'EUR' } },
       { gueltigAb: '2025-01-01', betrag: null },
     ]);
+  });
+
+  it('schickt den Anteil als Zahl, leer als null', () => {
+    expect(anfrageAus({ ...PFLICHT, anteilProzent: '33,3' }).anteilProzent).toBe(33.3);
+    expect(anfrageAus({ ...PFLICHT, anteilProzent: ' ' }).anteilProzent).toBeNull();
   });
 
   it('schickt die Frist als Zahl, auch 0', () => {
@@ -315,6 +347,27 @@ describe('feldfehlerTexte', () => {
       'Mindestens 0 Monate.',
     ],
     ['notiz', 'NeuerCode', {}, 'notiz', 'Bitte prüfe diese Eingabe.'],
+    [
+      'anteilProzent',
+      'DecimalMin',
+      {},
+      'anteilProzent',
+      'Bitte eine Zahl von 1 bis 100 mit höchstens einer Nachkommastelle.',
+    ],
+    [
+      'anteilProzent',
+      'DecimalMax',
+      {},
+      'anteilProzent',
+      'Bitte eine Zahl von 1 bis 100 mit höchstens einer Nachkommastelle.',
+    ],
+    [
+      'anteilProzent',
+      'Digits',
+      {},
+      'anteilProzent',
+      'Bitte eine Zahl von 1 bis 100 mit höchstens einer Nachkommastelle.',
+    ],
   ])('%s %s', (feld, code, parameter, formularfeld, erwartet) => {
     expect(text(feld, code, parameter).get(formularfeld as 'notiz')).toBe(erwartet);
   });
@@ -414,6 +467,12 @@ describe('Bearbeiten', () => {
       });
     });
 
+    it('belegt den Anteil mit Komma vor, ohne Anteil leer', () => {
+      expect(werteAus({ ...VERTRAG, anteilProzent: 50 }).anteilProzent).toBe('50');
+      expect(werteAus({ ...VERTRAG, anteilProzent: 33.3 }).anteilProzent).toBe('33,3');
+      expect(werteAus(VERTRAG).anteilProzent).toBe('');
+    });
+
     it('nimmt abbuchungAb, wenn es keine nächste Abbuchung gibt', () => {
       const beendet = {
         ...VERTRAG,
@@ -461,6 +520,17 @@ describe('Bearbeiten', () => {
       expect(
         vorschauAus({ ...PFLICHT, nichtKuendbar: true, kuendigungsfristMonate: '3' }),
       ).toMatchObject({ kuendbar: false, kuendigungsfristMonate: null });
+    });
+
+    it.each([
+      ['33,3', 33.3],
+      ['100', 100],
+      ['33,33', null],
+      ['0', null],
+      ['150', null],
+      ['abc', null],
+    ])('schickt den Anteil „%s“ nur, wenn das Backend ihn annimmt', (eingabe, erwartet) => {
+      expect(vorschauAus({ ...PFLICHT, anteilProzent: eingabe }).anteilProzent).toBe(erwartet);
     });
 
     it('lässt Preise weg, die das Backend sicher ablehnt', () => {

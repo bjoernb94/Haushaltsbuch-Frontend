@@ -14,6 +14,9 @@
         </div>
         <div class="kennzahl">
           <span>Kosten pro Monat</span><b>{{ daten.kostenProMonat | betraege }}</b>
+          @if (daten.hatAnteile) {
+            <small>{{ nurAnteil }}</small>
+          }
         </div>
       </div>
       <div class="fristen">

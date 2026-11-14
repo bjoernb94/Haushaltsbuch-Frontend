@@ -46,7 +46,9 @@ test.describe('Simulation der Verträge', () => {
 
     const uebersicht = (await api(page, 'GET', '/uebersicht')).json;
     expect(uebersicht.laufendeVertraege).toBe(6);
-    expect(uebersicht.kostenProMonat).toEqual([{ wert: 127.06, waehrung: 'EUR' }]);
+    // „Software GmbH“ zählt nur zur Hälfte.
+    expect(uebersicht.kostenProMonat).toEqual([{ wert: 124.56, waehrung: 'EUR' }]);
+    expect(uebersicht.hatAnteile).toBe(true);
     expect(uebersicht.naechsteKuendigungsfristen).toHaveLength(1);
   });
 

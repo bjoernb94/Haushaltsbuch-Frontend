@@ -150,6 +150,14 @@ export function prognoseText({ ab, betrag }: Prognosepreis, locale: string): str
   return `ab ${datumText(ab)}: ${betragText(betrag, locale)} · Prognose`;
 }
 
+/** Unter Kennzahlen, wenn das Backend {@code hatAnteile} meldet. */
+export const NUR_ANTEIL = 'Bei geteilten Verträgen nur dein Anteil';
+
+/** „33,3“: Anteil in Prozent wie vom Backend, höchstens eine Nachkommastelle. */
+export function prozentText(wert: number, locale: string): string {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(wert);
+}
+
 export const PREISAENDERUNG_ART_TEXT: Record<Preisaenderung['art'], string> = {
   ANGEKUENDIGT: 'angekündigt',
   PROGNOSE: 'Prognose',

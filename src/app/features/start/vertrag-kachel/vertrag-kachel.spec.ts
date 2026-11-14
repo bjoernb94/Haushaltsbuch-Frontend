@@ -77,6 +77,13 @@ describe('VertragKachel', () => {
     expect(element.querySelector('a')?.getAttribute('href')).toBe('/vertraege');
   });
 
+  it('nennt bei geteilten Verträgen „nur dein Anteil“', async () => {
+    uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatAnteile: true }));
+    expect(text((await kachel()).element.querySelectorAll('.kennzahl')[1])).toBe(
+      'Kosten pro Monat202,08 €Bei geteilten Verträgen nur dein Anteil',
+    );
+  });
+
   it('zeigt jede Währung und bei leerer Liste 0,00 €', async () => {
     uebersicht.mockReturnValue(
       of({

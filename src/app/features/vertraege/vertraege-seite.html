@@ -41,11 +41,17 @@
     </div>
     <div class="kennzahl">
       <span>Kosten pro Monat</span><b>{{ stand.uebersicht.kostenProMonat | betraege }}</b>
+      @if (stand.uebersicht.hatAnteile) {
+        <small>{{ nurAnteil }}</small>
+      }
     </div>
     <div class="kennzahl">
       <span>Kosten {{ stand.uebersicht.jahr }}</span
       ><b>{{ stand.uebersicht.kostenImJahr | betraege }}</b>
       <small>Alle Abbuchungen im Kalenderjahr</small>
+      @if (stand.uebersicht.hatAnteile) {
+        <small>{{ nurAnteil }}</small>
+      }
     </div>
   </div>
 } @else {

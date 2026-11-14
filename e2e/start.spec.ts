@@ -62,7 +62,8 @@ test.describe('Vertragskachel', () => {
     await page.goto('/start');
 
     await expect(kachel(page)).toContainText('Laufende Verträge6');
-    await expect(kachel(page)).toContainText('127,06');
+    await expect(kachel(page)).toContainText('124,56');
+    await expect(kachel(page)).toContainText('Bei geteilten Verträgen nur dein Anteil');
     await expect(kachel(page)).toContainText(/Kfz-Versicherung\s*586,80\s€\/Jahr/);
     await expect(kachel(page)).toContainText('bis 30.11.2026');
   });

@@ -70,6 +70,18 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(zeile(page, FITNESS).getByText('Preis ↑ ab 01.06.2027')).toBeVisible();
   });
 
+  test('Anteil: vorbelegt, geändert gespeichert, Chip folgt', async ({ page }) => {
+    const formular = await bearbeiten(page, 'Software GmbH');
+    await tab(page, 'Kosten');
+    await expect(formular.getByLabel('Mein Anteil in %')).toHaveValue('50');
+    await expect(formular.getByRole('status').filter({ hasText: 'Dein Anteil' })).toHaveText(
+      /50 % von 5,00\s€ = 2,50\s€ monatlich/,
+    );
+    await formular.getByLabel('Mein Anteil in %').fill('');
+    expect((await speichernUndAnfrageLesen(page)).anteilProzent).toBeNull();
+    await expect(zeile(page, 'Software GmbH').getByText('Anteil 50 %')).toHaveCount(0);
+  });
+
   test('Fehler einer Preiszeile stehen an der Zeile, der Tab zählt sie', async ({ page }) => {
     const formular = await bearbeiten(page, FITNESS);
     await tab(page, 'Preise');
