@@ -635,7 +635,27 @@ test.describe('Neuer Vertrag', () => {
       await expect(zusammenfassung).toContainText('Musterversicherung AG');
       await expect(zusammenfassung).toContainText('Versicherung');
       await expect(zusammenfassung).toContainText('Betrag19,99 € monatlich');
+      await expect(zusammenfassung).toContainText('Pro Monat19,99 €');
+      await expect(zusammenfassung).toContainText('Nächste Abbuchung01.01.2027, 19,99 €');
       await expect(zusammenfassung).toContainText('KündigungKein Termin bekannt');
+      await expect(zusammenfassung).toContainText('Nächste PreisänderungKeine bekannt');
+      await expect(zusammenfassung).toContainText('EinmalkostenKeine');
+
+      await page.getByLabel('Mein Anteil in %').fill('50');
+      await expect(zusammenfassung).toContainText('Pro Monat19,99 €, dein Anteil 10,00 €');
+      await page.getByRole('button', { name: 'Einmalkosten hinzufügen' }).click();
+      await expect(zusammenfassung).toContainText('EinmalkostenNoch offen');
+      await page.getByLabel('Wofür *').fill('Anschluss');
+      await page.getByLabel('Betrag in € *').nth(1).fill('49,90');
+      await page.getByLabel('Fällig am *').fill('2027-01-15');
+      await expect(zusammenfassung).toContainText('Einmalkosten49,90 €');
+      await tab(page, 'Preise');
+      await page.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
+      await page.getByLabel('Erhöhung in % *').fill('10');
+      await page.getByLabel('Nächste Erhöhung am *').fill('2027-06-01');
+      await expect(zusammenfassung).toContainText(
+        'Nächste Preisänderungab 01.06.2027: 21,99 € (Prognose)',
+      );
 
       const formular = (await page.locator('form').boundingBox())!;
       expect((await zusammenfassung.boundingBox())!.x).toBeGreaterThan(formular.x + formular.width);
