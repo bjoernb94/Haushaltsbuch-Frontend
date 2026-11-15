@@ -22,6 +22,8 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { catchError, distinctUntilChanged, map, of, startWith, switchMap, timer } from 'rxjs';
 import {
+  Erhoehungsrhythmus,
+  Steigerungsart,
   Verlaengerung,
   VertragAntwort,
   VertragKategorieAntwort,
@@ -31,13 +33,18 @@ import {
 } from '../../../core/api/api';
 import { problemFelder } from '../../../core/fehler/problem';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
-import { betragText, waehrungZeichen } from '../../../shared/format/betrag.pipe';
+import { betragText, waehrungName, waehrungZeichen } from '../../../shared/format/betrag.pipe';
+import { datumText } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import {
   EinmalkostenZeile,
   VertragEinmalkostenZeilen,
 } from '../vertrag-einmalkosten-zeilen/vertrag-einmalkosten-zeilen';
 import { PreisZeile, VertragPreisliste } from '../vertrag-preisliste/vertrag-preisliste';
+import {
+  PrognoseAnzeige,
+  VertragPreissteigerung,
+} from '../vertrag-preissteigerung/vertrag-preissteigerung';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
 import {
   Uebersicht,
@@ -77,6 +84,7 @@ const FEHLER_SPEICHERN =
 const BLENDET_AUS: Partial<Record<EinzelFeld, VertragFeld[]>> = {
   nichtKuendbar: ['verlaengerung', 'kuendigungsfristMonate'],
   gekuendigt: ['gekuendigtZum'],
+  steigt: ['steigerungsart', 'steigerungswert', 'rhythmus', 'naechsteErhoehungAm'],
 };
 
 const VORSCHAU_VERZOEGERUNG_MS = 400;
@@ -110,6 +118,13 @@ const TAB_VON: Record<EinzelFeld, TabKey> = {
   kuendigungsfristMonate: 'laufzeit',
   gekuendigt: 'laufzeit',
   gekuendigtZum: 'laufzeit',
+  preisgarantieBis: 'preise',
+  steigt: 'preise',
+  steigerungsart: 'preise',
+  steigerungswert: 'preise',
+  rhythmus: 'preise',
+  naechsteErhoehungAm: 'preise',
+  erinnerungSonderkuendigung: 'preise',
 };
 
 function tabVon(feld: VertragFeld): TabKey {
@@ -140,6 +155,11 @@ function ohneZeile(fehler: ReadonlyMap<VertragFeld, string>, liste: Liste, index
 }
 
 const NOCH_OFFEN = 'Noch offen';
+
+const PROGNOSE_UNVOLLSTAENDIG =
+  'Gib Wert und Datum der nächsten Erhöhung ein, dann zeigen wir hier die nächsten drei Preise.';
+
+const PROGNOSE_KEINE = 'Bis zum Vertragsende ist keine Erhöhung zu erwarten.';
 
 const HINWEIS_ZAHLWEISE = 'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.';
 
@@ -181,6 +201,7 @@ let letztesFormular = 0;
     Tabliste,
     VertragEinmalkostenZeilen,
     VertragPreisliste,
+    VertragPreissteigerung,
     VertragZusammenfassung,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -234,6 +255,9 @@ export class VertragFormular implements OnInit {
   protected readonly waehrung = computed(() =>
     waehrungZeichen(this.vertrag()?.betrag.waehrung ?? 'EUR', this.locale),
   );
+  protected readonly waehrungName = computed(() =>
+    waehrungName(this.vertrag()?.betrag.waehrung ?? 'EUR', this.locale),
+  );
   protected readonly name = computed(() => {
     const vertrag = this.vertrag();
     return vertrag && vertragName(vertrag);
@@ -260,12 +284,19 @@ export class VertragFormular implements OnInit {
     gekuendigtZum: [''],
     notiz: [''],
     einmalkosten: this.fb.array<EinmalkostenZeile>([]),
+    preisgarantieBis: [''],
+    steigt: [false],
+    steigerungsart: this.fb.control<Steigerungsart>('PROZENT'),
+    steigerungswert: [''],
+    rhythmus: this.fb.control<Erhoehungsrhythmus>('JAEHRLICH'),
+    naechsteErhoehungAm: [''],
+    erinnerungSonderkuendigung: [true],
   });
 
   private ausgangswerte = JSON.stringify(this.formular.getRawValue());
 
   /** Für die Zusammenfassung; folgt den Eingaben und der Vorbelegung. */
-  private readonly werte = signal(this.formular.getRawValue());
+  protected readonly werte = signal(this.formular.getRawValue());
 
   protected readonly tab = signal<TabKey>('allgemein');
 
@@ -317,6 +348,34 @@ export class VertragFormular implements OnInit {
         }))
       : [],
   );
+
+  /**
+   * Die nächsten drei Preise der Vorschau. Ohne Prognose ein Hinweis: Fehlen Wert oder Datum, dazu; sonst
+   * verhindern Garantie oder Vertragsende jede Erhöhung. „–“, solange die Vorschau nichts liefert.
+   */
+  protected readonly prognose = computed<PrognoseAnzeige>(() => {
+    const w = this.werte();
+    if (!w.steigerungswert.trim() || !w.naechsteErhoehungAm) {
+      return { zeilen: [], hinweis: PROGNOSE_UNVOLLSTAENDIG };
+    }
+    const vorschau = this.vorschau();
+    if (!vorschau) {
+      return { zeilen: [], hinweis: '–' };
+    }
+    const zeilen = vorschau.prognose.map(
+      ({ ab, betrag }) => `ab ${datumText(ab)} voraussichtlich ${betragText(betrag, this.locale)}`,
+    );
+    return { zeilen, hinweis: zeilen.length ? null : PROGNOSE_KEINE };
+  });
+
+  /** Wie im Design: bei kündbaren Verträgen mit Regel oder angekündigtem Preis (laut Vorschau). */
+  protected readonly erinnerung = computed(() => {
+    const w = this.werte();
+    return (
+      !w.nichtKuendbar &&
+      (w.steigt || !!this.vorschau()?.preise.some(({ art }) => art === 'ANGEKUENDIGT'))
+    );
+  });
 
   /** Summe der vollständigen Zeilen aus der Vorschau; ohne Zeilen keine. */
   protected readonly einmalkostenSumme = computed(() => {

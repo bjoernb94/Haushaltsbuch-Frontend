@@ -1,13 +1,20 @@
 import {
   Betrag,
+  Erhoehungsrhythmus,
   Feldfehler,
+  Steigerungsart,
   Verlaengerung,
   VertragAntwort,
   VertragVorschauAnfrage,
   Zahlungsweg,
   Zahlweise,
 } from '../../../core/api/api';
-import { EinmalkostenEingabe, PreisEingabe, VertragEingabe } from '../vertrag.service';
+import {
+  EinmalkostenEingabe,
+  PreisEingabe,
+  PreissteigerungEingabe,
+  VertragEingabe,
+} from '../vertrag.service';
 
 /** Eine Zeile der Liste „Frühere und angekündigte Preise“. */
 export interface PreisWerte {
@@ -49,6 +56,15 @@ export interface VertragWerte {
   notiz: string;
   /** In der Reihenfolge der Antwort bzw. der Eingabe. */
   einmalkosten: EinmalkostenWerte[];
+  preisgarantieBis: string;
+  /** Schalter „Preis steigt regelmäßig“; aus, gehen die Felder darunter nicht mit. */
+  steigt: boolean;
+  steigerungsart: Steigerungsart;
+  /** Prozent oder Betrag, je nach {@link steigerungsart}. */
+  steigerungswert: string;
+  rhythmus: Erhoehungsrhythmus;
+  naechsteErhoehungAm: string;
+  erinnerungSonderkuendigung: boolean;
 }
 
 /** {@code einmalkosten} steht für Fehler an der ganzen Liste, z. B. zu viele Einträge. */
@@ -87,7 +103,7 @@ export function betragLesen(eingabe: string): number | null {
 }
 
 // Mit Komma wie im Design; was sich nicht lesen lässt, darf nicht still zu 100 % werden.
-const ANTEIL_MUSTER = /^\d+(,\d+)?$/;
+const PROZENT_MUSTER = /^\d+(,\d+)?$/;
 
 // Wie das Backend (1 bis 100, höchstens eine Nachkommastelle); nur damit die Vorschau nicht scheitert.
 const ANTEIL_VORSCHAU = /^\d{1,3}(,\d)?$/;
@@ -100,11 +116,19 @@ function anteilFuerVorschau(eingabe: string, anteil: number | null): number | nu
 
 const ANTEIL_TEXT = 'Bitte eine Zahl von 1 bis 100 mit höchstens einer Nachkommastelle.';
 
-/** Liest den Anteil mit Komma, {@code null} wenn das nicht geht. Grenzen prüft das Backend. */
-export function anteilLesen(eingabe: string): number | null {
+/**
+ * Liest Prozent mit Komma (Anteil, Erhöhung), {@code null} wenn das nicht geht. Grenzen prüft das
+ * Backend.
+ */
+export function prozentLesen(eingabe: string): number | null {
   const text = eingabe.trim();
-  return ANTEIL_MUSTER.test(text) ? Number(text.replace(',', '.')) : null;
+  return PROZENT_MUSTER.test(text) ? Number(text.replace(',', '.')) : null;
 }
+
+// Wie das Backend (größer 0, höchstens 100, zwei Nachkommastellen); nur damit die Vorschau nicht scheitert.
+const ERHOEHUNG_VORSCHAU = /^\d{1,3}(,\d{1,2})?$/;
+
+const ERHOEHUNG_TEXT = 'Bitte eine Zahl größer 0 bis 100 mit höchstens zwei Nachkommastellen.';
 
 const PFLICHT_TEXT = {
   anbieter: 'Bitte gib den Anbieter ein.',
@@ -120,6 +144,11 @@ const EINMALKOSTEN_PFLICHT_TEXT: Readonly<Record<keyof EinmalkostenWerte, string
   betrag: PFLICHT_TEXT.betrag,
   faelligAm: 'Bitte gib an, wann die Kosten fällig sind.',
 };
+
+const STEIGERUNG_PFLICHT_TEXT = {
+  steigerungswert: 'Bitte gib an, um wie viel der Preis steigt.',
+  naechsteErhoehungAm: 'Bitte gib an, wann der Preis das nächste Mal steigt.',
+} as const;
 
 const GUELTIG_AB_TEXT = 'Bitte gib an, ab wann dieser Preis gilt.';
 
@@ -139,7 +168,7 @@ export function vertragPruefen(w: VertragWerte): ReadonlyMap<VertragFeld, string
   if (w.preise.length && !w.gueltigSeit && !w.beginn) {
     fehler.set('gueltigSeit', GUELTIG_SEIT_TEXT);
   }
-  if (w.anteilProzent.trim() && anteilLesen(w.anteilProzent) === null) {
+  if (w.anteilProzent.trim() && prozentLesen(w.anteilProzent) === null) {
     fehler.set('anteilProzent', ANTEIL_TEXT);
   }
   let ohneDatum = !w.gueltigSeit;
@@ -154,6 +183,15 @@ export function vertragPruefen(w: VertragWerte): ReadonlyMap<VertragFeld, string
       fehler.set(preisFeld(i, 'betrag'), PFLICHT_TEXT.betrag);
     }
   });
+  if (w.steigt) {
+    for (const feld of Object.keys(
+      STEIGERUNG_PFLICHT_TEXT,
+    ) as (keyof typeof STEIGERUNG_PFLICHT_TEXT)[]) {
+      if (!w[feld].trim()) {
+        fehler.set(feld, STEIGERUNG_PFLICHT_TEXT[feld]);
+      }
+    }
+  }
   w.einmalkosten.forEach((zeile, i) => {
     for (const feld of Object.keys(EINMALKOSTEN_PFLICHT_TEXT) as (keyof EinmalkostenWerte)[]) {
       if (!zeile[feld].trim()) {
@@ -206,6 +244,41 @@ export function werteAus(v: VertragAntwort): VertragWerte {
       betrag: betragEingabe(zeile.betrag),
       faelligAm: zeile.faelligAm,
     })),
+    preisgarantieBis: v.preisgarantieBis ?? '',
+    ...steigerungWerte(v.preissteigerung),
+    erinnerungSonderkuendigung: v.erinnerungSonderkuendigung,
+  };
+}
+
+type SteigerungWerte = Pick<
+  VertragWerte,
+  'steigt' | 'steigerungsart' | 'steigerungswert' | 'rhythmus' | 'naechsteErhoehungAm'
+>;
+
+/** Ohne Regel wie im Design: Prozent, jährlich. */
+export const OHNE_STEIGERUNG: SteigerungWerte = {
+  steigt: false,
+  steigerungsart: 'PROZENT',
+  steigerungswert: '',
+  rhythmus: 'JAEHRLICH',
+  naechsteErhoehungAm: '',
+};
+
+function steigerungWerte(regel: VertragAntwort['preissteigerung']): SteigerungWerte {
+  if (!regel) {
+    return OHNE_STEIGERUNG;
+  }
+  return {
+    steigt: true,
+    steigerungsart: regel.art,
+    steigerungswert:
+      regel.art === 'PROZENT'
+        ? (regel.prozent?.toString().replace('.', ',') ?? '')
+        : regel.betrag
+          ? betragEingabe(regel.betrag)
+          : '',
+    rhythmus: regel.rhythmus,
+    naechsteErhoehungAm: regel.naechsteAm,
   };
 }
 
@@ -236,12 +309,25 @@ function einmalkostenEingabe(zeile: EinmalkostenWerte, waehrung: string): Einmal
   };
 }
 
+/** Zur Art nur der passende Wert, der andere {@code null} (sonst {@code PassenderWert}). */
+function steigerungEingabe(w: VertragWerte, waehrung: string): PreissteigerungEingabe | null {
+  if (!w.steigt) {
+    return null;
+  }
+  const betrag = w.steigerungsart === 'BETRAG' ? betragLesen(w.steigerungswert) : null;
+  return {
+    art: w.steigerungsart,
+    prozent: w.steigerungsart === 'PROZENT' ? prozentLesen(w.steigerungswert) : null,
+    betrag: betrag === null ? null : { wert: betrag, waehrung },
+    rhythmus: w.rhythmus,
+    naechsteAm: w.naechsteErhoehungAm || null,
+  };
+}
+
 /**
  * Anfrage aus den Formularwerten. Leere Felder gehen als {@code null}, denn {@code ""} wäre bei Enums
  * und Datum {@code ANFRAGE_UNGUELTIG} ohne Bezug zum Feld, ebenso {@code { wert: null }} beim Betrag.
- * Der Betrag ist der erste Preis, die Liste folgt ({@code preise[i]} der Feldfehler). Felder, die das
- * Formular noch nicht zeigt (Preissteigerung), bleiben wie gespeichert, denn
- * {@code PUT} ersetzt alle Felder.
+ * Der Betrag ist der erste Preis, die Liste folgt ({@code preise[i]} der Feldfehler).
  */
 export function anfrageAus(
   w: VertragWerte,
@@ -268,19 +354,38 @@ export function anfrageAus(
       w.nichtKuendbar || !w.kuendigungsfristMonate ? null : Number(w.kuendigungsfristMonate),
     gekuendigtZum: w.gekuendigt ? w.gekuendigtZum || null : null,
     notiz: textOderNull(w.notiz),
-    anteilProzent: anteilLesen(w.anteilProzent),
+    anteilProzent: prozentLesen(w.anteilProzent),
     einmalkosten: w.einmalkosten.map((zeile) => einmalkostenEingabe(zeile, waehrung)),
-    preissteigerung: gespeichert?.preissteigerung ?? null,
-    preisgarantieBis: gespeichert?.preisgarantieBis ?? null,
-    erinnerungSonderkuendigung: gespeichert?.erinnerungSonderkuendigung ?? true,
+    preissteigerung: steigerungEingabe(w, waehrung),
+    preisgarantieBis: w.preisgarantieBis || null,
+    erinnerungSonderkuendigung: w.erinnerungSonderkuendigung,
   };
 }
 
+/** Ein Wert, den das Backend sicher ablehnt, fehlt; die Vorschau übergeht die Regel dann. */
+function steigerungFuerVorschau(
+  w: VertragWerte,
+  regel: PreissteigerungEingabe | null,
+): PreissteigerungEingabe | null {
+  if (!regel) {
+    return null;
+  }
+  const prozent =
+    regel.prozent != null &&
+    ERHOEHUNG_VORSCHAU.test(w.steigerungswert.trim()) &&
+    regel.prozent > 0 &&
+    regel.prozent <= 100
+      ? regel.prozent
+      : null;
+  const betrag = regel.betrag && regel.betrag.wert > 0 ? regel.betrag : null;
+  return { ...regel, prozent, betrag };
+}
+
 /**
- * Das ganze Formular für die Vorschau. Preise, Einmalkosten und ein Anteil, die das Backend sicher
- * ablehnt (ohne Betrag, Betrag nicht größer 0, ein zweiter Preis ohne Datum; Anteil nicht wie „33,3“),
- * fehlen, damit die übrigen Werte beim Tippen bleiben. Unvollständige Einmalkosten ignoriert die
- * Vorschau selbst.
+ * Das ganze Formular für die Vorschau. Preise, Einmalkosten, ein Anteil und eine Erhöhung, die das
+ * Backend sicher ablehnt (ohne Betrag, Betrag nicht größer 0, ein zweiter Preis ohne Datum; Anteil
+ * nicht wie „33,3“, Prozent nicht wie „2,75“ oder über 100), fehlen, damit die übrigen Werte beim
+ * Tippen bleiben. Unvollständige Einmalkosten und Regeln ignoriert die Vorschau selbst.
  */
 export function vorschauAus(
   w: VertragWerte,
@@ -300,7 +405,7 @@ export function vorschauAus(
     preise,
     anteilProzent: anteilFuerVorschau(w.anteilProzent, a.anteilProzent),
     einmalkosten: a.einmalkosten.filter(({ betrag }) => !betrag || betrag.wert > 0),
-    preissteigerung: a.preissteigerung,
+    preissteigerung: steigerungFuerVorschau(w, a.preissteigerung),
     preisgarantieBis: a.preisgarantieBis,
     zahlweise: a.zahlweise,
     abbuchungAb: a.abbuchungAb,
@@ -330,6 +435,14 @@ const FELD_ZUM_API_FELD: Readonly<Record<string, VertragFeld>> = {
   notiz: 'notiz',
   anteilProzent: 'anteilProzent',
   einmalkosten: 'einmalkosten',
+  preisgarantieBis: 'preisgarantieBis',
+  'preissteigerung.art': 'steigerungsart',
+  'preissteigerung.prozent': 'steigerungswert',
+  'preissteigerung.betrag': 'steigerungswert',
+  'preissteigerung.betrag.wert': 'steigerungswert',
+  'preissteigerung.betrag.waehrung': 'steigerungswert',
+  'preissteigerung.rhythmus': 'rhythmus',
+  'preissteigerung.naechsteAm': 'naechsteErhoehungAm',
 };
 
 const PREIS_MUSTER = /^preise\[(\d+)\]\.(gueltigAb|betrag)\b/;
@@ -371,12 +484,21 @@ function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: F
   if (feld === 'anteilProzent' && ['DecimalMin', 'DecimalMax', 'Digits'].includes(code)) {
     return ANTEIL_TEXT;
   }
+  if (
+    apiFeld === 'preissteigerung.prozent' &&
+    ['DecimalMin', 'DecimalMax', 'Digits'].includes(code)
+  ) {
+    return ERHOEHUNG_TEXT;
+  }
   switch (code) {
     case 'NotBlank':
     case 'NotNull':
     case 'NotEmpty':
       if (einmal) {
         return EINMALKOSTEN_PFLICHT_TEXT[einmal];
+      }
+      if (feld in STEIGERUNG_PFLICHT_TEXT) {
+        return STEIGERUNG_PFLICHT_TEXT[feld as keyof typeof STEIGERUNG_PFLICHT_TEXT];
       }
       if (istBetrag(feld)) {
         return PFLICHT_TEXT.betrag;
@@ -398,9 +520,14 @@ function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: F
     case 'PreisNichtVorBeginn':
       return 'Ein Preis kann nicht vor dem Vertragsbeginn gelten.';
     case 'GleicheWaehrung':
+      if (feld === 'steigerungswert') {
+        return 'Die Erhöhung braucht dieselbe Währung wie die Preise.';
+      }
       return einmal
         ? 'Einmalkosten brauchen dieselbe Währung wie die Preise.'
         : 'Alle Preise brauchen dieselbe Währung.';
+    case 'PassenderWert':
+      return STEIGERUNG_PFLICHT_TEXT.steigerungswert;
     case 'PositiverBetrag':
       return 'Der Betrag muss größer als 0 sein.';
     case 'Digits':

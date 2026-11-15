@@ -1,10 +1,12 @@
 import {
+  Erhoehungsrhythmus,
   Kuendigung,
   Kuendigungsart,
   Preisaenderung,
   Preiszeilenart,
   Prognosepreis,
   Verlaengerung,
+  VertragPreissteigerungAntwort,
   VertragPreisAntwort,
   VertragKategorieAntwort,
   VertragKategorieSchluessel,
@@ -30,6 +32,14 @@ export const ZAHLWEISE_EINHEIT: Record<Zahlweise, string> = {
   VIERTELJAEHRLICH: 'Quartal',
   HALBJAEHRLICH: 'Halbjahr',
   JAEHRLICH: 'Jahr',
+};
+
+export const RHYTHMUS_TEXT: Record<Erhoehungsrhythmus, string> = {
+  VIERTELJAEHRLICH: 'vierteljährlich',
+  HALBJAEHRLICH: 'halbjährlich',
+  JAEHRLICH: 'jährlich',
+  ZWEIJAEHRLICH: 'alle 2 Jahre',
+  DREIJAEHRLICH: 'alle 3 Jahre',
 };
 
 export const ZAHLUNGSWEG_TEXT: Record<Zahlungsweg, string> = {
@@ -153,9 +163,23 @@ export function prognoseText({ ab, betrag }: Prognosepreis, locale: string): str
 /** Unter Kennzahlen, wenn das Backend {@code hatAnteile} meldet. */
 export const NUR_ANTEIL = 'Bei geteilten Verträgen nur dein Anteil';
 
-/** „33,3“: Anteil in Prozent wie vom Backend, höchstens eine Nachkommastelle. */
-export function prozentText(wert: number, locale: string): string {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(wert);
+/**
+ * „33,3“: Prozent wie vom Backend, beim Anteil höchstens eine Nachkommastelle, bei der Erhöhung
+ * zwei („2,75“).
+ */
+export function prozentText(wert: number, locale: string, stellen = 1): string {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: stellen }).format(wert);
+}
+
+/** „Jährlich um 2,5 %“, ohne Datum: {@code naechsteAm} ist nur der Anker im Rhythmus. */
+export function steigerungText(
+  { art, prozent, betrag, rhythmus }: VertragPreissteigerungAntwort,
+  locale: string,
+): string {
+  const um =
+    art === 'PROZENT' ? `${prozentText(prozent ?? 0, locale, 2)} %` : betragText(betrag!, locale);
+  const text = `${RHYTHMUS_TEXT[rhythmus]} um ${um}`;
+  return text[0].toUpperCase() + text.slice(1);
 }
 
 export const PREISAENDERUNG_ART_TEXT: Record<Preisaenderung['art'], string> = {

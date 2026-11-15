@@ -17,6 +17,11 @@ export function waehrungZeichen(waehrung: string, locale: string): string {
   );
 }
 
+/** Name der Währung, z. B. „Euro“ für eine Auswahl. */
+export function waehrungName(waehrung: string, locale: string): string {
+  return new Intl.DisplayNames(locale, { type: 'currency' }).of(waehrung) ?? waehrung;
+}
+
 /** Betrag mit seiner Währung, z. B. „586,80 €“. */
 @Pipe({ name: 'betrag' })
 export class BetragPipe implements PipeTransform {

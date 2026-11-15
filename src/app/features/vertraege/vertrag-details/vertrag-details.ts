@@ -29,6 +29,7 @@ import {
   PREISAENDERUNG_ART_TEXT,
   prozentText,
   STATUS_TEXT,
+  steigerungText,
   VERLAENGERUNG_TEXT,
   vertragName,
   ZAHLUNGSWEG_TEXT,
@@ -142,7 +143,7 @@ export class VertragDetails {
       case 'laufzeit':
         return this.laufzeit(v);
       case 'preise':
-        return [];
+        return this.preise(v);
     }
   });
 
@@ -206,14 +207,26 @@ export class VertragDetails {
   }
 
   private kosten(v: VertragAntwort): Eintrag[] {
-    const { kostenProMonat, kostenImJahr, jahr, naechsteAbbuchung, eigenerAnteil } = v.berechnet;
+    const {
+      kostenProMonat,
+      kostenImJahr,
+      kostenImJahrMitPrognose,
+      jahr,
+      naechsteAbbuchung,
+      eigenerAnteil,
+    } = v.berechnet;
     return [
       {
         label: 'Aktueller Betrag',
         wert: `${betragText(v.betrag, this.locale)} ${ZAHLWEISE_TEXT[v.zahlweise]}`,
       },
       { label: 'Pro Monat', wert: betragText(kostenProMonat, this.locale) },
-      { label: `Kosten ${jahr}`, wert: betragText(kostenImJahr, this.locale) },
+      {
+        label: `Kosten ${jahr}`,
+        wert:
+          betragText(kostenImJahr, this.locale) +
+          (kostenImJahrMitPrognose ? ' inkl. Prognose' : ''),
+      },
       eigenerAnteil &&
         v.anteilProzent !== null && {
           label: 'Dein Anteil',
@@ -228,6 +241,26 @@ export class VertragDetails {
         wert: naechsteAbbuchung
           ? `${datumText(naechsteAbbuchung.am)}, ${betragText(naechsteAbbuchung.betrag, this.locale)}`
           : KEINE_ABBUCHUNG,
+      },
+    ].filter((eintrag) => !!eintrag);
+  }
+
+  /**
+   * Unter dem Preisverlauf. Die Erinnerung wie im Design nur bei kündbaren Verträgen mit Regel oder
+   * angekündigtem Preis.
+   */
+  private preise(v: VertragAntwort): Eintrag[] {
+    const erinnerung =
+      v.kuendbar && (!!v.preissteigerung || v.preise.some(({ art }) => art === 'ANGEKUENDIGT'));
+    return [
+      { label: 'Preisgarantie bis', wert: datumText(v.preisgarantieBis) || 'Keine' },
+      {
+        label: 'Regelmäßige Erhöhung',
+        wert: v.preissteigerung ? steigerungText(v.preissteigerung, this.locale) : 'Nein',
+      },
+      erinnerung && {
+        label: 'Erinnerung Sonderkündigungsrecht',
+        wert: v.erinnerungSonderkuendigung ? 'An' : 'Aus',
       },
     ].filter((eintrag) => !!eintrag);
   }

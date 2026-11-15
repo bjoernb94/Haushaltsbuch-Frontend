@@ -3,6 +3,8 @@ import {
   Betrag,
   Feldfehler,
   Kuendigung,
+  Preispunkt,
+  Prognosepreis,
   VertragAenderung,
   VertragAnfrage,
   VertragAntwort,
@@ -198,6 +200,13 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     betrag: betrag(5),
     preise: einPreis(5),
     anteilProzent: 50,
+    preissteigerung: {
+      art: 'BETRAG',
+      prozent: null,
+      betrag: betrag(1),
+      rhythmus: 'JAEHRLICH',
+      naechsteAm: '2025-01-01',
+    },
     einmalkosten: [
       { bezeichnung: 'Lizenzschlüssel', betrag: betrag(20), faelligAm: '2025-12-15' },
       { bezeichnung: 'Einrichtung', betrag: betrag(30), faelligAm: '2026-02-01' },
@@ -208,6 +217,18 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       ...BERECHNET_LEER,
       eigenerAnteil: { betrag: betrag(2.5), kostenProMonat: betrag(2.5), kostenImJahr: betrag(30) },
       einmalkosten: betrag(50),
+      naechstePreisaenderung: { ab: '2027-01-01', betrag: betrag(6), art: 'PROGNOSE' },
+      prognose: [
+        { ab: '2027-01-01', betrag: betrag(6) },
+        { ab: '2028-01-01', betrag: betrag(7) },
+        { ab: '2029-01-01', betrag: betrag(8) },
+      ],
+      preisverlauf: [
+        { ab: '2025-11-15', betrag: betrag(5), art: 'GEZAHLT' },
+        { ab: '2027-01-01', betrag: betrag(6), art: 'PROGNOSE' },
+        { ab: '2028-01-01', betrag: betrag(7), art: 'PROGNOSE' },
+        { ab: '2029-01-01', betrag: betrag(8), art: 'PROGNOSE' },
+      ],
       status: 'AKTIV',
       kostenProMonat: betrag(5),
       kostenImJahr: betrag(60),
@@ -292,7 +313,7 @@ function uebersicht(vertraege: VertragAntwort[]): VertragsuebersichtAntwort {
     kostenImJahr: summeJeWaehrung(
       vertraege.map((v) => (v.berechnet.eigenerAnteil ?? v.berechnet).kostenImJahr),
     ),
-    kostenImJahrMitPrognose: false,
+    kostenImJahrMitPrognose: vertraege.some((v) => v.berechnet.kostenImJahrMitPrognose),
     einmalkostenImJahr: einmalkostenImJahr(vertraege),
     hatAnteile: vertraege.some((v) => v.anteilProzent !== null && v.anteilProzent < 100),
     jahr: JAHR,
@@ -383,10 +404,82 @@ function einmalkostenSumme(zeilen: VertragAntwort['einmalkosten']): Betrag | nul
   return summeJeWaehrung(zeilen.map(({ betrag }) => betrag))[0] ?? null;
 }
 
+const RHYTHMUS_MONATE = {
+  VIERTELJAEHRLICH: 3,
+  HALBJAEHRLICH: 6,
+  JAEHRLICH: 12,
+  ZWEIJAEHRLICH: 24,
+  DREIJAEHRLICH: 36,
+};
+
+function plusMonate(iso: string, monate: number): string {
+  const [jahr, monat, tag] = iso.split('-').map(Number);
+  return new Date(Date.UTC(jahr, monat - 1 + monate, tag)).toISOString().slice(0, 10);
+}
+
+/**
+ * Grob wie das Backend: ab dem letzten Preis im Rhythmus, nicht vor heute (Browser), nicht in der
+ * Garantie und nicht nach `gekuendigtZum`; jeder Schritt auf Cent gerundet. Unvollständig: keine.
+ */
+function prognoseFuer(
+  anfrage: VertragVorschauAnfrage,
+  preise: VertragPreisAntwort[],
+): Prognosepreis[] {
+  const regel = anfrage.preissteigerung;
+  const letzter = preise.at(-1);
+  if (!regel?.art || !regel.rhythmus || !regel.naechsteAm || !letzter) {
+    return [];
+  }
+  const wert = regel.art === 'PROZENT' ? regel.prozent : regel.betrag?.wert;
+  if (!wert) {
+    return [];
+  }
+  const heute = new Date().toISOString().slice(0, 10);
+  const prognose: Prognosepreis[] = [];
+  let preis = letzter.betrag.wert;
+  for (let i = 0; prognose.length < 3 && i < 200; i++) {
+    const ab = plusMonate(regel.naechsteAm, i * RHYTHMUS_MONATE[regel.rhythmus]);
+    if (anfrage.gekuendigtZum && ab > anfrage.gekuendigtZum) {
+      break;
+    }
+    if (
+      (letzter.gueltigAb && ab <= letzter.gueltigAb) ||
+      (anfrage.preisgarantieBis && ab <= anfrage.preisgarantieBis) ||
+      ab < heute
+    ) {
+      continue;
+    }
+    preis =
+      Math.round((regel.art === 'PROZENT' ? preis * (1 + wert / 100) : preis + wert) * 100) / 100;
+    prognose.push({ ab, betrag: { ...letzter.betrag, wert: preis } });
+  }
+  return prognose;
+}
+
+/** Erster Preis ohne Datum: Beginn, sonst 12 Monate vor dem zweiten bzw. vor heute. */
+function preisverlaufFuer(
+  preise: VertragPreisAntwort[],
+  prognose: Prognosepreis[],
+  beginn: string | null | undefined,
+): Preispunkt[] {
+  const heute = new Date().toISOString().slice(0, 10);
+  return [
+    ...preise
+      .filter(({ art }) => art !== 'NACH_ENDE')
+      .map(({ gueltigAb, betrag, art }, i, alle) => ({
+        ab: gueltigAb ?? beginn ?? plusMonate(alle[i + 1]?.gueltigAb ?? heute, -12),
+        betrag,
+        art: art === 'ANGEKUENDIGT' ? ('ANGEKUENDIGT' as const) : ('GEZAHLT' as const),
+      })),
+    ...prognose.map((p) => ({ ...p, art: 'PROGNOSE' as const })),
+  ];
+}
+
 function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwort {
   const preise = preiseMitArt(anfrage.preise ?? []);
   const aktuell = preise.find((p) => p.art === 'AKTUELL')?.betrag ?? null;
   const angekuendigt = preise.find((p) => p.art === 'ANGEKUENDIGT');
+  const prognose = prognoseFuer(anfrage, preise);
   const prozent = anfrage.anteilProzent ?? 100;
   const proMonat =
     aktuell && anfrage.zahlweise
@@ -410,8 +503,10 @@ function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwor
     naechsteAbbuchung: null,
     naechstePreisaenderung: angekuendigt
       ? { ab: angekuendigt.gueltigAb!, betrag: angekuendigt.betrag, art: 'ANGEKUENDIGT' }
-      : null,
-    prognose: [],
+      : prognose[0]
+        ? { ...prognose[0], art: 'PROGNOSE' }
+        : null,
+    prognose,
     kuendigung: vorschau(anfrage),
   };
 }
@@ -427,6 +522,7 @@ function ausAnfrage(
     preise,
     naechstePreisaenderung,
     eigenerAnteil,
+    prognose,
   } = vorschauAntwort(anfrage);
   const { wert, waehrung } = aktuell!;
   const proJahr = Math.round((wert * 1200) / MONATE_JE_ZAHLUNG[anfrage.zahlweise]) / 100;
@@ -456,6 +552,9 @@ function ausAnfrage(
       kostenImJahr: { wert: proJahr, waehrung },
       naechsteAbbuchung: { am: anfrage.abbuchungAb, betrag: aktuell! },
       naechstePreisaenderung,
+      prognose,
+      preisverlauf: preisverlaufFuer(preise, prognose, anfrage.beginn),
+      kostenImJahrMitPrognose: prognose.some(({ ab }) => ab.startsWith(`${JAHR}-`)),
       eigenerAnteil: eigenerAnteil && {
         betrag: eigenerAnteil.betrag,
         kostenProMonat: eigenerAnteil.kostenProMonat!,
@@ -511,6 +610,16 @@ function feldfehler(anfrage: VertragAnfrage): Feldfehler[] {
     }
     if (gueltigAb) daten.add(gueltigAb);
   });
+  const regel = anfrage.preissteigerung;
+  if (regel) {
+    if (!regel.naechsteAm) melden('preissteigerung.naechsteAm', 'NotNull');
+    if (regel.art === 'PROZENT' && regel.prozent == null) {
+      melden('preissteigerung.prozent', 'PassenderWert');
+    } else if (regel.art === 'PROZENT' && regel.prozent! > 100) {
+      melden('preissteigerung.prozent', 'DecimalMax', { value: '100' });
+    }
+    if (regel.art === 'BETRAG' && !regel.betrag) melden('preissteigerung.betrag', 'PassenderWert');
+  }
   if (!anfrage.einmalkosten) {
     melden('einmalkosten', 'NotNull');
   }

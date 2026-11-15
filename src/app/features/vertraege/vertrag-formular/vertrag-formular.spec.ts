@@ -799,6 +799,163 @@ describe('VertragFormular', () => {
     });
   });
 
+  describe('Preissteigerung', () => {
+    async function imTabPreise() {
+      const hilfen = await erstellen();
+      const { el, fixture } = hilfen;
+      el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[3].click();
+      await fixture.whenStable();
+      const einschalten = async () => {
+        hilfen.feld('steigt').click();
+        await fixture.whenStable();
+      };
+      /** Jede Zeile der Box „Prognose“ für sich. */
+      const prognose = () =>
+        [...el.querySelectorAll('.prognose > *')].map((e) =>
+          e.textContent?.replace(/\s+/g, ' ').trim(),
+        );
+      return { ...hilfen, einschalten, prognose };
+    }
+
+    it('blendet die Felder mit dem Schalter ein; Bezeichnung folgt der Art', async () => {
+      const { el, feld, setzen, einschalten, fixture } = await imTabPreise();
+      expect(feld('steigt').getAttribute('role')).toBe('switch');
+      expect(feld('steigerungswert')).toBeNull();
+      await einschalten();
+      const label = () =>
+        el.querySelector(`label[for="${feld('steigerungswert').id}"]`)?.textContent;
+      expect(label()).toBe('Erhöhung in % *');
+      expect(feld<HTMLSelectElement>('rhythmus').value).toBe('JAEHRLICH');
+      expect([...feld<HTMLSelectElement>('steigerungsart').options].map((o) => o.text)).toEqual([
+        'Prozent',
+        'Euro',
+      ]);
+      setzen('steigerungsart', 'BETRAG');
+      await fixture.whenStable();
+      expect(label()).toBe('Erhöhung in € *');
+    });
+
+    it('verlangt Wert und Datum, zählt sie im Tab Preise und schickt die Regel', async () => {
+      const { el, host, setzen, einschalten, absenden, pflichtfelderFuellen, fehlerText } =
+        await imTabPreise();
+      pflichtfelderFuellen();
+      await einschalten();
+      await absenden();
+      expect(host.gespeichert).toHaveLength(0);
+      const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
+        t.textContent?.replace(/\s+/g, ' ').trim(),
+      );
+      expect(tabs.at(-1)).toBe('Preise 2, 2 Fehler');
+      expect(fehlerText('steigerungswert')).toBe('Bitte gib an, um wie viel der Preis steigt.');
+
+      setzen('steigerungswert', '2,5');
+      setzen('naechsteErhoehungAm', '2027-01-01');
+      setzen('preisgarantieBis', '2026-06-30');
+      await absenden();
+      expect(host.gespeichert[0]).toMatchObject({
+        preisgarantieBis: '2026-06-30',
+        erinnerungSonderkuendigung: true,
+        preissteigerung: {
+          art: 'PROZENT',
+          prozent: 2.5,
+          betrag: null,
+          rhythmus: 'JAEHRLICH',
+          naechsteAm: '2027-01-01',
+        },
+      });
+    });
+
+    it('ordnet Feldfehler des Backends den Feldern zu', async () => {
+      const { host, fixture, einschalten, fehlerText } = await imTabPreise();
+      await einschalten();
+      host.fehler.set(
+        validierung(
+          ['preissteigerung.prozent', 'PassenderWert'],
+          ['preisgarantieBis', 'PlausiblesDatum'],
+        ),
+      );
+      await fixture.whenStable();
+      expect(fehlerText('steigerungswert')).toBe('Bitte gib an, um wie viel der Preis steigt.');
+      expect(fehlerText('preisgarantieBis')).toBe(
+        'Bitte gib ein Datum zwischen dem 01.01.1900 und dem 31.12.2199 ein.',
+      );
+    });
+
+    it('Prognose: Hinweis ohne Wert oder Datum, sonst die Preise der Vorschau', async () => {
+      TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
+      const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
+      vorschau.mockReturnValue(antwort);
+      const { setzen, einschalten, prognose, fixture } = await imTabPreise();
+      await einschalten();
+      expect(prognose()).toEqual([
+        'Prognose',
+        'Gib Wert und Datum der nächsten Erhöhung ein, dann zeigen wir hier die nächsten drei Preise.',
+      ]);
+
+      antwort.next(
+        vorschauAntwort(KEINE, {
+          prognose: [
+            { ab: '2027-01-01', betrag: { wert: 20.49, waehrung: 'EUR' } },
+            { ab: '2028-01-01', betrag: { wert: 21, waehrung: 'EUR' } },
+          ],
+        }),
+      );
+      setzen('steigerungswert', '2,5');
+      setzen('naechsteErhoehungAm', '2027-01-01');
+      await new Promise((fertig) => setTimeout(fertig, 450));
+      await fixture.whenStable();
+      expect(prognose()).toEqual([
+        'Prognose',
+        'ab 01.01.2027 voraussichtlich 20,49 €',
+        'ab 01.01.2028 voraussichtlich 21,00 €',
+      ]);
+
+      antwort.next(vorschauAntwort(KEINE));
+      setzen('preisgarantieBis', '2030-01-01');
+      await new Promise((fertig) => setTimeout(fertig, 450));
+      await fixture.whenStable();
+      expect(prognose()).toEqual([
+        'Prognose',
+        'Bis zum Vertragsende ist keine Erhöhung zu erwarten.',
+      ]);
+    });
+
+    it('Erinnerung: bei Regel oder angekündigtem Preis, nicht bei „Nicht kündbar“', async () => {
+      const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
+      vorschau.mockReturnValue(antwort);
+      const { el, host, einschalten, ankreuzen, absenden, pflichtfelderFuellen, feld, fixture } =
+        await imTabPreise();
+      const erinnerung = () => el.querySelector('.erinnerung');
+      expect(erinnerung()).toBeNull();
+
+      antwort.next(
+        vorschauAntwort(KEINE, {
+          preise: [
+            { gueltigAb: '2027-01-01', betrag: { wert: 25, waehrung: 'EUR' }, art: 'ANGEKUENDIGT' },
+          ],
+        }),
+      );
+      await new Promise((fertig) => setTimeout(fertig, 5));
+      await fixture.whenStable();
+      expect(erinnerung()?.textContent).toContain('Vor jeder Preiserhöhung daran erinnern');
+
+      antwort.next(vorschauAntwort(KEINE));
+      await einschalten();
+      await new Promise((fertig) => setTimeout(fertig, 450));
+      await fixture.whenStable();
+      expect(erinnerung()).not.toBeNull();
+      await ankreuzen('erinnerungSonderkuendigung');
+
+      await ankreuzen('nichtKuendbar');
+      expect(erinnerung()).toBeNull();
+      // Ausgeblendet bleibt der Wert.
+      feld('steigt').click();
+      pflichtfelderFuellen();
+      await absenden();
+      expect(host.gespeichert[0].erinnerungSonderkuendigung).toBe(false);
+    });
+  });
+
   describe('Einmalkosten', () => {
     async function imTabKosten() {
       const hilfen = await erstellen();
@@ -1134,6 +1291,29 @@ describe('VertragFormular', () => {
       el.querySelector('form')!.dispatchEvent(new Event('submit'));
       await fixture.whenStable();
       expect(host.gespeichert[0].anteilProzent).toBe(33.3);
+    });
+
+    it('belegt Regel und Garantie vor, in der Währung des Vertrags', async () => {
+      TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
+      const { feld, el } = await offen({
+        ...VERTRAG,
+        preisgarantieBis: '2026-12-31',
+        preissteigerung: {
+          art: 'BETRAG',
+          prozent: null,
+          betrag: { wert: 1.5, waehrung: 'USD' },
+          rhythmus: 'HALBJAEHRLICH',
+          naechsteAm: '2027-01-01',
+        },
+      });
+      expect(feld('steigt').checked).toBe(true);
+      expect(feld('steigerungswert').value).toBe('1,50');
+      expect(feld('rhythmus').value).toBe('HALBJAEHRLICH');
+      expect(feld('naechsteErhoehungAm').value).toBe('2027-01-01');
+      expect(feld('preisgarantieBis').value).toBe('2026-12-31');
+      expect(el.textContent).toContain('Erhöhung in $ *');
+      const art = feld('steigerungsart') as unknown as HTMLSelectElement;
+      expect(art.selectedOptions[0].text).toBe('US-Dollar');
     });
 
     describe('Preise', () => {

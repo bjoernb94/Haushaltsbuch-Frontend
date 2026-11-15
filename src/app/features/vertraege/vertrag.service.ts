@@ -8,6 +8,7 @@ import {
   VertragEinmalkostenAnfrage,
   VertragKategorieAntwort,
   VertragPreisAnfrage,
+  VertragPreissteigerungAnfrage,
   VertragsuebersichtAntwort,
   VertragVorschauAnfrage,
   VertragVorschauAntwort,
@@ -25,9 +26,15 @@ export type PreisEingabe = Eingabe<VertragPreisAnfrage>;
 /** Einmalkosten einer Zeile; wie {@link Eingabe}, auch der Betrag fehlt als {@code null}. */
 export type EinmalkostenEingabe = Eingabe<VertragEinmalkostenAnfrage>;
 
-export type VertragEingabe = Eingabe<Omit<VertragAnfrage, 'preise' | 'einmalkosten'>> & {
+/** Die Regel der Preissteigerung; wie {@link Eingabe}, auch Art, Rhythmus und Datum als {@code null}. */
+export type PreissteigerungEingabe = Eingabe<VertragPreissteigerungAnfrage>;
+
+export type VertragEingabe = Eingabe<
+  Omit<VertragAnfrage, 'preise' | 'einmalkosten' | 'preissteigerung'>
+> & {
   preise: PreisEingabe[];
   einmalkosten: EinmalkostenEingabe[];
+  preissteigerung?: PreissteigerungEingabe | null;
 };
 
 const VERTRAEGE_URL = '/api/vertraege';

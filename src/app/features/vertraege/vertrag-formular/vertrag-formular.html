@@ -415,6 +415,16 @@
           (entfernen)="preisEntfernen($event)"
           (geaendert)="preisGeaendert($event.index, $event.feld)"
         />
+        <app-vertrag-preissteigerung
+          [idPrefix]="idPrefix"
+          [fehler]="feldFehler()"
+          [waehrung]="waehrung()"
+          [waehrungName]="waehrungName()"
+          [steigt]="werte().steigt"
+          [art]="werte().steigerungsart"
+          [prognose]="prognose()"
+          [erinnerung]="erinnerung()"
+        />
       </fieldset>
     </div>
   </div>

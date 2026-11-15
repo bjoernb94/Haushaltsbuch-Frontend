@@ -1,7 +1,8 @@
 // Zeilen mit Feldern und „Entfernen“, dazu „… hinzufügen“: Preisliste und Einmalkosten im Formular.
 @use '../../../shared/formular/formular';
 
-@mixin grundlage {
+// Felder mit Bezeichnung, Hinweis und Fehler; auch für Teile des Formulars außerhalb der Zeilen.
+@mixin feldtexte {
   @include formular.felder($hoehe: 52px);
 
   :host {
@@ -13,7 +14,8 @@
   .feld {
     min-width: 0;
 
-    input {
+    input,
+    select {
       width: 100%;
     }
   }
@@ -38,6 +40,10 @@
   .feldhinweis {
     color: var(--app-text-gedaempft);
   }
+}
+
+@mixin grundlage {
+  @include feldtexte;
 
   .entfernen,
   .hinzufuegen {

@@ -136,6 +136,63 @@ test.describe('Vertrag bearbeiten', () => {
     );
   });
 
+  test('Preissteigerung: vorbelegt, Prognose aus der Vorschau, geändert gespeichert', async ({
+    page,
+  }) => {
+    const formular = await bearbeiten(page, 'Software GmbH');
+    await tab(page, 'Preise');
+    await expect(formular.getByRole('switch', { name: 'Preis steigt regelmäßig' })).toBeChecked();
+    await expect(formular.getByLabel('Erhöhung in', { exact: true })).toHaveValue('BETRAG');
+    await expect(formular.getByLabel('Erhöhung in € *')).toHaveValue('1,00');
+    const prognose = formular.getByRole('status').filter({ hasText: 'Prognose' });
+    await expect(prognose).toContainText(/ab 01\.01\.2027 voraussichtlich 6,00\s€/);
+
+    await formular.getByLabel('Erhöhung in', { exact: true }).selectOption('PROZENT');
+    await formular.getByLabel('Erhöhung in % *').fill('10');
+    await formular.getByLabel('Rhythmus').selectOption({ label: 'alle 2 Jahre' });
+    await formular.getByLabel('Nächste Erhöhung am *').fill('2027-01-01');
+    await expect(prognose).toContainText(/ab 01\.01\.2029 voraussichtlich 6,05\s€/);
+    await formular.getByLabel('Preisgarantie bis').fill('2028-12-31');
+    await expect(prognose).not.toContainText('01.01.2027');
+    await formular
+      .getByRole('switch', { name: 'Vor jeder Preiserhöhung daran erinnern' })
+      .uncheck();
+
+    expect(await speichernUndAnfrageLesen(page)).toMatchObject({
+      preisgarantieBis: '2028-12-31',
+      erinnerungSonderkuendigung: false,
+      preissteigerung: {
+        art: 'PROZENT',
+        prozent: 10,
+        betrag: null,
+        rhythmus: 'ZWEIJAEHRLICH',
+        naechsteAm: '2027-01-01',
+      },
+    });
+    await expect(
+      zeile(page, 'Software GmbH').getByText('Preis ↑ ab 01.01.2029 (Prognose)'),
+    ).toBeVisible();
+  });
+
+  test('Preissteigerung ausschalten schickt keine Regel, Fehler stehen am Feld', async ({
+    page,
+  }) => {
+    const formular = await bearbeiten(page, KFZ);
+    await tab(page, 'Preise');
+    await expect(formular.getByText('Vor jeder Preiserhöhung daran erinnern')).toHaveCount(0);
+    await formular.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
+    await expect(formular.getByText('Vor jeder Preiserhöhung daran erinnern')).toBeVisible();
+    await sheet(page).getByRole('button', { name: 'Sichern' }).click();
+    await expect(sheet(page).getByRole('tab', { name: /^Preise.*2 Fehler$/ })).toBeVisible();
+    await expect(formular.getByLabel('Erhöhung in % *')).toBeFocused();
+    await expect(formular.getByLabel('Erhöhung in % *')).toHaveAccessibleDescription(
+      'Bitte gib an, um wie viel der Preis steigt.',
+    );
+
+    await formular.getByRole('switch', { name: 'Preis steigt regelmäßig' }).uncheck();
+    expect((await speichernUndAnfrageLesen(page)).preissteigerung).toBeNull();
+  });
+
   test('Fehler einer Preiszeile stehen an der Zeile, der Tab zählt sie', async ({ page }) => {
     const formular = await bearbeiten(page, FITNESS);
     await tab(page, 'Preise');
