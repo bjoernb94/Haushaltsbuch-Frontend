@@ -7,12 +7,19 @@ import {
   Zahlungsweg,
   Zahlweise,
 } from '../../../core/api/api';
-import { PreisEingabe, VertragEingabe } from '../vertrag.service';
+import { EinmalkostenEingabe, PreisEingabe, VertragEingabe } from '../vertrag.service';
 
 /** Eine Zeile der Liste „Frühere und angekündigte Preise“. */
 export interface PreisWerte {
   gueltigAb: string;
   betrag: string;
+}
+
+/** Eine Zeile der Einmalkosten. */
+export interface EinmalkostenWerte {
+  bezeichnung: string;
+  betrag: string;
+  faelligAm: string;
 }
 
 /** Werte der Formularfelder, unverändert wie eingegeben. */
@@ -40,17 +47,27 @@ export interface VertragWerte {
   gekuendigt: boolean;
   gekuendigtZum: string;
   notiz: string;
+  /** In der Reihenfolge der Antwort bzw. der Eingabe. */
+  einmalkosten: EinmalkostenWerte[];
 }
 
+/** {@code einmalkosten} steht für Fehler an der ganzen Liste, z. B. zu viele Einträge. */
 export type EinzelFeld = Exclude<keyof VertragWerte, 'preise'>;
 
 /** Feld einer Zeile der Preisliste, z. B. {@code preise.0.gueltigAb}. */
 export type PreisFeld = `preise.${number}.${keyof PreisWerte}`;
 
-export type VertragFeld = EinzelFeld | PreisFeld;
+/** Feld einer Zeile der Einmalkosten, z. B. {@code einmalkosten.0.faelligAm}. */
+export type EinmalkostenFeld = `einmalkosten.${number}.${keyof EinmalkostenWerte}`;
+
+export type VertragFeld = EinzelFeld | PreisFeld | EinmalkostenFeld;
 
 export function preisFeld(index: number, feld: keyof PreisWerte): PreisFeld {
   return `preise.${index}.${feld}`;
+}
+
+export function einmalkostenFeld(index: number, feld: keyof EinmalkostenWerte): EinmalkostenFeld {
+  return `einmalkosten.${index}.${feld}`;
 }
 
 // Ohne Tausenderpunkte oder mit korrekt gesetzten. „12.50“ passt absichtlich nicht: Das ist weder
@@ -98,6 +115,12 @@ const PFLICHT_TEXT = {
   gekuendigtZum: 'Bitte gib an, zu wann der Vertrag gekündigt ist.',
 } as const;
 
+const EINMALKOSTEN_PFLICHT_TEXT: Readonly<Record<keyof EinmalkostenWerte, string>> = {
+  bezeichnung: 'Bitte gib an, wofür die Kosten anfallen.',
+  betrag: PFLICHT_TEXT.betrag,
+  faelligAm: 'Bitte gib an, wann die Kosten fällig sind.',
+};
+
 const GUELTIG_AB_TEXT = 'Bitte gib an, ab wann dieser Preis gilt.';
 
 const GUELTIG_SEIT_TEXT = 'Bitte gib an, seit wann der Betrag oben gilt.';
@@ -129,6 +152,13 @@ export function vertragPruefen(w: VertragWerte): ReadonlyMap<VertragFeld, string
     }
     if (!preis.betrag.trim()) {
       fehler.set(preisFeld(i, 'betrag'), PFLICHT_TEXT.betrag);
+    }
+  });
+  w.einmalkosten.forEach((zeile, i) => {
+    for (const feld of Object.keys(EINMALKOSTEN_PFLICHT_TEXT) as (keyof EinmalkostenWerte)[]) {
+      if (!zeile[feld].trim()) {
+        fehler.set(einmalkostenFeld(i, feld), EINMALKOSTEN_PFLICHT_TEXT[feld]);
+      }
     }
   });
   return fehler;
@@ -171,6 +201,11 @@ export function werteAus(v: VertragAntwort): VertragWerte {
     gekuendigt: !!v.gekuendigtZum,
     gekuendigtZum: v.gekuendigtZum ?? '',
     notiz: v.notiz ?? '',
+    einmalkosten: v.einmalkosten.map((zeile) => ({
+      bezeichnung: zeile.bezeichnung,
+      betrag: betragEingabe(zeile.betrag),
+      faelligAm: zeile.faelligAm,
+    })),
   };
 }
 
@@ -192,11 +227,20 @@ function preisEingabe(gueltigAb: string, betrag: string, waehrung: string): Prei
   return { gueltigAb: gueltigAb || null, betrag: wert === null ? null : { wert, waehrung } };
 }
 
+function einmalkostenEingabe(zeile: EinmalkostenWerte, waehrung: string): EinmalkostenEingabe {
+  const wert = betragLesen(zeile.betrag);
+  return {
+    bezeichnung: textOderNull(zeile.bezeichnung),
+    betrag: wert === null ? null : { wert, waehrung },
+    faelligAm: zeile.faelligAm || null,
+  };
+}
+
 /**
  * Anfrage aus den Formularwerten. Leere Felder gehen als {@code null}, denn {@code ""} wäre bei Enums
  * und Datum {@code ANFRAGE_UNGUELTIG} ohne Bezug zum Feld, ebenso {@code { wert: null }} beim Betrag.
  * Der Betrag ist der erste Preis, die Liste folgt ({@code preise[i]} der Feldfehler). Felder, die das
- * Formular noch nicht zeigt (Einmalkosten, Preissteigerung), bleiben wie gespeichert, denn
+ * Formular noch nicht zeigt (Preissteigerung), bleiben wie gespeichert, denn
  * {@code PUT} ersetzt alle Felder.
  */
 export function anfrageAus(
@@ -225,7 +269,7 @@ export function anfrageAus(
     gekuendigtZum: w.gekuendigt ? w.gekuendigtZum || null : null,
     notiz: textOderNull(w.notiz),
     anteilProzent: anteilLesen(w.anteilProzent),
-    einmalkosten: gespeichert?.einmalkosten ?? [],
+    einmalkosten: w.einmalkosten.map((zeile) => einmalkostenEingabe(zeile, waehrung)),
     preissteigerung: gespeichert?.preissteigerung ?? null,
     preisgarantieBis: gespeichert?.preisgarantieBis ?? null,
     erinnerungSonderkuendigung: gespeichert?.erinnerungSonderkuendigung ?? true,
@@ -233,9 +277,10 @@ export function anfrageAus(
 }
 
 /**
- * Das ganze Formular für die Vorschau. Preise und ein Anteil, die das Backend sicher ablehnt (ohne
- * Betrag, Betrag nicht größer 0, ein zweiter ohne Datum; Anteil nicht wie „33,3“), fehlen, damit die
- * übrigen Werte beim Tippen bleiben.
+ * Das ganze Formular für die Vorschau. Preise, Einmalkosten und ein Anteil, die das Backend sicher
+ * ablehnt (ohne Betrag, Betrag nicht größer 0, ein zweiter Preis ohne Datum; Anteil nicht wie „33,3“),
+ * fehlen, damit die übrigen Werte beim Tippen bleiben. Unvollständige Einmalkosten ignoriert die
+ * Vorschau selbst.
  */
 export function vorschauAus(
   w: VertragWerte,
@@ -254,7 +299,7 @@ export function vorschauAus(
     kuendbar: !w.nichtKuendbar,
     preise,
     anteilProzent: anteilFuerVorschau(w.anteilProzent, a.anteilProzent),
-    einmalkosten: a.einmalkosten,
+    einmalkosten: a.einmalkosten.filter(({ betrag }) => !betrag || betrag.wert > 0),
     preissteigerung: a.preissteigerung,
     preisgarantieBis: a.preisgarantieBis,
     zahlweise: a.zahlweise,
@@ -284,12 +329,22 @@ const FELD_ZUM_API_FELD: Readonly<Record<string, VertragFeld>> = {
   gekuendigtZum: 'gekuendigtZum',
   notiz: 'notiz',
   anteilProzent: 'anteilProzent',
+  einmalkosten: 'einmalkosten',
 };
 
 const PREIS_MUSTER = /^preise\[(\d+)\]\.(gueltigAb|betrag)\b/;
 
-/** {@code preise[0]} ist der Betrag, {@code preise[i]} sonst die Zeile i − 1 der Liste. */
+const EINMALKOSTEN_MUSTER = /^einmalkosten\[(\d+)\]\.(bezeichnung|betrag|faelligAm)\b/;
+
+/**
+ * {@code preise[0]} ist der Betrag, {@code preise[i]} sonst die Zeile i − 1 der Liste;
+ * {@code einmalkosten[i]} ist die Zeile i.
+ */
 function formularFeld(apiFeld: string): VertragFeld | undefined {
+  const einmal = EINMALKOSTEN_MUSTER.exec(apiFeld);
+  if (einmal) {
+    return einmalkostenFeld(Number(einmal[1]), einmal[2] as keyof EinmalkostenWerte);
+  }
   const preis = PREIS_MUSTER.exec(apiFeld);
   if (!preis) {
     return FELD_ZUM_API_FELD[apiFeld];
@@ -306,7 +361,13 @@ function istBetrag(feld: VertragFeld): boolean {
   return feld === 'betrag' || feld.endsWith('.betrag');
 }
 
+/** Der Teil nach der Zeile, z. B. {@code faelligAm}; {@code null} außerhalb der Einmalkosten. */
+function einmalkostenTeil(feld: VertragFeld): keyof EinmalkostenWerte | null {
+  return feld.startsWith('einmalkosten.') ? (feld.split('.')[2] as keyof EinmalkostenWerte) : null;
+}
+
 function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: Feldfehler): string {
+  const einmal = einmalkostenTeil(feld);
   if (feld === 'anteilProzent' && ['DecimalMin', 'DecimalMax', 'Digits'].includes(code)) {
     return ANTEIL_TEXT;
   }
@@ -314,6 +375,9 @@ function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: F
     case 'NotBlank':
     case 'NotNull':
     case 'NotEmpty':
+      if (einmal) {
+        return EINMALKOSTEN_PFLICHT_TEXT[einmal];
+      }
       if (istBetrag(feld)) {
         return PFLICHT_TEXT.betrag;
       }
@@ -321,8 +385,11 @@ function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: F
         ? PFLICHT_TEXT[feld as keyof typeof PFLICHT_TEXT]
         : 'Bitte fülle dieses Feld aus.';
     case 'Size':
-      return apiFeld === 'preise'
-        ? `Höchstens ${parameter['max']} Preise.`
+      if (apiFeld === 'preise') {
+        return `Höchstens ${parameter['max']} Preise.`;
+      }
+      return apiFeld === 'einmalkosten'
+        ? `Höchstens ${parameter['max']} Einmalkosten.`
         : `Höchstens ${parameter['max']} Zeichen.`;
     case 'GueltigAbPflicht':
       return feld === 'gueltigSeit' ? GUELTIG_SEIT_TEXT : GUELTIG_AB_TEXT;
@@ -331,7 +398,9 @@ function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: F
     case 'PreisNichtVorBeginn':
       return 'Ein Preis kann nicht vor dem Vertragsbeginn gelten.';
     case 'GleicheWaehrung':
-      return 'Alle Preise brauchen dieselbe Währung.';
+      return einmal
+        ? 'Einmalkosten brauchen dieselbe Währung wie die Preise.'
+        : 'Alle Preise brauchen dieselbe Währung.';
     case 'PositiverBetrag':
       return 'Der Betrag muss größer als 0 sein.';
     case 'Digits':

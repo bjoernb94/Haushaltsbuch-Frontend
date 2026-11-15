@@ -82,6 +82,60 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(zeile(page, 'Software GmbH').getByText('Anteil 50 %')).toHaveCount(0);
   });
 
+  test('Einmalkosten: vorbelegt, Summe aus der Vorschau; ändern, entfernen, hinzufügen', async ({
+    page,
+  }) => {
+    const formular = await bearbeiten(page, 'Software GmbH');
+    await tab(page, 'Kosten');
+    const zeilen = formular.locator('app-vertrag-einmalkosten-zeilen .zeile');
+    await expect(zeilen).toHaveCount(2);
+    await expect(zeilen.nth(0).getByLabel('Wofür *')).toHaveValue('Lizenzschlüssel');
+    await expect(zeilen.nth(1).getByLabel('Betrag in € *')).toHaveValue('30,00');
+    await expect(zeilen.nth(1).getByLabel('Fällig am *')).toHaveValue('2026-02-01');
+    const summe = formular.getByRole('status').filter({ hasText: 'Einmalkosten gesamt' });
+    await expect(summe).toHaveText(/Einmalkosten gesamt: 50,00\s€/);
+
+    await formular.getByRole('button', { name: 'Lizenzschlüssel entfernen' }).click();
+    await expect(zeilen).toHaveCount(1);
+    await expect(zeilen.nth(0).getByLabel('Wofür *')).toBeFocused();
+    await expect(summe).toHaveText(/Einmalkosten gesamt: 30,00\s€/);
+
+    await formular.getByRole('button', { name: 'Einmalkosten hinzufügen' }).click();
+    await expect(zeilen.nth(1).getByLabel('Wofür *')).toBeFocused();
+    await tab(page, 'Allgemein');
+    await sheet(page).getByRole('button', { name: 'Sichern' }).click();
+    await expect(sheet(page).getByRole('tab', { name: /^Kosten.*3 Fehler$/ })).toBeVisible();
+    await expect(zeilen.nth(1).getByLabel('Wofür *')).toBeFocused();
+    await expect(zeilen.nth(1).getByLabel('Wofür *')).toHaveAccessibleDescription(
+      'Bitte gib an, wofür die Kosten anfallen.',
+    );
+
+    await zeilen.nth(1).getByLabel('Wofür *').fill('Hardware');
+    await zeilen.nth(1).getByLabel('Betrag in € *').fill('99,50');
+    await zeilen.nth(1).getByLabel('Fällig am *').fill('2026-01-10');
+    await expect(summe).toHaveText(/Einmalkosten gesamt: 129,50\s€/);
+    expect((await speichernUndAnfrageLesen(page)).einmalkosten).toEqual([
+      {
+        bezeichnung: 'Einrichtung',
+        betrag: { wert: 30, waehrung: 'EUR' },
+        faelligAm: '2026-02-01',
+      },
+      { bezeichnung: 'Hardware', betrag: { wert: 99.5, waehrung: 'EUR' }, faelligAm: '2026-01-10' },
+    ]);
+
+    await expect(sheet(page)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Details zu Software GmbH anzeigen' }).click();
+    await details(page, 'Software GmbH').getByRole('tab', { name: 'Kosten' }).click();
+    await expect(page.locator('app-vertrag-einmalkosten').getByRole('listitem')).toHaveText([
+      /Hardware · fällig am 10\.01\.2026/,
+      /Einrichtung · fällig am 01\.02\.2026/,
+    ]);
+    await expect(page.getByText('Gesamt 129,50 €')).toBeVisible();
+    await expect(page.locator('.kennzahl').filter({ hasText: 'Einmalkosten 2026' })).toContainText(
+      /64,75\s€/,
+    );
+  });
+
   test('Fehler einer Preiszeile stehen an der Zeile, der Tab zählt sie', async ({ page }) => {
     const formular = await bearbeiten(page, FITNESS);
     await tab(page, 'Preise');

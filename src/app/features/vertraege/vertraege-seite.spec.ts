@@ -258,9 +258,22 @@ describe('VertraegeSeite', () => {
       expect(text(kennzahlen[0])).toBe('Laufende Verträge2');
       expect(text(kennzahlen[1])).toBe('Kosten pro Monat58,90 € · 5,00 $');
       expect(text(kennzahlen[2])).toBe('Kosten 2026706,80 €Alle Abbuchungen im Kalenderjahr');
+      expect(text(kennzahlen[3])).toBe('Einmalkosten 20260,00 €');
     });
 
-    it('nennt bei geteilten Verträgen unter beiden Kosten „nur dein Anteil“', async () => {
+    it('zeigt die Einmalkosten im Jahr des Backends je Währung', async () => {
+      uebersicht.mockReturnValue(
+        of({
+          ...UEBERSICHT,
+          jahr: 2027,
+          einmalkostenImJahr: [EUR(149.9), { wert: 20, waehrung: 'USD' }],
+        }),
+      );
+      const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
+      expect(text(kennzahlen[3])).toBe('Einmalkosten 2027149,90 € · 20,00 $');
+    });
+
+    it('nennt bei geteilten Verträgen unter allen Kosten „nur dein Anteil“', async () => {
       uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatAnteile: true }));
       const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
       expect(text(kennzahlen[1])).toBe(
@@ -268,6 +281,9 @@ describe('VertraegeSeite', () => {
       );
       expect(text(kennzahlen[2])).toBe(
         'Kosten 2026706,80 €Alle Abbuchungen im KalenderjahrBei geteilten Verträgen nur dein Anteil',
+      );
+      expect(text(kennzahlen[3])).toBe(
+        'Einmalkosten 20260,00 €Bei geteilten Verträgen nur dein Anteil',
       );
     });
 
@@ -514,6 +530,39 @@ describe('VertraegeSeite', () => {
         'Pro Monat48,90 €Dein Anteil 16,28 € (33,3 %)',
       );
       expect(eintraege(element)['Dein Anteil']).toBe('33,3 % = 16,28 € pro Monat');
+    });
+
+    it('Tab Kosten: Einmalkosten in der Reihenfolge des Backends, Gesamt ohne Anteil', async () => {
+      auflisten.mockReturnValue(
+        of([
+          {
+            ...GETEILT,
+            einmalkosten: [
+              { bezeichnung: 'Router', betrag: EUR(99), faelligAm: '2026-01-15' },
+              { bezeichnung: 'Anschluss', betrag: EUR(49.9), faelligAm: '2026-02-01' },
+            ],
+            berechnet: { ...GETEILT.berechnet, einmalkosten: EUR(148.9) },
+          },
+        ]),
+      );
+      const { element, stabil } = await seite('/vertraege/geteilt?tab=kosten');
+      const einmal = () => element.querySelector('app-vertrag-einmalkosten');
+      expect([...einmal()!.querySelectorAll('li')].map(text)).toEqual([
+        'Router · fällig am 15.01.202699,00 €',
+        'Anschluss · fällig am 01.02.202649,90 €',
+      ]);
+      expect(text(einmal()!.querySelector('.gesamt'))).toBe('Gesamt 148,90 €');
+
+      element.querySelectorAll<HTMLButtonElement>('[role="tab"]')[0].click();
+      await stabil();
+      expect(einmal()).toBeNull();
+    });
+
+    it('Tab Kosten ohne Einmalkosten: Hinweis statt Liste', async () => {
+      const { element } = await seite('/vertraege/kfz?tab=kosten');
+      expect(text(element.querySelector('app-vertrag-einmalkosten'))).toBe(
+        'EinmalkostenKeine Einmalkosten hinterlegt.',
+      );
     });
 
     it('ohne Anteil kein Untertitel und keine Zeile „Dein Anteil“', async () => {

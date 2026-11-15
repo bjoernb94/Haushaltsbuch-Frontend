@@ -18,6 +18,7 @@ import { betragText } from '../../../shared/format/betrag.pipe';
 import { datumText } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
+import { VertragEinmalkosten } from '../vertrag-einmalkosten/vertrag-einmalkosten';
 import { VertragPreise } from '../vertrag-preise/vertrag-preise';
 import { VertraegeSeite } from '../vertraege-seite';
 import {
@@ -60,7 +61,7 @@ interface Eintrag {
  */
 @Component({
   selector: 'app-vertrag-details',
-  imports: [HinweisBox, RouterOutlet, Tabliste, VertragPreise],
+  imports: [HinweisBox, RouterOutlet, Tabliste, VertragEinmalkosten, VertragPreise],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-details.html',
   styleUrl: './vertrag-details.scss',

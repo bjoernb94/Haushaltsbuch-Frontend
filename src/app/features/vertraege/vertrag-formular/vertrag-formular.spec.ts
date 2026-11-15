@@ -799,6 +799,164 @@ describe('VertragFormular', () => {
     });
   });
 
+  describe('Einmalkosten', () => {
+    async function imTabKosten() {
+      const hilfen = await erstellen();
+      const { el, fixture } = hilfen;
+      el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
+      await fixture.whenStable();
+      const hinzufuegen = async () => {
+        [...el.querySelectorAll<HTMLButtonElement>('button')]
+          .find((b) => b.textContent?.includes('Einmalkosten hinzufügen'))!
+          .click();
+        await fixture.whenStable();
+      };
+      const zeile = (i: number) =>
+        el.querySelectorAll<HTMLElement>('app-vertrag-einmalkosten-zeilen .zeile')[i];
+      const eingabe = (i: number, feld: string) =>
+        zeile(i).querySelector<HTMLInputElement>(`[formcontrolname="${feld}"]`)!;
+      const eingeben = async (i: number, feld: string, wert: string) => {
+        eingabe(i, feld).value = wert;
+        eingabe(i, feld).dispatchEvent(new Event('input'));
+        await fixture.whenStable();
+      };
+      const zeilenFehler = (i: number) =>
+        zeile(i).querySelector('.feldfehler')?.textContent?.trim();
+      return { ...hilfen, hinzufuegen, zeile, eingabe, eingeben, zeilenFehler };
+    }
+
+    it('fügt Zeilen hinzu, fokussiert „Wofür“ und schickt sie mit', async () => {
+      const { host, hinzufuegen, eingabe, eingeben, pflichtfelderFuellen, absenden } =
+        await imTabKosten();
+      pflichtfelderFuellen();
+      await absenden();
+      expect(host.gespeichert[0].einmalkosten).toEqual([]);
+
+      await hinzufuegen();
+      expect(document.activeElement).toBe(eingabe(0, 'bezeichnung'));
+      await eingeben(0, 'bezeichnung', 'Anschlussgebühr');
+      await eingeben(0, 'betrag', '49,90');
+      await eingeben(0, 'faelligAm', '2026-12-01');
+      await absenden();
+      expect(host.gespeichert[1].einmalkosten).toEqual([
+        {
+          bezeichnung: 'Anschlussgebühr',
+          betrag: { wert: 49.9, waehrung: 'EUR' },
+          faelligAm: '2026-12-01',
+        },
+      ]);
+    });
+
+    it('meldet fehlende Angaben an der Zeile, zählt sie im Tab Kosten und springt dorthin', async () => {
+      const { el, fixture, hinzufuegen, eingabe, pflichtfelderFuellen, absenden, zeilenFehler } =
+        await imTabKosten();
+      await hinzufuegen();
+      pflichtfelderFuellen();
+      el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[0].click();
+      await fixture.whenStable();
+      await absenden();
+      const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
+        t.textContent?.replace(/\s+/g, ' ').trim(),
+      );
+      expect(tabs).toEqual(['Allgemein', 'Kosten 3, 3 Fehler', 'Laufzeit', 'Preise']);
+      expect(zeilenFehler(0)).toBe('Bitte gib an, wofür die Kosten anfallen.');
+      expect(eingabe(0, 'betrag').getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(eingabe(0, 'bezeichnung'));
+      const fehlerId = eingabe(0, 'faelligAm').getAttribute('aria-describedby')!;
+      expect(document.getElementById(fehlerId)?.textContent?.trim()).toBe(
+        'Bitte gib an, wofür die Kosten anfallen.',
+      );
+    });
+
+    it('ordnet Feldfehler des Backends der Zeile zu, die Liste dem Abschnitt', async () => {
+      const { host, el, fixture, hinzufuegen, eingeben, zeilenFehler } = await imTabKosten();
+      await hinzufuegen();
+      await hinzufuegen();
+      host.fehler.set(
+        new HttpErrorResponse({
+          status: 400,
+          error: {
+            code: 'VALIDIERUNG',
+            felder: [
+              { feld: 'einmalkosten[1].faelligAm', code: 'PlausiblesDatum', parameter: {} },
+              { feld: 'einmalkosten', code: 'Size', parameter: { max: 100 } },
+            ],
+          },
+        }),
+      );
+      await fixture.whenStable();
+      expect(zeilenFehler(0)).toBeUndefined();
+      expect(zeilenFehler(1)).toBe(
+        'Bitte gib ein Datum zwischen dem 01.01.1900 und dem 31.12.2199 ein.',
+      );
+      expect(
+        el.querySelector('app-vertrag-einmalkosten-zeilen > .feldfehler')?.textContent?.trim(),
+      ).toBe('Höchstens 100 Einmalkosten.');
+
+      await eingeben(1, 'faelligAm', '2026-12-01');
+      expect(zeilenFehler(1)).toBeUndefined();
+    });
+
+    it('Entfernen nimmt die Zeile samt Fehler weg, die Fehler darunter rücken nach', async () => {
+      const { host, fixture, el, hinzufuegen, eingeben, zeilenFehler, eingabe } =
+        await imTabKosten();
+      await hinzufuegen();
+      await hinzufuegen();
+      await eingeben(1, 'bezeichnung', 'Router');
+      host.fehler.set(
+        validierung(
+          ['einmalkosten[0].betrag', 'NotNull'],
+          ['einmalkosten[1].betrag', 'PositiverBetrag'],
+        ),
+      );
+      await fixture.whenStable();
+      const entfernen = el.querySelectorAll<HTMLButtonElement>('.zeile .entfernen');
+      expect(entfernen[0].getAttribute('aria-label')).toBe('Einmalkosten entfernen');
+      expect(entfernen[1].getAttribute('aria-label')).toBe('Router entfernen');
+      entfernen[0].click();
+      await fixture.whenStable();
+      expect(el.querySelectorAll('app-vertrag-einmalkosten-zeilen .zeile')).toHaveLength(1);
+      expect(zeilenFehler(0)).toBe('Der Betrag muss größer als 0 sein.');
+      expect(document.activeElement).toBe(eingabe(0, 'bezeichnung'));
+
+      el.querySelector<HTMLButtonElement>('.zeile .entfernen')!.click();
+      await fixture.whenStable();
+      expect(document.activeElement?.textContent).toContain('Einmalkosten hinzufügen');
+    });
+
+    it('zeigt die Summe der Vorschau, solange es Zeilen gibt', async () => {
+      TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
+      const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
+      vorschau.mockReturnValue(antwort);
+      const { el, fixture, hinzufuegen } = await imTabKosten();
+      const summe = () =>
+        el.querySelector('app-vertrag-einmalkosten-zeilen [role="status"]')?.textContent?.trim();
+      antwort.next(vorschauAntwort(KEINE, { einmalkosten: { wert: 49.9, waehrung: 'EUR' } }));
+      // Die erste Anfrage startet nach timer(0); eine neue Zeile ändert die Anfrage und bräche sie ab.
+      await new Promise((fertig) => setTimeout(fertig, 5));
+      await fixture.whenStable();
+      expect(summe()).toBe('');
+
+      await hinzufuegen();
+      expect(summe()?.replace(/\s/g, ' ')).toBe('Einmalkosten gesamt: 49,90 €');
+
+      // Ohne vollständige Zeile liefert die Vorschau keine Summe (nach der Pause neu gefragt).
+      antwort.next(vorschauAntwort(KEINE));
+      await new Promise((fertig) => setTimeout(fertig, 450));
+      await fixture.whenStable();
+      expect(summe()).toBe('');
+    });
+
+    it('lässt Zeilen mit Betrag nicht größer 0 in der Vorschau weg', async () => {
+      const { hinzufuegen, eingeben } = await imTabKosten();
+      await hinzufuegen();
+      await eingeben(0, 'bezeichnung', 'Gutschrift');
+      await eingeben(0, 'betrag', '0');
+      await new Promise((fertig) => setTimeout(fertig, 450));
+      expect(vorschau.mock.lastCall?.[0].einmalkosten).toEqual([]);
+    });
+  });
+
   describe('zum Bearbeiten', () => {
     const VERTRAG: VertragAntwort = {
       id: 'v1',

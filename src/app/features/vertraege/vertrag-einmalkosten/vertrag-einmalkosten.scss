@@ -1,0 +1,49 @@
+:host {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--app-trenner);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--app-trenner);
+    font-size: 15px;
+    overflow-wrap: anywhere;
+
+    b {
+      white-space: nowrap;
+    }
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .gesamt {
+    font-size: 15px;
+    font-weight: 800;
+    text-align: right;
+  }
+
+  .keine {
+    font-size: 14px;
+    color: var(--app-text-gedaempft);
+  }
+}

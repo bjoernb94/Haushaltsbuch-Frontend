@@ -5,6 +5,7 @@ import {
   VertragAenderung,
   VertragAnfrage,
   VertragAntwort,
+  VertragEinmalkostenAnfrage,
   VertragKategorieAntwort,
   VertragPreisAnfrage,
   VertragsuebersichtAntwort,
@@ -21,7 +22,13 @@ export type Eingabe<T> = { [F in keyof T]: T[F] | null };
 /** Ein Preis der Liste; wie {@link Eingabe}, auch der Betrag fehlt als {@code null}. */
 export type PreisEingabe = Eingabe<VertragPreisAnfrage>;
 
-export type VertragEingabe = Eingabe<Omit<VertragAnfrage, 'preise'>> & { preise: PreisEingabe[] };
+/** Einmalkosten einer Zeile; wie {@link Eingabe}, auch der Betrag fehlt als {@code null}. */
+export type EinmalkostenEingabe = Eingabe<VertragEinmalkostenAnfrage>;
+
+export type VertragEingabe = Eingabe<Omit<VertragAnfrage, 'preise' | 'einmalkosten'>> & {
+  preise: PreisEingabe[];
+  einmalkosten: EinmalkostenEingabe[];
+};
 
 const VERTRAEGE_URL = '/api/vertraege';
 

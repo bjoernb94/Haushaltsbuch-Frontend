@@ -17,6 +17,7 @@ export type Verlaengerung = Schemas['Verlaengerung'];
 export type VertragAenderung = Schemas['VertragAenderung'];
 export type VertragAnfrage = Schemas['VertragAnfrage'];
 export type VertragAntwort = Schemas['VertragAntwort'];
+export type VertragEinmalkostenAnfrage = Schemas['VertragEinmalkostenAnfrage'];
 export type VertragPreisAnfrage = Schemas['VertragPreisAnfrage'];
 export type VertragPreisAntwort = Schemas['VertragPreisAntwort'];
 export type VertragKategorieAntwort = Schemas['VertragKategorieAntwort'];

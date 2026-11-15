@@ -45,7 +45,7 @@ test.describe('Seite Verträge', () => {
     await page.goto('/vertraege');
     const fitness = page.locator('app-vertrag-zeile').filter({ hasText: 'Fitnessstudio am Park' });
     await expect(fitness.getByText('Preis ↑ ab 01.03.2027')).toBeVisible();
-    await expect(page.getByText('Kosten 2026')).toBeVisible();
+    await expect(page.getByText('Kosten 2026', { exact: true })).toBeVisible();
     await expect(page.getByText('Alle Abbuchungen im Kalenderjahr')).toBeVisible();
 
     await page.goto('/vertraege/fitness?tab=preise');
@@ -67,7 +67,10 @@ test.describe('Seite Verträge', () => {
     await page.goto('/vertraege');
     const app = page.locator('app-vertrag-zeile').filter({ hasText: 'Software GmbH' });
     await expect(app.getByText('Anteil 50 %')).toBeVisible();
-    await expect(page.getByText('Bei geteilten Verträgen nur dein Anteil')).toHaveCount(2);
+    await expect(page.getByText('Bei geteilten Verträgen nur dein Anteil')).toHaveCount(3);
+    await expect(page.locator('.kennzahl').filter({ hasText: 'Einmalkosten 2026' })).toHaveText(
+      /Einmalkosten 2026\s*15,00\s€\s*Bei geteilten Verträgen nur dein Anteil/,
+    );
 
     await page.goto('/vertraege/app?tab=kosten');
     const panel = page.getByRole('complementary', { name: 'Software GmbH' });
@@ -77,6 +80,17 @@ test.describe('Seite Verträge', () => {
     await expect(panel.getByRole('tabpanel')).toContainText(
       /Dein Anteil\s*50 % = 2,50\s€ pro Monat/,
     );
+    // Sortiert vom Backend, „Gesamt“ mit vollem Betrag.
+    const einmalkosten = panel.locator('app-vertrag-einmalkosten');
+    await expect(einmalkosten.getByRole('heading')).toHaveText('Einmalkosten');
+    await expect(einmalkosten.getByRole('listitem')).toHaveText([
+      /Lizenzschlüssel · fällig am 15\.12\.2025\s*20,00\s€/,
+      /Einrichtung · fällig am 01\.02\.2026\s*30,00\s€/,
+    ]);
+    await expect(einmalkosten.getByText('Gesamt 50,00 €')).toBeVisible();
+
+    await page.goto('/vertraege/kfz?tab=kosten');
+    await expect(page.getByText('Keine Einmalkosten hinterlegt.')).toBeVisible();
   });
 
   test('kürzt lange Angaben in der Zeile, die Details zeigen alles', async ({ page }) => {
@@ -283,8 +297,13 @@ test.describe('Seite Verträge', () => {
     test('das Panel bleibt beim Scrollen der Liste stehen', async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 600 });
       await oeffnen(page, KFZ).click();
-      await page.mouse.wheel(0, 1500);
-      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+      // Holt die Seite die Zeile gerade weich ins Bild, geht das Rad darin unter: erneut drehen.
+      await expect
+        .poll(async () => {
+          await page.mouse.wheel(0, 1500);
+          return page.evaluate(() => window.scrollY);
+        })
+        .toBeGreaterThan(300);
       await expect(details(page, KFZ).getByRole('heading', { name: KFZ })).toBeInViewport();
     });
   });

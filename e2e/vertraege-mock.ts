@@ -198,12 +198,16 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     betrag: betrag(5),
     preise: einPreis(5),
     anteilProzent: 50,
+    einmalkosten: [
+      { bezeichnung: 'Lizenzschlüssel', betrag: betrag(20), faelligAm: '2025-12-15' },
+      { bezeichnung: 'Einrichtung', betrag: betrag(30), faelligAm: '2026-02-01' },
+    ],
     zahlweise: 'MONATLICH',
     abbuchungAb: '2026-01-05',
     berechnet: {
       ...BERECHNET_LEER,
       eigenerAnteil: { betrag: betrag(2.5), kostenProMonat: betrag(2.5), kostenImJahr: betrag(30) },
-      einmalkosten: betrag(0),
+      einmalkosten: betrag(50),
       status: 'AKTIV',
       kostenProMonat: betrag(5),
       kostenImJahr: betrag(60),
@@ -266,6 +270,18 @@ function summeJeWaehrung(betraege: Betrag[]): Betrag[] {
   return [...summen].map(([waehrung, wert]) => ({ waehrung, wert: Math.round(wert * 100) / 100 }));
 }
 
+const JAHR = 2026;
+
+/** Im Jahr fällig, je Vertrag nur der eigene Anteil; gerundet erst die Summe, wie das Backend. */
+function einmalkostenImJahr(vertraege: VertragAntwort[]): Betrag[] {
+  const anteile = vertraege.flatMap((v) =>
+    v.einmalkosten
+      .filter(({ faelligAm }) => faelligAm.startsWith(`${JAHR}-`))
+      .map(({ betrag }) => ({ ...betrag, wert: (betrag.wert * (v.anteilProzent ?? 100)) / 100 })),
+  );
+  return summeJeWaehrung(anteile);
+}
+
 function uebersicht(vertraege: VertragAntwort[]): VertragsuebersichtAntwort {
   const laufend = vertraege.filter((v) => v.berechnet.status !== 'BEENDET');
   return {
@@ -277,9 +293,9 @@ function uebersicht(vertraege: VertragAntwort[]): VertragsuebersichtAntwort {
       vertraege.map((v) => (v.berechnet.eigenerAnteil ?? v.berechnet).kostenImJahr),
     ),
     kostenImJahrMitPrognose: false,
-    einmalkostenImJahr: [],
-    hatAnteile: vertraege.some((v) => v.berechnet.eigenerAnteil),
-    jahr: 2026,
+    einmalkostenImJahr: einmalkostenImJahr(vertraege),
+    hatAnteile: vertraege.some((v) => v.anteilProzent !== null && v.anteilProzent < 100),
+    jahr: JAHR,
     naechsteKuendigungsfristen: laufend
       .flatMap(({ id, anbieter, bezeichnung, betrag, zahlweise, berechnet }) => {
         const { art, kuendigenBis, zum, dringend } = berechnet.kuendigung;
@@ -343,6 +359,30 @@ function anteilVon({ wert, waehrung }: Betrag, prozent: number): Betrag {
   return { wert: Math.round(wert * prozent + 1e-9) / 100, waehrung };
 }
 
+interface EinmalkostenAnfrage {
+  bezeichnung?: string | null;
+  betrag?: Betrag | null;
+  faelligAm?: string | null;
+}
+
+/** Nur vollständige Zeilen, sortiert nach Fälligkeit, dann Bezeichnung. */
+function vollstaendigeEinmalkosten(zeilen: EinmalkostenAnfrage[]): VertragAntwort['einmalkosten'] {
+  return zeilen
+    .filter((z): z is VertragAntwort['einmalkosten'][number] =>
+      Boolean(z.bezeichnung?.trim() && z.betrag && z.faelligAm),
+    )
+    .map(({ bezeichnung, betrag, faelligAm }) => ({ bezeichnung, betrag, faelligAm }))
+    .sort(
+      (a, b) =>
+        a.faelligAm.localeCompare(b.faelligAm) || a.bezeichnung.localeCompare(b.bezeichnung),
+    );
+}
+
+/** Voller Betrag, ohne Anteil; ohne vollständige Zeile `null`. */
+function einmalkostenSumme(zeilen: VertragAntwort['einmalkosten']): Betrag | null {
+  return summeJeWaehrung(zeilen.map(({ betrag }) => betrag))[0] ?? null;
+}
+
 function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwort {
   const preise = preiseMitArt(anfrage.preise ?? []);
   const aktuell = preise.find((p) => p.art === 'AKTUELL')?.betrag ?? null;
@@ -366,7 +406,7 @@ function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwor
             kostenProMonat: proMonat && anteilVon(proMonat, prozent),
           }
         : null,
-    einmalkosten: null,
+    einmalkosten: einmalkostenSumme(vollstaendigeEinmalkosten(anfrage.einmalkosten ?? [])),
     naechsteAbbuchung: null,
     naechstePreisaenderung: angekuendigt
       ? { ab: angekuendigt.gueltigAb!, betrag: angekuendigt.betrag, art: 'ANGEKUENDIGT' }
@@ -391,6 +431,7 @@ function ausAnfrage(
   const { wert, waehrung } = aktuell!;
   const proJahr = Math.round((wert * 1200) / MONATE_JE_ZAHLUNG[anfrage.zahlweise]) / 100;
   const prozent = anfrage.anteilProzent ?? 100;
+  const einmalkosten = vollstaendigeEinmalkosten(anfrage.einmalkosten);
   return {
     ...VERTRAG_LEER,
     ...felder,
@@ -398,6 +439,7 @@ function ausAnfrage(
     version,
     betrag: aktuell!,
     preise,
+    einmalkosten,
     preissteigerung: anfrage.preissteigerung
       ? {
           ...anfrage.preissteigerung,
@@ -408,7 +450,7 @@ function ausAnfrage(
     kategorie: KATEGORIEN.find((k) => k.id === kategorieId) ?? KATEGORIEN[0],
     berechnet: {
       ...BERECHNET_LEER,
-      einmalkosten: { wert: 0, waehrung },
+      einmalkosten: einmalkostenSumme(einmalkosten) ?? { wert: 0, waehrung },
       status: anfrage.gekuendigtZum ? 'GEKUENDIGT' : 'AKTIV',
       kostenProMonat: { wert: Math.round((proJahr * 100) / 12) / 100, waehrung },
       kostenImJahr: { wert: proJahr, waehrung },
@@ -426,9 +468,12 @@ function ausAnfrage(
 
 /** Wie das Backend: `""` bei Enum und Datum sowie `{ wert: null }` sind nicht lesbar. */
 function nichtLesbar(anfrage: Record<string, unknown>): boolean {
-  const preise = (anfrage['preise'] ?? []) as { betrag: { wert: unknown } | null }[];
+  const zeilen = [
+    ...((anfrage['preise'] ?? []) as { betrag: { wert: unknown } | null }[]),
+    ...((anfrage['einmalkosten'] ?? []) as { betrag: { wert: unknown } | null }[]),
+  ];
   return (
-    preise.some(({ betrag }) => betrag?.wert === null) ||
+    zeilen.some(({ betrag }) => betrag?.wert === null) ||
     ['kategorieId', 'zahlweise', 'abbuchungAb', 'zahlungsweg', 'beginn', 'laufzeitende'].some(
       (feld) => anfrage[feld] === '',
     )
@@ -465,6 +510,18 @@ function feldfehler(anfrage: VertragAnfrage): Feldfehler[] {
       melden(`preise[${i}].gueltigAb`, 'PreisNichtVorBeginn');
     }
     if (gueltigAb) daten.add(gueltigAb);
+  });
+  if (!anfrage.einmalkosten) {
+    melden('einmalkosten', 'NotNull');
+  }
+  (anfrage.einmalkosten ?? []).forEach(({ bezeichnung, betrag, faelligAm }, i) => {
+    if (!bezeichnung?.trim()) melden(`einmalkosten[${i}].bezeichnung`, 'NotBlank');
+    if (!betrag) {
+      melden(`einmalkosten[${i}].betrag`, 'NotNull');
+    } else if (betrag.wert <= 0) {
+      melden(`einmalkosten[${i}].betrag`, 'PositiverBetrag');
+    }
+    if (!faelligAm) melden(`einmalkosten[${i}].faelligAm`, 'NotNull');
   });
   if (anfrage.beginn && anfrage.laufzeitende && anfrage.laufzeitende < anfrage.beginn) {
     melden('laufzeitende', 'LaufzeitendeNachBeginn');
