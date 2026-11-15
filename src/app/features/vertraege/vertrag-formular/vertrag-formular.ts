@@ -33,6 +33,10 @@ import { problemFelder } from '../../../core/fehler/problem';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { betragText, waehrungZeichen } from '../../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import {
+  EinmalkostenZeile,
+  VertragEinmalkostenZeilen,
+} from '../vertrag-einmalkosten-zeilen/vertrag-einmalkosten-zeilen';
 import { PreisZeile, VertragPreisliste } from '../vertrag-preisliste/vertrag-preisliste';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
 import {
@@ -52,6 +56,8 @@ import { VertragEingabe, VertragService } from '../vertrag.service';
 import {
   anfrageAus,
   betragLesen,
+  EinmalkostenWerte,
+  einmalkostenFeld,
   EinzelFeld,
   feldfehlerTexte,
   PreisWerte,
@@ -96,6 +102,7 @@ const TAB_VON: Record<EinzelFeld, TabKey> = {
   zahlweise: 'kosten',
   abbuchungAb: 'kosten',
   zahlungsweg: 'kosten',
+  einmalkosten: 'kosten',
   nichtKuendbar: 'laufzeit',
   beginn: 'laufzeit',
   laufzeitende: 'laufzeit',
@@ -106,19 +113,27 @@ const TAB_VON: Record<EinzelFeld, TabKey> = {
 };
 
 function tabVon(feld: VertragFeld): TabKey {
-  return feld.startsWith('preise.') ? 'preise' : TAB_VON[feld as EinzelFeld];
+  if (feld.startsWith('preise.')) {
+    return 'preise';
+  }
+  return feld.startsWith('einmalkosten.') ? 'kosten' : TAB_VON[feld as EinzelFeld];
 }
 
-/** Fehler der Zeilen ab {@code index} rücken nach dem Entfernen dieser Zeile eine Zeile nach oben. */
-function ohneZeile(fehler: ReadonlyMap<VertragFeld, string>, index: number) {
+type Liste = 'preise' | 'einmalkosten';
+
+/**
+ * Fehler der Zeilen ab {@code index} rücken nach dem Entfernen dieser Zeile eine Zeile nach oben;
+ * die der anderen Liste bleiben.
+ */
+function ohneZeile(fehler: ReadonlyMap<VertragFeld, string>, liste: Liste, index: number) {
   const neu = new Map<VertragFeld, string>();
   for (const [feld, text] of fehler) {
-    const zeile = /^preise\.(\d+)\.(\w+)$/.exec(feld);
-    if (!zeile) {
+    const zeile = /^(\w+)\.(\d+)\.(\w+)$/.exec(feld);
+    if (!zeile || zeile[1] !== liste) {
       neu.set(feld, text);
-    } else if (Number(zeile[1]) !== index) {
-      const i = Number(zeile[1]);
-      neu.set(preisFeld(i > index ? i - 1 : i, zeile[2] as keyof PreisWerte), text);
+    } else if (Number(zeile[2]) !== index) {
+      const i = Number(zeile[2]);
+      neu.set(`${liste}.${i > index ? i - 1 : i}.${zeile[3]}` as VertragFeld, text);
     }
   }
   return neu;
@@ -164,6 +179,7 @@ let letztesFormular = 0;
     ReactiveFormsModule,
     HinweisBox,
     Tabliste,
+    VertragEinmalkostenZeilen,
     VertragPreisliste,
     VertragZusammenfassung,
   ],
@@ -243,6 +259,7 @@ export class VertragFormular implements OnInit {
     gekuendigt: [false],
     gekuendigtZum: [''],
     notiz: [''],
+    einmalkosten: this.fb.array<EinmalkostenZeile>([]),
   });
 
   private ausgangswerte = JSON.stringify(this.formular.getRawValue());
@@ -301,6 +318,14 @@ export class VertragFormular implements OnInit {
       : [],
   );
 
+  /** Summe der vollständigen Zeilen aus der Vorschau; ohne Zeilen keine. */
+  protected readonly einmalkostenSumme = computed(() => {
+    const summe = this.vorschau()?.einmalkosten;
+    return this.werte().einmalkosten.length && summe
+      ? `Einmalkosten gesamt: ${betragText(summe, this.locale)}`
+      : null;
+  });
+
   protected readonly feldFehler = linkedSignal<ReadonlyMap<VertragFeld, string>>(() =>
     feldfehlerTexte(problemFelder(this.fehlerAntwort())),
   );
@@ -358,7 +383,8 @@ export class VertragFormular implements OnInit {
 
   constructor() {
     // Nur der Fehler des geänderten Feldes verschwindet, die übrigen bleiben als Orientierung.
-    // Die Zeilen der Preisliste melden sich selbst ({@link preisGeaendert}).
+    // Die Zeilen der Preisliste und der Einmalkosten melden sich selbst ({@link preisGeaendert},
+    // {@link einmalkostenGeaendert}); bei {@code einmalkosten} geht nur der Fehler an der Liste.
     const felder = Object.keys(this.formular.controls).filter((feld) => feld !== 'preise');
     for (const feld of felder as EinzelFeld[]) {
       const control: AbstractControl = this.formular.controls[feld];
@@ -400,6 +426,10 @@ export class VertragFormular implements OnInit {
     }
     const preise = this.formular.controls.preise;
     werte.preise.forEach(() => preise.push(this.preisZeile(), { emitEvent: false }));
+    const einmalkosten = this.formular.controls.einmalkosten;
+    werte.einmalkosten.forEach(() =>
+      einmalkosten.push(this.einmalkostenZeile(), { emitEvent: false }),
+    );
     this.formular.setValue(werte, { emitEvent: false });
     // Die leere Zeile zählt nicht als Änderung: Wer gleich wieder schließt, wird nicht gefragt.
     this.ausgangswerte = JSON.stringify(this.formular.getRawValue());
@@ -436,7 +466,7 @@ export class VertragFormular implements OnInit {
     this.formular.controls.preise.removeAt(index);
     this.allgemeinerFehler.set(false);
     this.feldFehler.update((fehler) => {
-      const neu = ohneZeile(fehler, index);
+      const neu = ohneZeile(fehler, 'preise', index);
       neu.delete('gueltigSeit');
       return neu;
     });
@@ -449,6 +479,34 @@ export class VertragFormular implements OnInit {
 
   protected preisGeaendert(index: number, feld: keyof PreisWerte): void {
     this.fehlerEntfernen(preisFeld(index, feld));
+  }
+
+  private einmalkostenZeile(): EinmalkostenZeile {
+    return this.fb.group({ bezeichnung: [''], betrag: [''], faelligAm: [''] });
+  }
+
+  protected einmalkostenHinzufuegen(): void {
+    const einmalkosten = this.formular.controls.einmalkosten;
+    einmalkosten.push(this.einmalkostenZeile());
+    const id = this.id(einmalkostenFeld(einmalkosten.length - 1, 'bezeichnung'));
+    afterNextRender(() => document.getElementById(id)?.focus(), { injector: this.injector });
+  }
+
+  protected einmalkostenEntfernen(index: number): void {
+    this.formular.controls.einmalkosten.removeAt(index);
+    this.allgemeinerFehler.set(false);
+    this.feldFehler.update((fehler) => ohneZeile(fehler, 'einmalkosten', index));
+    // Der Fokus ginge mit dem Knopf verloren: zur nächsten Zeile, sonst zu „Einmalkosten hinzufügen“.
+    const einmalkosten = this.formular.controls.einmalkosten;
+    const ziel =
+      index < einmalkosten.length
+        ? this.id(einmalkostenFeld(index, 'bezeichnung'))
+        : this.id('einmalkosten-hinzufuegen');
+    afterNextRender(() => document.getElementById(ziel)?.focus(), { injector: this.injector });
+  }
+
+  protected einmalkostenGeaendert(index: number, feld: keyof EinmalkostenWerte): void {
+    this.fehlerEntfernen(einmalkostenFeld(index, feld));
   }
 
   /**
@@ -476,7 +534,9 @@ export class VertragFormular implements OnInit {
     this.tab.set(tab as TabKey);
   }
 
-  protected id(feld: VertragFeld | 'tab' | 'tabpanel' | 'preis-hinzufuegen'): string {
+  protected id(
+    feld: VertragFeld | 'tab' | 'tabpanel' | 'preis-hinzufuegen' | 'einmalkosten-hinzufuegen',
+  ): string {
     return `${this.idPrefix}-${feld.replaceAll('.', '-')}`;
   }
 

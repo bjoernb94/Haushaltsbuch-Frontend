@@ -48,6 +48,8 @@ test.describe('Simulation der Verträge', () => {
     expect(uebersicht.laufendeVertraege).toBe(6);
     // „Software GmbH“ zählt nur zur Hälfte.
     expect(uebersicht.kostenProMonat).toEqual([{ wert: 124.56, waehrung: 'EUR' }]);
+    // Nur die 2026 fällige Einrichtung, zur Hälfte.
+    expect(uebersicht.einmalkostenImJahr).toEqual([{ wert: 15, waehrung: 'EUR' }]);
     expect(uebersicht.hatAnteile).toBe(true);
     expect(uebersicht.naechsteKuendigungsfristen).toHaveLength(1);
   });

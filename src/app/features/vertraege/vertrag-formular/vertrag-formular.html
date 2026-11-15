@@ -251,6 +251,20 @@
           </div>
         </div>
       </fieldset>
+
+      <fieldset>
+        <legend>Einmalkosten <span class="optional">(optional)</span></legend>
+        <app-vertrag-einmalkosten-zeilen
+          [zeilen]="formular.controls.einmalkosten"
+          [waehrung]="waehrung()"
+          [summe]="einmalkostenSumme()"
+          [fehler]="feldFehler()"
+          [idPrefix]="idPrefix"
+          (hinzufuegen)="einmalkostenHinzufuegen()"
+          (entfernen)="einmalkostenEntfernen($event)"
+          (geaendert)="einmalkostenGeaendert($event.index, $event.feld)"
+        />
+      </fieldset>
     </div>
     <div class="tabinhalt" [hidden]="tab() !== 'laufzeit'">
       <fieldset>

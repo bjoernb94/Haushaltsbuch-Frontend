@@ -1,0 +1,14 @@
+<h3>Einmalkosten</h3>
+@if (zeilen().length) {
+  <ul>
+    @for (zeile of zeilen(); track $index) {
+      <li>
+        <span>{{ zeile.text }}</span
+        ><b>{{ zeile.betrag }}</b>
+      </li>
+    }
+  </ul>
+  <p class="gesamt">{{ gesamt() }}</p>
+} @else {
+  <p class="keine">Keine Einmalkosten hinterlegt.</p>
+}

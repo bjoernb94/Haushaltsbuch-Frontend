@@ -30,6 +30,7 @@ const LEER: VertragWerte = {
   gekuendigt: false,
   gekuendigtZum: '',
   notiz: '',
+  einmalkosten: [],
 };
 
 const PFLICHT: VertragWerte = {
@@ -145,6 +146,23 @@ describe('vertragPruefen', () => {
     });
   });
 
+  describe('Einmalkosten', () => {
+    it('verlangt in jeder Zeile Wofür, Betrag und Fällig am', () => {
+      const fehler = vertragPruefen({
+        ...PFLICHT,
+        einmalkosten: [
+          { bezeichnung: ' ', betrag: '', faelligAm: '' },
+          { bezeichnung: 'Router', betrag: '0', faelligAm: '2026-03-01' },
+        ],
+      });
+      expect([...fehler.entries()]).toEqual([
+        ['einmalkosten.0.bezeichnung', 'Bitte gib an, wofür die Kosten anfallen.'],
+        ['einmalkosten.0.betrag', 'Bitte gib einen gültigen Betrag ein, z. B. 19,99.'],
+        ['einmalkosten.0.faelligAm', 'Bitte gib an, wann die Kosten fällig sind.'],
+      ]);
+    });
+  });
+
   it('überlässt fachliche Regeln und nicht lesbare Beträge dem Backend', () => {
     const werte = {
       ...PFLICHT,
@@ -207,6 +225,21 @@ describe('anfrageAus', () => {
       { gueltigAb: '2027-01-01', betrag: { wert: 24.99, waehrung: 'EUR' } },
       { gueltigAb: '2025-01-01', betrag: null },
     ]);
+  });
+
+  it('schickt die Einmalkosten in der Währung der Preise, Leeres als null', () => {
+    const anfrage = anfrageAus({
+      ...PFLICHT,
+      einmalkosten: [
+        { bezeichnung: ' Router ', betrag: '1.049,50', faelligAm: '2026-03-01' },
+        { bezeichnung: '', betrag: 'abc', faelligAm: '' },
+      ],
+    });
+    expect(anfrage.einmalkosten).toEqual([
+      { bezeichnung: 'Router', betrag: { wert: 1049.5, waehrung: 'EUR' }, faelligAm: '2026-03-01' },
+      { bezeichnung: null, betrag: null, faelligAm: null },
+    ]);
+    expect(anfrageAus(PFLICHT).einmalkosten).toEqual([]);
   });
 
   it('schickt den Anteil als Zahl, leer als null', () => {
@@ -309,6 +342,56 @@ describe('feldfehlerTexte', () => {
       'preise.0.betrag',
       'Alle Preise brauchen dieselbe Währung.',
     ],
+    [
+      'einmalkosten[1].bezeichnung',
+      'NotBlank',
+      {},
+      'einmalkosten.1.bezeichnung',
+      'Bitte gib an, wofür die Kosten anfallen.',
+    ],
+    [
+      'einmalkosten[0].bezeichnung',
+      'Size',
+      { max: 200 },
+      'einmalkosten.0.bezeichnung',
+      'Höchstens 200 Zeichen.',
+    ],
+    [
+      'einmalkosten[0].betrag',
+      'NotNull',
+      {},
+      'einmalkosten.0.betrag',
+      'Bitte gib einen gültigen Betrag ein, z. B. 19,99.',
+    ],
+    [
+      'einmalkosten[0].betrag',
+      'PositiverBetrag',
+      {},
+      'einmalkosten.0.betrag',
+      'Der Betrag muss größer als 0 sein.',
+    ],
+    [
+      'einmalkosten[2].betrag.waehrung',
+      'GleicheWaehrung',
+      {},
+      'einmalkosten.2.betrag',
+      'Einmalkosten brauchen dieselbe Währung wie die Preise.',
+    ],
+    [
+      'einmalkosten[0].faelligAm',
+      'NotNull',
+      {},
+      'einmalkosten.0.faelligAm',
+      'Bitte gib an, wann die Kosten fällig sind.',
+    ],
+    [
+      'einmalkosten[0].faelligAm',
+      'PlausiblesDatum',
+      {},
+      'einmalkosten.0.faelligAm',
+      'Bitte gib ein Datum zwischen dem 01.01.1900 und dem 31.12.2199 ein.',
+    ],
+    ['einmalkosten', 'Size', { max: 100 }, 'einmalkosten', 'Höchstens 100 Einmalkosten.'],
     ['anbieter', 'NotBlank', {}, 'anbieter', 'Bitte gib den Anbieter ein.'],
     ['notiz', 'Size', { max: 1000 }, 'notiz', 'Höchstens 1000 Zeichen.'],
     [
@@ -467,6 +550,24 @@ describe('Bearbeiten', () => {
       });
     });
 
+    it('belegt die Einmalkosten in der Reihenfolge der Antwort vor, Beträge mit Komma', () => {
+      const werte = werteAus({
+        ...VERTRAG,
+        einmalkosten: [
+          { bezeichnung: 'Router', betrag: { wert: 99, waehrung: 'USD' }, faelligAm: '2026-01-15' },
+          {
+            bezeichnung: 'Anschluss',
+            betrag: { wert: 49.9, waehrung: 'USD' },
+            faelligAm: '2026-02-01',
+          },
+        ],
+      });
+      expect(werte.einmalkosten).toEqual([
+        { bezeichnung: 'Router', betrag: '99,00', faelligAm: '2026-01-15' },
+        { bezeichnung: 'Anschluss', betrag: '49,90', faelligAm: '2026-02-01' },
+      ]);
+    });
+
     it('belegt den Anteil mit Komma vor, ohne Anteil leer', () => {
       expect(werteAus({ ...VERTRAG, anteilProzent: 50 }).anteilProzent).toBe('50');
       expect(werteAus({ ...VERTRAG, anteilProzent: 33.3 }).anteilProzent).toBe('33,3');
@@ -549,6 +650,25 @@ describe('Bearbeiten', () => {
       ]);
     });
 
+    it('lässt Einmalkosten mit Betrag nicht größer 0 weg, unvollständige bleiben', () => {
+      const anfrage = vorschauAus({
+        ...PFLICHT,
+        einmalkosten: [
+          { bezeichnung: 'Gutschrift', betrag: '-5', faelligAm: '2026-03-01' },
+          { bezeichnung: 'Router', betrag: '', faelligAm: '' },
+          { bezeichnung: 'Anschluss', betrag: '49', faelligAm: '2026-03-01' },
+        ],
+      });
+      expect(anfrage.einmalkosten).toEqual([
+        { bezeichnung: 'Router', betrag: null, faelligAm: null },
+        {
+          bezeichnung: 'Anschluss',
+          betrag: { wert: 49, waehrung: 'EUR' },
+          faelligAm: '2026-03-01',
+        },
+      ]);
+    });
+
     it('behält nur den ersten Preis ohne Datum', () => {
       const anfrage = vorschauAus({
         ...PFLICHT,
@@ -599,7 +719,7 @@ describe('Bearbeiten', () => {
       });
     });
 
-    it('übernimmt Felder, die das Formular noch nicht zeigt, wie gespeichert', () => {
+    it('übernimmt Felder, die das Formular noch nicht zeigt, wie gespeichert; Einmalkosten unverändert', () => {
       const gespeichert: VertragAntwort = {
         ...VERTRAG,
         anteilProzent: 50,

@@ -105,6 +105,9 @@
               </div>
             }
           </dl>
+          @if (aktiverTab() === 'kosten') {
+            <app-vertrag-einmalkosten [vertrag]="vertrag()!" />
+          }
         }
       </div>
 

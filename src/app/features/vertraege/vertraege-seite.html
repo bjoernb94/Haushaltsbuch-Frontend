@@ -53,6 +53,13 @@
         <small>{{ nurAnteil }}</small>
       }
     </div>
+    <div class="kennzahl">
+      <span>Einmalkosten {{ stand.uebersicht.jahr }}</span
+      ><b>{{ stand.uebersicht.einmalkostenImJahr | betraege }}</b>
+      @if (stand.uebersicht.hatAnteile) {
+        <small>{{ nurAnteil }}</small>
+      }
+    </div>
   </div>
 } @else {
   <p class="laedt" role="status">Wird geladen …</p>
