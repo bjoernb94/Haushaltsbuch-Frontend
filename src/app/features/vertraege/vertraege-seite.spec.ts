@@ -261,6 +261,14 @@ describe('VertraegeSeite', () => {
       expect(text(kennzahlen[3])).toBe('Einmalkosten 20260,00 €');
     });
 
+    it('nennt „inkl. Prognose“ unter „Kosten <Jahr>“, wenn das Backend es meldet', async () => {
+      uebersicht.mockReturnValue(of({ ...UEBERSICHT, kostenImJahrMitPrognose: true }));
+      const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
+      expect(text(kennzahlen[2])).toBe(
+        'Kosten 2026706,80 €Alle Abbuchungen im Kalenderjahr, inkl. Prognose',
+      );
+    });
+
     it('zeigt die Einmalkosten im Jahr des Backends je Währung', async () => {
       uebersicht.mockReturnValue(
         of({
@@ -519,6 +527,56 @@ describe('VertraegeSeite', () => {
       );
       expect(text(zeilen(element)[0].querySelector('.chip'))).toBe('Preis ↑ ab 01.01.2027');
       expect(zeilen(element)[1].querySelector('.chip')).toBeNull();
+    });
+
+    it('Tab Preise: Diagramm ab zwei Punkten, darunter Garantie, Regel und Erinnerung', async () => {
+      auflisten.mockReturnValue(
+        of([
+          {
+            ...MIT_PREISEN,
+            preisgarantieBis: '2026-12-31',
+            preissteigerung: {
+              art: 'PROZENT',
+              prozent: 2.5,
+              betrag: null,
+              rhythmus: 'JAEHRLICH',
+              naechsteAm: '2025-01-01',
+            },
+            erinnerungSonderkuendigung: false,
+            berechnet: {
+              ...MIT_PREISEN.berechnet,
+              kostenImJahrMitPrognose: true,
+              preisverlauf: [
+                { ab: '2023-01-01', betrag: EUR(549), art: 'GEZAHLT' },
+                { ab: '2026-01-01', betrag: EUR(600), art: 'GEZAHLT' },
+                { ab: '2027-01-01', betrag: EUR(620), art: 'ANGEKUENDIGT' },
+                { ab: '2028-01-01', betrag: EUR(635.5), art: 'PROGNOSE' },
+              ],
+            },
+          },
+        ]),
+      );
+      const { element, stabil } = await seite('/vertraege/strom?tab=preise');
+      expect(element.querySelector('app-vertrag-preisverlauf [role="img"]')).not.toBeNull();
+      expect(eintraege(element)).toEqual({
+        'Preisgarantie bis': '31.12.2026',
+        'Regelmäßige Erhöhung': 'Jährlich um 2,5 %',
+        'Erinnerung Sonderkündigungsrecht': 'Aus',
+      });
+
+      element.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
+      await stabil();
+      expect(eintraege(element)['Kosten 2026']).toBe('586,80 € inkl. Prognose');
+    });
+
+    it('Tab Preise ohne Regel und Änderungen: Hinweis statt Diagramm, Erinnerung fehlt', async () => {
+      const { element } = await seite('/vertraege/kfz?tab=preise');
+      expect(element.querySelector('app-vertrag-preisverlauf')).toBeNull();
+      expect(element.querySelector('.keine-preise')).not.toBeNull();
+      expect(eintraege(element)).toEqual({
+        'Preisgarantie bis': 'Keine',
+        'Regelmäßige Erhöhung': 'Nein',
+      });
     });
 
     it('geteilter Vertrag: Chip, Kachel „Pro Monat“ und „Dein Anteil“ im Tab Kosten', async () => {

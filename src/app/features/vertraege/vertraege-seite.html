@@ -48,7 +48,11 @@
     <div class="kennzahl">
       <span>Kosten {{ stand.uebersicht.jahr }}</span
       ><b>{{ stand.uebersicht.kostenImJahr | betraege }}</b>
-      <small>Alle Abbuchungen im Kalenderjahr</small>
+      <small
+        >Alle Abbuchungen im Kalenderjahr{{
+          stand.uebersicht.kostenImJahrMitPrognose ? ', inkl. Prognose' : ''
+        }}</small
+      >
       @if (stand.uebersicht.hatAnteile) {
         <small>{{ nurAnteil }}</small>
       }

@@ -1,0 +1,150 @@
+<div class="raster">
+  <div class="feld">
+    <label [for]="id('preisgarantieBis')"
+      >Preisgarantie bis <span class="optional">(optional)</span></label
+    >
+    <input
+      [id]="id('preisgarantieBis')"
+      type="date"
+      formControlName="preisgarantieBis"
+      [attr.aria-invalid]="!!fehlerText('preisgarantieBis')"
+      [attr.aria-describedby]="
+        beschreibung('preisgarantieBis', id('preisgarantieBis') + '-hinweis')
+      "
+    />
+    <span class="feldhinweis" [id]="id('preisgarantieBis') + '-hinweis'"
+      >Vor diesem Datum rechnet die Prognose keine Erhöhung ein.</span
+    >
+    @if (fehlerText('preisgarantieBis'); as text) {
+      <p class="feldfehler" [id]="id('preisgarantieBis') + '-fehler'">{{ text }}</p>
+    }
+  </div>
+</div>
+
+<div class="ankreuzen">
+  <input
+    [id]="id('steigt')"
+    type="checkbox"
+    role="switch"
+    formControlName="steigt"
+    [attr.aria-describedby]="id('steigt') + '-hinweis'"
+  />
+  <div>
+    <label [for]="id('steigt')">Preis steigt regelmäßig</label>
+    <span class="feldhinweis" [id]="id('steigt') + '-hinweis'"
+      >Zum Beispiel jährlich um 2,5 %. Das ist eine Prognose: Kommt der echte neue Preis, trägst du
+      ihn oben als Preis ein, und die Prognose rechnet ab dort weiter.</span
+    >
+  </div>
+</div>
+
+@if (steigt()) {
+  <div class="raster">
+    <div class="feld">
+      <label [for]="id('steigerungsart')">Erhöhung in</label>
+      <select
+        [id]="id('steigerungsart')"
+        formControlName="steigerungsart"
+        [attr.aria-invalid]="!!fehlerText('steigerungsart')"
+        [attr.aria-describedby]="beschreibung('steigerungsart')"
+      >
+        <option value="PROZENT">Prozent</option>
+        <option value="BETRAG">{{ waehrungName() }}</option>
+      </select>
+      @if (fehlerText('steigerungsart'); as text) {
+        <p class="feldfehler" [id]="id('steigerungsart') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+    <div class="feld">
+      <label [for]="id('steigerungswert')">{{ wertLabel() }}</label>
+      <input
+        [id]="id('steigerungswert')"
+        type="text"
+        inputmode="decimal"
+        [placeholder]="wertPlatzhalter()"
+        formControlName="steigerungswert"
+        [attr.aria-invalid]="!!fehlerText('steigerungswert')"
+        [attr.aria-describedby]="beschreibung('steigerungswert')"
+      />
+      @if (fehlerText('steigerungswert'); as text) {
+        <p class="feldfehler" [id]="id('steigerungswert') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+    <div class="feld">
+      <label [for]="id('rhythmus')">Rhythmus</label>
+      <select
+        [id]="id('rhythmus')"
+        formControlName="rhythmus"
+        [attr.aria-invalid]="!!fehlerText('rhythmus')"
+        [attr.aria-describedby]="beschreibung('rhythmus')"
+      >
+        @for (option of rhythmen; track option.wert) {
+          <option [value]="option.wert">{{ option.text }}</option>
+        }
+      </select>
+      @if (fehlerText('rhythmus'); as text) {
+        <p class="feldfehler" [id]="id('rhythmus') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+    <div class="feld">
+      <label [for]="id('naechsteErhoehungAm')">Nächste Erhöhung am *</label>
+      <input
+        [id]="id('naechsteErhoehungAm')"
+        type="date"
+        formControlName="naechsteErhoehungAm"
+        [attr.aria-invalid]="!!fehlerText('naechsteErhoehungAm')"
+        [attr.aria-describedby]="beschreibung('naechsteErhoehungAm')"
+      />
+      @if (fehlerText('naechsteErhoehungAm'); as text) {
+        <p class="feldfehler" [id]="id('naechsteErhoehungAm') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+  </div>
+  <div class="prognose" role="status">
+    <b>Prognose</b>
+    @for (zeile of prognose().zeilen; track $index) {
+      <span>{{ zeile }}</span>
+    }
+    @if (prognose().hinweis; as hinweis) {
+      <span class="leer">{{ hinweis }}</span>
+    }
+  </div>
+}
+
+@if (erinnerung()) {
+  <div class="erinnerung">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 11v5"></path>
+      <path d="M12 8h.01"></path>
+    </svg>
+    <div>
+      <span [id]="id('erinnerungSonderkuendigung') + '-hinweis'"
+        >Bei einer Preiserhöhung hast du oft ein Sonderkündigungsrecht. Ob es gilt, hängt vom
+        Vertrag ab, steht meist im Ankündigungsschreiben.</span
+      >
+      <div class="ankreuzen">
+        <input
+          [id]="id('erinnerungSonderkuendigung')"
+          type="checkbox"
+          role="switch"
+          formControlName="erinnerungSonderkuendigung"
+          [attr.aria-describedby]="id('erinnerungSonderkuendigung') + '-hinweis'"
+        />
+        <label [for]="id('erinnerungSonderkuendigung')"
+          >Vor jeder Preiserhöhung daran erinnern</label
+        >
+      </div>
+    </div>
+  </div>
+}

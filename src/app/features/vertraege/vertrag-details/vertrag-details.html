@@ -96,18 +96,17 @@
       >
         @if (aktiverTab() === 'preise') {
           <app-vertrag-preise [vertrag]="vertrag()!" (hinzufuegen)="preisHinzufuegen()" />
-        } @else {
-          <dl>
-            @for (eintrag of eintraege(); track eintrag.label) {
-              <div [class.breit]="eintrag.breit">
-                <dt>{{ eintrag.label }}</dt>
-                <dd>{{ eintrag.wert }}</dd>
-              </div>
-            }
-          </dl>
-          @if (aktiverTab() === 'kosten') {
-            <app-vertrag-einmalkosten [vertrag]="vertrag()!" />
+        }
+        <dl>
+          @for (eintrag of eintraege(); track eintrag.label) {
+            <div [class.breit]="eintrag.breit">
+              <dt>{{ eintrag.label }}</dt>
+              <dd>{{ eintrag.wert }}</dd>
+            </div>
           }
+        </dl>
+        @if (aktiverTab() === 'kosten') {
+          <app-vertrag-einmalkosten [vertrag]="vertrag()!" />
         }
       </div>
 

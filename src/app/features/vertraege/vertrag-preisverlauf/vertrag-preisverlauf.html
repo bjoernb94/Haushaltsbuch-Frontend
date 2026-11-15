@@ -1,0 +1,44 @@
+<figure>
+  <div class="flaeche" role="img" [attr.aria-label]="beschreibung()">
+    @for (wert of zeichnung().achse; track $index) {
+      <span class="achse" aria-hidden="true" [style.top.px]="wert.y">{{ wert.text }}</span>
+    }
+    <div class="zeichnung" aria-hidden="true">
+      <svg
+        [attr.viewBox]="'0 0 100 ' + hoehe"
+        preserveAspectRatio="none"
+        width="100%"
+        [attr.height]="hoehe"
+      >
+        <path class="gitter" [attr.d]="zeichnung().gitter"></path>
+        <path class="heute" [attr.d]="zeichnung().heute"></path>
+        <path class="linie" [attr.d]="zeichnung().gezahlt"></path>
+        <path class="linie zukunft" [attr.d]="zeichnung().zukunft"></path>
+      </svg>
+      @for (punkt of zeichnung().punkte; track $index) {
+        <span
+          class="punkt"
+          [class.gezahlt]="punkt.gezahlt"
+          [style.left.%]="punkt.x"
+          [style.top.px]="punkt.y"
+        ></span>
+      }
+      <span class="heute-text" [style.left.%]="zeichnung().heuteX">heute</span>
+      @for (jahr of zeichnung().jahre; track jahr.text) {
+        <span class="jahr" [style.left.%]="jahr.x">{{ jahr.text }}</span>
+      }
+    </div>
+  </div>
+  <figcaption>
+    <span
+      ><svg width="26" height="8" viewBox="0 0 26 8" aria-hidden="true">
+        <path d="M1 4H25"></path></svg
+      >Gezahlt</span
+    >
+    <span
+      ><svg width="26" height="8" viewBox="0 0 26 8" aria-hidden="true">
+        <path class="zukunft" d="M1 4H25"></path></svg
+      >Angekündigt oder Prognose</span
+    >
+  </figcaption>
+</figure>

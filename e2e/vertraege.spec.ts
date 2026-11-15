@@ -93,6 +93,27 @@ test.describe('Seite Verträge', () => {
     await expect(page.getByText('Keine Einmalkosten hinterlegt.')).toBeVisible();
   });
 
+  test('Preissteigerung: Chip mit Prognose, Diagramm und Regel im Tab Preise', async ({ page }) => {
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/vertraege');
+    const app = page.locator('app-vertrag-zeile').filter({ hasText: 'Software GmbH' });
+    await expect(app.getByText('Preis ↑ ab 01.01.2027 (Prognose)')).toBeVisible();
+
+    await page.goto('/vertraege/app?tab=preise');
+    const panel = page.getByRole('complementary', { name: 'Software GmbH' });
+    const diagramm = panel.getByRole('img', { name: /^Preisverlauf:/ });
+    await expect(diagramm).toBeVisible();
+    await expect(diagramm).toHaveAttribute('aria-label', /ab 01\.01\.2027 6,00\s€ \(Prognose\)/);
+    await expect(panel.locator('figcaption')).toHaveText(/Gezahlt\s*Angekündigt oder Prognose/);
+    await expect(panel.getByRole('tabpanel')).toContainText(/Preisgarantie bis\s*Keine/);
+    await expect(panel.getByRole('tabpanel')).toContainText(
+      /Regelmäßige Erhöhung\s*Jährlich um 1,00\s€/,
+    );
+    await expect(panel.getByRole('tabpanel')).toContainText(
+      /Erinnerung Sonderkündigungsrecht\s*An/,
+    );
+  });
+
   test('kürzt lange Angaben in der Zeile, die Details zeigen alles', async ({ page }) => {
     const lang = 'Sehr langer Text '.repeat(30).trim();
     await backendSimulieren(page, {

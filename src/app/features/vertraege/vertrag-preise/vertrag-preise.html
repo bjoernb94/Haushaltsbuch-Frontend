@@ -1,4 +1,7 @@
 @if (preise().length) {
+  @if (vertrag().berechnet.preisverlauf.length > 1) {
+    <app-vertrag-preisverlauf [punkte]="vertrag().berechnet.preisverlauf" />
+  }
   <div class="preise">
     <h3>Preise</h3>
     <ul>

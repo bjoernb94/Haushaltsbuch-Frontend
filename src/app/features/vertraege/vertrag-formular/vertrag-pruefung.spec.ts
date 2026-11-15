@@ -1,10 +1,11 @@
 import { VertragAntwort } from '../../../core/api/api';
 import {
   anfrageAus,
-  anteilLesen,
+  prozentLesen,
   vorschauAus,
   betragLesen,
   feldfehlerTexte,
+  OHNE_STEIGERUNG,
   vertragPruefen,
   VertragWerte,
   werteAus,
@@ -31,6 +32,9 @@ const LEER: VertragWerte = {
   gekuendigtZum: '',
   notiz: '',
   einmalkosten: [],
+  preisgarantieBis: '',
+  ...OHNE_STEIGERUNG,
+  erinnerungSonderkuendigung: true,
 };
 
 const PFLICHT: VertragWerte = {
@@ -73,7 +77,7 @@ describe('betragLesen', () => {
   });
 });
 
-describe('anteilLesen', () => {
+describe('prozentLesen', () => {
   it.each([
     ['50', 50],
     ['33,3', 33.3],
@@ -82,11 +86,11 @@ describe('anteilLesen', () => {
     ['0', 0],
     ['150', 150],
   ])('liest „%s“, die Grenzen prüft das Backend', (eingabe, wert) => {
-    expect(anteilLesen(eingabe)).toBe(wert);
+    expect(prozentLesen(eingabe)).toBe(wert);
   });
 
   it.each(['', 'abc', '33.3', '50 %', ',5', '-5'])('lehnt „%s“ ab', (eingabe) => {
-    expect(anteilLesen(eingabe)).toBeNull();
+    expect(prozentLesen(eingabe)).toBeNull();
   });
 });
 
@@ -143,6 +147,18 @@ describe('vertragPruefen', () => {
       const fehler = vertragPruefen({ ...PFLICHT, preise });
       expect(fehler.get('gueltigSeit')).toBe('Bitte gib an, seit wann der Betrag oben gilt.');
       expect(vertragPruefen(PFLICHT).has('gueltigSeit')).toBe(false);
+    });
+  });
+
+  describe('Preissteigerung', () => {
+    it('verlangt Wert und Datum nur mit eingeschaltetem Schalter', () => {
+      expect(vertragPruefen(PFLICHT).size).toBe(0);
+      expect([...vertragPruefen({ ...PFLICHT, steigt: true }).entries()]).toEqual([
+        ['steigerungswert', 'Bitte gib an, um wie viel der Preis steigt.'],
+        ['naechsteErhoehungAm', 'Bitte gib an, wann der Preis das nächste Mal steigt.'],
+      ]);
+      const regel = { steigerungswert: '2,5', naechsteErhoehungAm: '2027-01-01' };
+      expect(vertragPruefen({ ...PFLICHT, steigt: true, ...regel }).size).toBe(0);
     });
   });
 
@@ -240,6 +256,37 @@ describe('anfrageAus', () => {
       { bezeichnung: null, betrag: null, faelligAm: null },
     ]);
     expect(anfrageAus(PFLICHT).einmalkosten).toEqual([]);
+  });
+
+  it('schickt die Regel nur mit eingeschaltetem Schalter, zur Art nur den passenden Wert', () => {
+    const regel = {
+      ...PFLICHT,
+      steigerungswert: '2,75',
+      rhythmus: 'VIERTELJAEHRLICH' as const,
+      naechsteErhoehungAm: '2027-01-01',
+      preisgarantieBis: '2026-12-31',
+      erinnerungSonderkuendigung: false,
+    };
+    expect(anfrageAus(regel)).toMatchObject({
+      preissteigerung: null,
+      preisgarantieBis: '2026-12-31',
+      erinnerungSonderkuendigung: false,
+    });
+    expect(anfrageAus({ ...regel, steigt: true }).preissteigerung).toEqual({
+      art: 'PROZENT',
+      prozent: 2.75,
+      betrag: null,
+      rhythmus: 'VIERTELJAEHRLICH',
+      naechsteAm: '2027-01-01',
+    });
+    expect(
+      anfrageAus({ ...regel, steigt: true, steigerungsart: 'BETRAG', steigerungswert: '1,50' })
+        .preissteigerung,
+    ).toMatchObject({ prozent: null, betrag: { wert: 1.5, waehrung: 'EUR' } });
+    expect(
+      anfrageAus({ ...regel, steigt: true, steigerungswert: 'x', naechsteErhoehungAm: '' })
+        .preissteigerung,
+    ).toMatchObject({ prozent: null, naechsteAm: null });
   });
 
   it('schickt den Anteil als Zahl, leer als null', () => {
@@ -392,6 +439,56 @@ describe('feldfehlerTexte', () => {
       'Bitte gib ein Datum zwischen dem 01.01.1900 und dem 31.12.2199 ein.',
     ],
     ['einmalkosten', 'Size', { max: 100 }, 'einmalkosten', 'Höchstens 100 Einmalkosten.'],
+    [
+      'preissteigerung.prozent',
+      'PassenderWert',
+      {},
+      'steigerungswert',
+      'Bitte gib an, um wie viel der Preis steigt.',
+    ],
+    [
+      'preissteigerung.prozent',
+      'DecimalMax',
+      {},
+      'steigerungswert',
+      'Bitte eine Zahl größer 0 bis 100 mit höchstens zwei Nachkommastellen.',
+    ],
+    [
+      'preissteigerung.prozent',
+      'Digits',
+      {},
+      'steigerungswert',
+      'Bitte eine Zahl größer 0 bis 100 mit höchstens zwei Nachkommastellen.',
+    ],
+    [
+      'preissteigerung.betrag',
+      'PositiverBetrag',
+      {},
+      'steigerungswert',
+      'Der Betrag muss größer als 0 sein.',
+    ],
+    [
+      'preissteigerung.betrag.waehrung',
+      'GleicheWaehrung',
+      {},
+      'steigerungswert',
+      'Die Erhöhung braucht dieselbe Währung wie die Preise.',
+    ],
+    [
+      'preissteigerung.naechsteAm',
+      'NotNull',
+      {},
+      'naechsteErhoehungAm',
+      'Bitte gib an, wann der Preis das nächste Mal steigt.',
+    ],
+    [
+      'preisgarantieBis',
+      'PlausiblesDatum',
+      {},
+      'preisgarantieBis',
+      'Bitte gib ein Datum zwischen dem 01.01.1900 und dem 31.12.2199 ein.',
+    ],
+    ['preissteigerung.rhythmus', 'NotNull', {}, 'rhythmus', 'Bitte fülle dieses Feld aus.'],
     ['anbieter', 'NotBlank', {}, 'anbieter', 'Bitte gib den Anbieter ein.'],
     ['notiz', 'Size', { max: 1000 }, 'notiz', 'Höchstens 1000 Zeichen.'],
     [
@@ -568,6 +665,44 @@ describe('Bearbeiten', () => {
       ]);
     });
 
+    it('belegt Regel, Garantie und Erinnerung vor; ohne Regel Prozent und jährlich', () => {
+      expect(werteAus(VERTRAG)).toMatchObject({
+        ...OHNE_STEIGERUNG,
+        preisgarantieBis: '',
+        erinnerungSonderkuendigung: true,
+      });
+      const regel = {
+        art: 'PROZENT' as const,
+        prozent: 2.75,
+        betrag: null,
+        rhythmus: 'ZWEIJAEHRLICH' as const,
+        naechsteAm: '2025-01-01',
+      };
+      expect(
+        werteAus({
+          ...VERTRAG,
+          preissteigerung: regel,
+          preisgarantieBis: '2026-12-31',
+          erinnerungSonderkuendigung: false,
+        }),
+      ).toMatchObject({
+        steigt: true,
+        steigerungsart: 'PROZENT',
+        steigerungswert: '2,75',
+        rhythmus: 'ZWEIJAEHRLICH',
+        naechsteErhoehungAm: '2025-01-01',
+        preisgarantieBis: '2026-12-31',
+        erinnerungSonderkuendigung: false,
+      });
+      const betrag = {
+        ...regel,
+        art: 'BETRAG' as const,
+        prozent: null,
+        betrag: { wert: 1, waehrung: 'USD' },
+      };
+      expect(werteAus({ ...VERTRAG, preissteigerung: betrag }).steigerungswert).toBe('1,00');
+    });
+
     it('belegt den Anteil mit Komma vor, ohne Anteil leer', () => {
       expect(werteAus({ ...VERTRAG, anteilProzent: 50 }).anteilProzent).toBe('50');
       expect(werteAus({ ...VERTRAG, anteilProzent: 33.3 }).anteilProzent).toBe('33,3');
@@ -669,6 +804,24 @@ describe('Bearbeiten', () => {
       ]);
     });
 
+    it('lässt Werte der Erhöhung weg, die das Backend sicher ablehnt', () => {
+      const regel = { ...PFLICHT, steigt: true, naechsteErhoehungAm: '2027-01-01' };
+      const prozent = (wert: string) =>
+        vorschauAus({ ...regel, steigerungswert: wert }).preissteigerung?.prozent;
+      expect(prozent('2,75')).toBe(2.75);
+      expect(prozent('100')).toBe(100);
+      expect(prozent('2,755')).toBeNull();
+      expect(prozent('101')).toBeNull();
+      expect(prozent('0')).toBeNull();
+      expect(prozent('abc')).toBeNull();
+      const betrag = (wert: string) =>
+        vorschauAus({ ...regel, steigerungsart: 'BETRAG', steigerungswert: wert }).preissteigerung
+          ?.betrag;
+      expect(betrag('1,00')).toEqual({ wert: 1, waehrung: 'EUR' });
+      expect(betrag('0')).toBeNull();
+      expect(vorschauAus(PFLICHT).preissteigerung).toBeNull();
+    });
+
     it('behält nur den ersten Preis ohne Datum', () => {
       const anfrage = vorschauAus({
         ...PFLICHT,
@@ -719,7 +872,7 @@ describe('Bearbeiten', () => {
       });
     });
 
-    it('übernimmt Felder, die das Formular noch nicht zeigt, wie gespeichert; Einmalkosten unverändert', () => {
+    it('schickt Anteil, Einmalkosten, Regel, Garantie und Erinnerung ohne Änderung zurück', () => {
       const gespeichert: VertragAntwort = {
         ...VERTRAG,
         anteilProzent: 50,

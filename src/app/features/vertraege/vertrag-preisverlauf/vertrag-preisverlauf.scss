@@ -1,0 +1,113 @@
+figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.flaeche {
+  position: relative;
+  height: 196px;
+  box-sizing: border-box;
+  border: 1px solid var(--app-trenner);
+  border-radius: 12px;
+  background: var(--app-flaeche);
+  overflow: hidden;
+}
+
+.zeichnung {
+  position: absolute;
+  inset: 20px 20px auto 76px;
+  height: 150px;
+
+  svg {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+  }
+}
+
+path {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.gitter {
+  stroke: var(--app-trenner);
+  stroke-width: 1;
+}
+
+.heute {
+  stroke: var(--app-text-gedaempft);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.linie,
+figcaption path {
+  stroke: var(--app-gruen);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.zukunft {
+  stroke-dasharray: 6 5;
+}
+
+.punkt {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  box-sizing: border-box;
+  border: 2px solid var(--app-gruen);
+  border-radius: 50%;
+  background: var(--app-flaeche);
+
+  &.gezahlt {
+    background: var(--app-gruen);
+  }
+}
+
+.achse,
+.jahr,
+.heute-text {
+  position: absolute;
+  font-size: 12px;
+  color: var(--app-text-gedaempft);
+  white-space: nowrap;
+}
+
+.achse {
+  left: 4px;
+  width: 66px;
+  text-align: right;
+  transform: translateY(-50%);
+}
+
+.jahr {
+  top: 154px;
+  transform: translateX(-50%);
+}
+
+.heute-text {
+  top: -16px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 13px;
+  color: var(--app-text-gedaempft);
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
