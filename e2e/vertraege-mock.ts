@@ -500,7 +500,11 @@ function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwor
           }
         : null,
     einmalkosten: einmalkostenSumme(vollstaendigeEinmalkosten(anfrage.einmalkosten ?? [])),
-    naechsteAbbuchung: null,
+    // Grob: der Anker selbst, ohne Rhythmus; null ohne Zahlweise, Anker oder Preis wie im Backend.
+    naechsteAbbuchung:
+      aktuell && anfrage.zahlweise && anfrage.abbuchungAb
+        ? { am: anfrage.abbuchungAb, betrag: aktuell }
+        : null,
     naechstePreisaenderung: angekuendigt
       ? { ab: angekuendigt.gueltigAb!, betrag: angekuendigt.betrag, art: 'ANGEKUENDIGT' }
       : prognose[0]

@@ -22,6 +22,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { catchError, distinctUntilChanged, map, of, startWith, switchMap, timer } from 'rxjs';
 import {
+  Betrag,
   Erhoehungsrhythmus,
   Steigerungsart,
   Verlaengerung,
@@ -53,6 +54,7 @@ import {
 import {
   kategorieText,
   kuendigungText,
+  PREISAENDERUNG_ART_TEXT,
   preisText,
   VERLAENGERUNG_TEXT,
   vertragName,
@@ -60,9 +62,9 @@ import {
   ZAHLWEISE_TEXT,
 } from '../vertrag-texte';
 import { VertragEingabe, VertragService } from '../vertrag.service';
+import { KEINE_ABBUCHUNG } from '../vertrag-zeile/vertrag-zeile';
 import {
   anfrageAus,
-  betragLesen,
   EinmalkostenWerte,
   einmalkostenFeld,
   EinzelFeld,
@@ -402,24 +404,48 @@ export class VertragFormular implements OnInit {
     return TABS.map((tab) => ({ ...tab, fehler: anzahl.get(tab.key) ?? 0 }));
   });
 
-  /** Nur Formatierung der Eingaben; Termine kommen aus der Vorschau des Backends (ADR 0010). */
+  /**
+   * Alle Werte aus der Vorschau des Backends, die SPA formatiert nur (ADR 0010). Scheitert die
+   * Vorschau, ist alles „Noch offen“. {@code null} trotz ausgefüllter Felder heißt: Es folgt nichts
+   * mehr (Abbuchung) bzw. noch keine vollständige Zeile (Einmalkosten).
+   */
   protected readonly uebersicht = computed<Uebersicht>(() => {
     const w = this.werte();
     const anbieter = w.anbieter.trim();
     const bezeichnung = w.bezeichnung.trim();
     const kategorie = this.kategorien().find(({ id }) => id === w.kategorieId);
-    const wert = betragLesen(w.betrag);
-    const betrag =
-      wert !== null && wert > 0
-        ? betragText({ wert, waehrung: this.vertrag()?.betrag.waehrung ?? 'EUR' }, this.locale) +
-          (w.zahlweise ? ` ${ZAHLWEISE_TEXT[w.zahlweise]}` : '')
+    const v = this.vorschau();
+    const text = (betrag: Betrag) => betragText(betrag, this.locale);
+    const zahlweise = w.zahlweise ? ` ${ZAHLWEISE_TEXT[w.zahlweise]}` : '';
+
+    const proMonat = v?.kostenProMonat
+      ? text(v.kostenProMonat) +
+        (v.eigenerAnteil?.kostenProMonat
+          ? `, dein Anteil ${text(v.eigenerAnteil.kostenProMonat)}`
+          : '')
+      : NOCH_OFFEN;
+    const abbuchungMoeglich = !!(w.betrag.trim() && w.zahlweise && w.abbuchungAb);
+    const abbuchung = v?.naechsteAbbuchung
+      ? `${datumText(v.naechsteAbbuchung.am)}, ${text(v.naechsteAbbuchung.betrag)}`
+      : v && abbuchungMoeglich
+        ? KEINE_ABBUCHUNG
         : NOCH_OFFEN;
-    const vorschau = this.vorschau();
     const kuendigung = w.nichtKuendbar
       ? 'Nicht kündbar'
-      : vorschau
-        ? kuendigungText(vorschau.kuendigung)
+      : v
+        ? kuendigungText(v.kuendigung)
         : NOCH_OFFEN;
+    const aenderung = v?.naechstePreisaenderung;
+    const preis = !v
+      ? NOCH_OFFEN
+      : aenderung
+        ? `ab ${datumText(aenderung.ab)}: ${text(aenderung.betrag)} (${PREISAENDERUNG_ART_TEXT[aenderung.art]})`
+        : 'Keine bekannt';
+    const einmalkosten = v?.einmalkosten
+      ? text(v.einmalkosten)
+      : w.einmalkosten.length
+        ? NOCH_OFFEN
+        : 'Keine';
     return {
       name: bezeichnung || anbieter || 'Neuer Vertrag',
       unter:
@@ -427,8 +453,12 @@ export class VertragFormular implements OnInit {
           .filter(Boolean)
           .join(' · ') || 'Noch keine Angaben',
       zeilen: [
-        { label: 'Betrag', wert: betrag },
+        { label: 'Betrag', wert: v?.betrag ? text(v.betrag) + zahlweise : NOCH_OFFEN },
+        { label: 'Pro Monat', wert: proMonat },
+        { label: 'Nächste Abbuchung', wert: abbuchung },
         { label: 'Kündigung', wert: kuendigung },
+        { label: 'Nächste Preisänderung', wert: preis },
+        { label: 'Einmalkosten', wert: einmalkosten },
       ],
     };
   });

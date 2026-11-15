@@ -610,23 +610,99 @@ describe('VertragFormular', () => {
         'complementary',
       );
       expect(titel()).toEqual(['Neuer Vertrag', 'Noch keine Angaben']);
-      expect(zeilen()).toEqual({ Betrag: 'Noch offen', Kündigung: 'Noch offen' });
+      expect(zeilen()).toEqual({
+        Betrag: 'Noch offen',
+        'Pro Monat': 'Noch offen',
+        'Nächste Abbuchung': 'Noch offen',
+        Kündigung: 'Noch offen',
+        'Nächste Preisänderung': 'Noch offen',
+        Einmalkosten: 'Keine',
+      });
     });
 
-    it('folgt den Eingaben: Name, Anbieter · Kategorie, Betrag mit Zahlweise', async () => {
-      const { setzen, zeilen, titel } = await mitZusammenfassung();
+    it('folgt den Eingaben: Name, Anbieter · Kategorie', async () => {
+      const { setzen, titel } = await mitZusammenfassung();
       await setzen('anbieter', 'Musterversicherung AG');
       expect(titel()).toEqual(['Musterversicherung AG', 'Noch keine Angaben']);
       await setzen('bezeichnung', 'Kfz');
       await setzen('kategorieId', 'k1');
       expect(titel()).toEqual(['Kfz', 'Musterversicherung AG · Versicherung']);
+    });
 
-      await setzen('betrag', '1.234,5');
-      expect(zeilen()['Betrag']).toBe('1.234,50 €');
+    it('zeigt die Werte der Vorschau, die SPA rechnet nichts', async () => {
+      const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
+      vorschau.mockReturnValue(antwort);
+      const { fixture, setzen, zeilen } = await mitZusammenfassung();
       await setzen('zahlweise', 'JAEHRLICH');
-      expect(zeilen()['Betrag']).toBe('1.234,50 € jährlich');
-      await setzen('betrag', '12.50');
-      expect(zeilen()['Betrag']).toBe('Noch offen');
+      const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
+      antwort.next(
+        vorschauAntwort(KEINE, {
+          betrag: EUR(586.8),
+          kostenProMonat: EUR(48.9),
+          eigenerAnteil: { betrag: EUR(195.4), kostenProMonat: EUR(16.28) },
+          naechsteAbbuchung: { am: '2027-01-01', betrag: EUR(586.8) },
+          naechstePreisaenderung: { ab: '2027-06-01', betrag: EUR(601.47), art: 'PROGNOSE' },
+          einmalkosten: EUR(49.9),
+        }),
+      );
+      await new Promise((fertig) => setTimeout(fertig, 450));
+      await fixture.whenStable();
+      expect(zeilen()).toEqual({
+        Betrag: '586,80 € jährlich',
+        'Pro Monat': '48,90 €, dein Anteil 16,28 €',
+        'Nächste Abbuchung': '01.01.2027, 586,80 €',
+        Kündigung: 'Kein Termin bekannt',
+        'Nächste Preisänderung': 'ab 01.06.2027: 601,47 € (Prognose)',
+        Einmalkosten: '49,90 €',
+      });
+    });
+
+    it('null der Vorschau: „Noch offen“, mit allen Angaben „Keine weiteren Abbuchungen“', async () => {
+      const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
+      vorschau.mockReturnValue(antwort);
+      const { fixture, el, setzen, zeilen } = await mitZusammenfassung();
+      antwort.next(vorschauAntwort(KEINE));
+      await new Promise((fertig) => setTimeout(fertig, 5));
+      await fixture.whenStable();
+      expect(zeilen()).toMatchObject({
+        Betrag: 'Noch offen',
+        'Pro Monat': 'Noch offen',
+        'Nächste Abbuchung': 'Noch offen',
+        'Nächste Preisänderung': 'Keine bekannt',
+        Einmalkosten: 'Keine',
+      });
+
+      await setzen('betrag', '10');
+      await setzen('zahlweise', 'MONATLICH');
+      await setzen('abbuchungAb', '2025-01-01');
+      el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
+      await fixture.whenStable();
+      [...el.querySelectorAll<HTMLButtonElement>('button')]
+        .find((b) => b.textContent?.includes('Einmalkosten hinzufügen'))!
+        .click();
+      await new Promise((fertig) => setTimeout(fertig, 450));
+      await fixture.whenStable();
+      expect(zeilen()['Nächste Abbuchung']).toBe('Keine weiteren Abbuchungen');
+      expect(zeilen()['Einmalkosten']).toBe('Noch offen');
+    });
+
+    it('scheitert die Vorschau, ist alles „Noch offen“ statt eines alten Stands', async () => {
+      const antworten = [
+        new ReplaySubject<VertragVorschauAntwort>(1),
+        new Subject<VertragVorschauAntwort>(),
+      ];
+      vorschau.mockReturnValueOnce(antworten[0]).mockReturnValueOnce(antworten[1]);
+      const { fixture, setzen, zeilen } = await mitZusammenfassung();
+      antworten[0].next(vorschauAntwort(KEINE, { betrag: { wert: 10, waehrung: 'EUR' } }));
+      await new Promise((fertig) => setTimeout(fertig, 5));
+      await fixture.whenStable();
+      expect(zeilen()['Betrag']).toBe('10,00 €');
+
+      await setzen('laufzeitende', '2020-01-01');
+      await new Promise((fertig) => setTimeout(fertig, 450));
+      antworten[1].error(validierung(['laufzeitende', 'LaufzeitendeNachBeginn']));
+      await fixture.whenStable();
+      expect(Object.values(zeilen()).slice(0, 5)).toEqual(Array(5).fill('Noch offen'));
     });
 
     it('nennt „Nicht kündbar“ und sonst den Termin der Vorschau', async () => {
