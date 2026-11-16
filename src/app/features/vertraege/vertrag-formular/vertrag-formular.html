@@ -237,6 +237,10 @@
                 </div>
               }
             </div>
+            <!-- Außerhalb der Live-Region, sonst wird er bei jeder Eingabe vorgelesen. -->
+            @if (anteilText()) {
+              <app-rundungshinweis />
+            }
           </div>
         </div>
       </fieldset>

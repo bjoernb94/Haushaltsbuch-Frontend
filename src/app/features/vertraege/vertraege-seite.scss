@@ -93,6 +93,11 @@ h1 {
   gap: 16px;
 }
 
+// Gehört zu den Kennzahlen darüber, näher als der Abstand der Seite.
+.kennzahlen + app-rundungshinweis {
+  margin-top: -16px;
+}
+
 .kennzahl {
   display: flex;
   flex-direction: column;

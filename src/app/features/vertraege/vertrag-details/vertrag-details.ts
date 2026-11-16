@@ -17,6 +17,7 @@ import { VertragAntwort } from '../../../core/api/api';
 import { betragText } from '../../../shared/format/betrag.pipe';
 import { datumText } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import { Rundungshinweis } from '../../../shared/rundungshinweis/rundungshinweis';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
 import { VertragEinmalkosten } from '../vertrag-einmalkosten/vertrag-einmalkosten';
 import { VertragPreise } from '../vertrag-preise/vertrag-preise';
@@ -87,7 +88,14 @@ interface Eintrag {
  */
 @Component({
   selector: 'app-vertrag-details',
-  imports: [HinweisBox, RouterOutlet, Tabliste, VertragEinmalkosten, VertragPreise],
+  imports: [
+    HinweisBox,
+    RouterOutlet,
+    Rundungshinweis,
+    Tabliste,
+    VertragEinmalkosten,
+    VertragPreise,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-details.html',
   styleUrl: './vertrag-details.scss',

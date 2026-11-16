@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
 import { VertragsuebersichtAntwort } from '../../../core/api/api';
+import { RUNDUNG_TEXT } from '../../../shared/rundungshinweis/rundungshinweis';
 import { VertragService } from '../../vertraege/vertrag.service';
 import { VertragKachel } from './vertrag-kachel';
 
@@ -76,6 +77,7 @@ describe('VertragKachel', () => {
     expect(text(kennzahlen[0])).toBe('Laufende Verträge9');
     expect(text(kennzahlen[1])).toBe('Kosten pro Monat202,08 €');
     expect(element.querySelector('a')?.getAttribute('href')).toBe('/vertraege');
+    expect(text(element.querySelector('.kennzahlen + app-rundungshinweis'))).toBe(RUNDUNG_TEXT);
   });
 
   it('nennt bei geteilten Verträgen „nur dein Anteil“', async () => {

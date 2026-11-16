@@ -13,6 +13,7 @@ import { problemCode } from '../../../core/fehler/problem';
 import { BetraegePipe, BetragPipe } from '../../../shared/format/betrag.pipe';
 import { DatumPipe } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import { Rundungshinweis } from '../../../shared/rundungshinweis/rundungshinweis';
 import {
   NUR_ANTEIL,
   OHNE_NICHT_BEGONNENE,
@@ -25,7 +26,7 @@ import { Kachel } from '../kachel/kachel';
 /** Kachel „Vertragsübersicht“ mit Kennzahlen und nächsten Fristen; lädt beim Öffnen der Seite. */
 @Component({
   selector: 'app-vertrag-kachel',
-  imports: [RouterLink, Kachel, HinweisBox, BetragPipe, BetraegePipe, DatumPipe],
+  imports: [RouterLink, Kachel, HinweisBox, BetragPipe, BetraegePipe, DatumPipe, Rundungshinweis],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-kachel.html',
   styleUrl: './vertrag-kachel.scss',

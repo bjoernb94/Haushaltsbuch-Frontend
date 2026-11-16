@@ -8,6 +8,7 @@ import {
   output,
 } from '@angular/core';
 import { VertragAntwort } from '../../../core/api/api';
+import { Rundungshinweis } from '../../../shared/rundungshinweis/rundungshinweis';
 import { VertragPreisverlauf } from '../vertrag-preisverlauf/vertrag-preisverlauf';
 import { preisText, prognoseText } from '../vertrag-texte';
 
@@ -18,7 +19,7 @@ import { preisText, prognoseText } from '../vertrag-texte';
  */
 @Component({
   selector: 'app-vertrag-preise',
-  imports: [VertragPreisverlauf],
+  imports: [Rundungshinweis, VertragPreisverlauf],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-preise.html',
   styleUrl: './vertrag-preise.scss',

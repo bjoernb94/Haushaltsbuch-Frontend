@@ -47,6 +47,14 @@ test.describe('Seite Verträge', () => {
     await expect(page.locator('.kennzahl').filter({ hasText: 'Kosten pro Monat' })).toContainText(
       'Ohne Verträge, die erst später beginnen',
     );
+    await expect(
+      page.getByText(
+        'Umgerechnete Werte und Summen sind gerundet und können um wenige Cent abweichen.',
+        {
+          exact: false,
+        },
+      ),
+    ).toBeVisible();
     await expect(page.getByRole('link', { name: 'Zur Übersicht' })).toHaveCount(0);
   });
 

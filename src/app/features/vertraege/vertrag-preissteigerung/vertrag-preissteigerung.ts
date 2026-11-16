@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ControlContainer, FormGroupDirective, ReactiveFormsModule } from '@angular/forms';
 import { Erhoehungsrhythmus, Steigerungsart } from '../../../core/api/api';
+import { Rundungshinweis } from '../../../shared/rundungshinweis/rundungshinweis';
 import { VertragFeld } from '../vertrag-formular/vertrag-pruefung';
 import { RHYTHMUS_TEXT } from '../vertrag-texte';
 
@@ -22,7 +23,7 @@ const RHYTHMEN = (Object.keys(RHYTHMUS_TEXT) as Erhoehungsrhythmus[]).map((wert)
  */
 @Component({
   selector: 'app-vertrag-preissteigerung',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, Rundungshinweis],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-preissteigerung.html',
