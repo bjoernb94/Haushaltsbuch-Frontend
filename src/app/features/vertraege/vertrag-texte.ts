@@ -7,6 +7,7 @@ import {
   Prognosepreis,
   Verlaengerung,
   VertragPreissteigerungAntwort,
+  VertragAntwort,
   VertragPreisAntwort,
   VertragKategorieAntwort,
   VertragKategorieSchluessel,
@@ -58,9 +59,11 @@ export const VERLAENGERUNG_TEXT: Record<Verlaengerung, string> = {
 };
 
 export const STATUS_TEXT: Record<Vertragsstatus, string> = {
+  NICHT_BEGONNEN: 'Noch nicht begonnen',
   AKTIV: 'Aktiv',
   GEKUENDIGT: 'Gekündigt',
   BEENDET: 'Beendet',
+  STORNIERT: 'Storniert',
 };
 
 const KATEGORIE_TEXT: Record<VertragKategorieSchluessel, string> = {
@@ -129,6 +132,7 @@ const KUENDIGUNG_ANZEIGE: Record<Kuendigungsart, (k: Kuendigung) => KuendigungAn
     ton: 'info',
   }),
   BEENDET: () => ({ text: 'Beendet', zusatz: '', ton: 'neutral' }),
+  STORNIERT: () => ({ text: 'Storniert', zusatz: '', ton: 'neutral' }),
 };
 
 /** Badge aus {@code berechnet.kuendigung}; Termine und Art kommen vom Backend (ADR 0010). */
@@ -160,8 +164,30 @@ export function prognoseText({ ab, betrag }: Prognosepreis, locale: string): str
   return `ab ${datumText(ab)}: ${betragText(betrag, locale)} · Prognose`;
 }
 
+/** Statt „Beginn – Ende“: Status und Vertragsende kommen vom Backend (ADR 0010). */
+export function laufzeitZeile({ beginn, berechnet }: VertragAntwort): string {
+  switch (berechnet.status) {
+    case 'NICHT_BEGONNEN':
+      return `Beginnt am ${datumText(beginn)}`;
+    case 'BEENDET':
+      return `${datumText(beginn)} – ${datumText(berechnet.vertragsende)}`;
+    case 'STORNIERT':
+      return `Storniert, Beginn wäre ${datumText(beginn)}`;
+    default:
+      return `Seit ${datumText(beginn)}`;
+  }
+}
+
+/** Beendet oder storniert: in der Liste ausgegraut. */
+export function vorbei({ status }: VertragAntwort['berechnet']): boolean {
+  return status === 'BEENDET' || status === 'STORNIERT';
+}
+
 /** Unter Kennzahlen, wenn das Backend {@code hatAnteile} meldet. */
 export const NUR_ANTEIL = 'Bei geteilten Verträgen nur dein Anteil';
+
+/** Unter „Kosten pro Monat“, wenn das Backend {@code hatNichtBegonnene} meldet. */
+export const OHNE_NICHT_BEGONNENE = 'Ohne Verträge, die erst später beginnen';
 
 /**
  * „33,3“: Prozent wie vom Backend, beim Anteil höchstens eine Nachkommastelle, bei der Erhöhung

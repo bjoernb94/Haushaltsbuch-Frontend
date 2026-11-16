@@ -237,7 +237,7 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(formular.getByLabel('Bezeichnung')).toHaveValue(KFZ);
     await expect(formular.getByLabel('Betrag in € *')).toHaveValue('586,80');
     await expect(formular.getByLabel('Zahlweise *')).toHaveValue('JAEHRLICH');
-    await expect(formular.getByLabel('Nächste Abbuchung *')).toHaveValue('2027-01-01');
+    await expect(formular.getByLabel('Vertragsbeginn *')).toHaveValue('2023-01-01');
     await expect(formular.getByLabel('Zahlungsweg')).toHaveValue('LASTSCHRIFT');
     await expect(formular.getByLabel('Verlängerung')).toHaveValue('ZWOELF_MONATE');
     await expect(formular.getByLabel('Kündigungsfrist')).toHaveValue('1');
@@ -255,9 +255,7 @@ test.describe('Vertrag bearbeiten', () => {
     expect(Math.round(box.x + box.width / 2)).toBe(640);
   });
 
-  test('ohne Änderung bleiben alle Felder und der Anker gleich, Meldung an der Zeile', async ({
-    page,
-  }) => {
+  test('ohne Änderung bleiben alle Felder gleich, Meldung an der Zeile', async ({ page }) => {
     await bearbeiten(page);
     expect(await speichernUndAnfrageLesen(page)).toEqual({
       version: 0,
@@ -267,7 +265,6 @@ test.describe('Vertrag bearbeiten', () => {
       vertragsnummer: 'KFZ-4711-23',
       preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'EUR' } }],
       zahlweise: 'JAEHRLICH',
-      abbuchungAb: '2024-01-01',
       zahlungsweg: 'LASTSCHRIFT',
       kuendbar: true,
       beginn: '2023-01-01',
@@ -318,22 +315,16 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(details(page, KFZ)).toBeVisible();
   });
 
-  test('ein neues Datum wird Anker, die Zahlweise zeigt den Hinweis', async ({ page }) => {
+  test('Vertragsbeginn und Zahlweise im Tab Kosten gehen mit, ohne Hinweis', async ({ page }) => {
     const formular = await bearbeiten(page);
     await tab(page, 'Kosten');
-    const hinweis = formular.getByText(
-      'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.',
-    );
-    await expect(hinweis).toHaveCount(0);
-
     await formular.getByLabel('Zahlweise *').selectOption('MONATLICH');
-    await expect(hinweis).toBeVisible();
-    await expect(formular.getByLabel('Nächste Abbuchung *')).toHaveAccessibleDescription(
-      'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.',
-    );
+    await formular.getByLabel('Vertragsbeginn *').fill('2023-02-01');
+    await expect(formular.getByText('Nächste Abbuchung')).toHaveCount(0);
 
     const anfrage = await speichernUndAnfrageLesen(page);
-    expect(anfrage).toMatchObject({ zahlweise: 'MONATLICH', abbuchungAb: '2027-01-01' });
+    expect(anfrage).toMatchObject({ zahlweise: 'MONATLICH', beginn: '2023-02-01' });
+    expect(anfrage).not.toHaveProperty('abbuchungAb');
   });
 
   test('„Nicht kündbar“ und „Gekündigt“ lassen sich setzen und zurücknehmen', async ({ page }) => {
@@ -354,14 +345,14 @@ test.describe('Vertrag bearbeiten', () => {
     expect((await speichernUndAnfrageLesen(page)).gekuendigtZum).toBeNull();
   });
 
-  test('die Vorschau schickt den gespeicherten Anker und folgt einer Änderung', async ({
+  test('die Vorschau schickt den gespeicherten Beginn und folgt einer Änderung', async ({
     page,
   }) => {
     const vorschau = page.waitForRequest((r) => r.url().endsWith('/vorschau'));
     const formular = await bearbeiten(page);
     await tab(page, 'Laufzeit');
     const gespeichert = BEISPIEL_VERTRAEGE.find((v) => v.bezeichnung === KFZ)!;
-    expect((await vorschau).postDataJSON().abbuchungAb).toBe(gespeichert.abbuchungAb);
+    expect((await vorschau).postDataJSON().beginn).toBe(gespeichert.beginn);
     const termin = formular.getByRole('status').filter({ hasText: 'Nächster Kündigungstermin:' });
     await expect(termin).toContainText('Kündbar bis');
     await formular.getByLabel('Gekündigt', { exact: true }).check();

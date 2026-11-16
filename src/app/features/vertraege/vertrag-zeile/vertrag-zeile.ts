@@ -20,12 +20,12 @@ import { Chip, VertragChips } from '../vertrag-chips/vertrag-chips';
 import {
   kategorieText,
   kuendigungAnzeige,
+  laufzeitZeile,
   prozentText,
   vertragName,
+  vorbei,
   ZAHLWEISE_TEXT,
 } from '../vertrag-texte';
-
-export const KEINE_ABBUCHUNG = 'Keine weiteren Abbuchungen';
 
 export interface ZeilenMeldung {
   text: string;
@@ -74,7 +74,7 @@ export class VertragZeile {
   private readonly mehrKnopf = viewChild.required<ElementRef<HTMLButtonElement>>('mehrKnopf');
 
   protected readonly name = computed(() => vertragName(this.vertrag()));
-  protected readonly beendet = computed(() => this.vertrag().berechnet.status === 'BEENDET');
+  protected readonly beendet = computed(() => vorbei(this.vertrag().berechnet));
   protected readonly kuendigung = computed(() =>
     kuendigungAnzeige(this.vertrag().berechnet.kuendigung),
   );
@@ -99,12 +99,7 @@ export class VertragZeile {
       : `${text} · ${betragText(berechnet.kostenProMonat, this.locale)}/Monat`;
   });
 
-  protected readonly abbuchung = computed(() => {
-    const { naechsteAbbuchung } = this.vertrag().berechnet;
-    return naechsteAbbuchung
-      ? `Nächste Abbuchung ${datumText(naechsteAbbuchung.am)}`
-      : KEINE_ABBUCHUNG;
-  });
+  protected readonly laufzeit = computed(() => laufzeitZeile(this.vertrag()));
 
   /**
    * „Preis ↑ ab 01.01.2027“ (der Pfeil vergleicht nur die beiden Beträge des Backends) und bei

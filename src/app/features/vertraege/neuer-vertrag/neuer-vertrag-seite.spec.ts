@@ -29,7 +29,7 @@ async function erstellen(service: Partial<VertragService>) {
     setzen('kategorieId', 'k1');
     setzen('betrag', '19,99');
     setzen('zahlweise', 'MONATLICH');
-    setzen('abbuchungAb', '2027-01-01');
+    setzen('beginn', '2027-01-01');
     el.querySelector('form')!.dispatchEvent(new Event('submit'));
     await fixture.whenStable();
   };

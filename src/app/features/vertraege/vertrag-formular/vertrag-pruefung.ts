@@ -44,10 +44,9 @@ export interface VertragWerte {
   /** Leer = 100 %. */
   anteilProzent: string;
   zahlweise: Zahlweise | '';
-  abbuchungAb: string;
+  beginn: string;
   zahlungsweg: Zahlungsweg | '';
   nichtKuendbar: boolean;
-  beginn: string;
   laufzeitende: string;
   verlaengerung: Verlaengerung | '';
   kuendigungsfristMonate: string;
@@ -135,7 +134,7 @@ const PFLICHT_TEXT = {
   kategorieId: 'Bitte wähle eine Kategorie.',
   betrag: 'Bitte gib einen gültigen Betrag ein, z. B. 19,99.',
   zahlweise: 'Bitte wähle die Zahlweise.',
-  abbuchungAb: 'Bitte gib das Datum der nächsten Abbuchung ein.',
+  beginn: 'Bitte gib an, wann der Vertrag beginnt.',
   gekuendigtZum: 'Bitte gib an, zu wann der Vertrag gekündigt ist.',
 } as const;
 
@@ -157,17 +156,12 @@ const GUELTIG_SEIT_TEXT = 'Bitte gib an, seit wann der Betrag oben gilt.';
 /**
  * Nur Pflichtfelder, zur Bedienung; alles Weitere entscheidet das Backend (ADR 0010). Ohne Datum darf
  * nur ein Preis sein (er gilt ab Vertragsbeginn): zuerst der Betrag, sonst die erste Zeile ohne Datum.
- * „Betrag gilt seit“ braucht es bei weiteren Preisen ohne Vertragsbeginn, sonst ist unklar, wie die
- * Preise zueinander stehen (wie im Design).
  */
 export function vertragPruefen(w: VertragWerte): ReadonlyMap<VertragFeld, string> {
   const leer = (Object.keys(PFLICHT_TEXT) as (keyof typeof PFLICHT_TEXT)[]).filter(
     (feld) => !w[feld].trim() && (feld !== 'gekuendigtZum' || w.gekuendigt),
   );
   const fehler = new Map<VertragFeld, string>(leer.map((feld) => [feld, PFLICHT_TEXT[feld]]));
-  if (w.preise.length && !w.gueltigSeit && !w.beginn) {
-    fehler.set('gueltigSeit', GUELTIG_SEIT_TEXT);
-  }
   if (w.anteilProzent.trim() && prozentLesen(w.anteilProzent) === null) {
     fehler.set('anteilProzent', ANTEIL_TEXT);
   }
@@ -212,8 +206,7 @@ function textOderNull(eingabe: string): string | null {
 }
 
 /**
- * Vorbelegung zum Bearbeiten. „Nächste Abbuchung“ zeigt den nächsten Termin, nicht den Anker. Welcher
- * Preis heute gilt, sagt das Backend ({@code art}); er steht unter „Betrag“, die übrigen in der Liste.
+ * Vorbelegung zum Bearbeiten. Welcher Preis heute gilt, sagt das Backend ({@code art}); er steht unter „Betrag“, die übrigen in der Liste.
  */
 export function werteAus(v: VertragAntwort): VertragWerte {
   const aktuell = v.preise.find(({ art }) => art === 'AKTUELL');
@@ -229,10 +222,9 @@ export function werteAus(v: VertragAntwort): VertragWerte {
       .map((preis) => ({ gueltigAb: preis.gueltigAb ?? '', betrag: betragEingabe(preis.betrag) })),
     anteilProzent: v.anteilProzent?.toString().replace('.', ',') ?? '',
     zahlweise: v.zahlweise,
-    abbuchungAb: v.berechnet.naechsteAbbuchung?.am ?? v.abbuchungAb,
+    beginn: v.beginn,
     zahlungsweg: v.zahlungsweg ?? '',
     nichtKuendbar: !v.kuendbar,
-    beginn: v.beginn ?? '',
     laufzeitende: v.laufzeitende ?? '',
     verlaengerung: v.verlaengerung ?? '',
     kuendigungsfristMonate: v.kuendigungsfristMonate?.toString() ?? '',
@@ -280,19 +272,6 @@ function steigerungWerte(regel: VertragAntwort['preissteigerung']): SteigerungWe
     rhythmus: regel.rhythmus,
     naechsteErhoehungAm: regel.naechsteAm,
   };
-}
-
-/**
- * Das Backend zählt von diesem Anker aus. Der angezeigte Termin darf ihn nicht versehentlich ersetzen,
- * sonst wandert der Abbuchungstag (31.01. monatlich: aus 30.11. folgt 30.12. statt 31.12.). Neuer
- * Anker ist er also erst, wenn sich Datum oder Zahlweise geändert haben.
- */
-function abbuchungAb(w: VertragWerte, gespeichert: VertragAntwort | null): string | null {
-  const unveraendert =
-    gespeichert &&
-    w.zahlweise === gespeichert.zahlweise &&
-    w.abbuchungAb === werteAus(gespeichert).abbuchungAb;
-  return unveraendert ? gespeichert.abbuchungAb : w.abbuchungAb || null;
 }
 
 function preisEingabe(gueltigAb: string, betrag: string, waehrung: string): PreisEingabe {
@@ -344,10 +323,9 @@ export function anfrageAus(
       ...w.preise.map((preis) => preisEingabe(preis.gueltigAb, preis.betrag, waehrung)),
     ],
     zahlweise: w.zahlweise || null,
-    abbuchungAb: abbuchungAb(w, gespeichert),
+    beginn: w.beginn || null,
     zahlungsweg: w.zahlungsweg || null,
     kuendbar: !w.nichtKuendbar,
-    beginn: w.beginn || null,
     laufzeitende: w.laufzeitende || null,
     verlaengerung: w.nichtKuendbar ? null : w.verlaengerung || null,
     kuendigungsfristMonate:
@@ -408,7 +386,6 @@ export function vorschauAus(
     preissteigerung: steigerungFuerVorschau(w, a.preissteigerung),
     preisgarantieBis: a.preisgarantieBis,
     zahlweise: a.zahlweise,
-    abbuchungAb: a.abbuchungAb,
     beginn: a.beginn,
     laufzeitende: a.laufzeitende,
     verlaengerung: a.verlaengerung,
@@ -424,10 +401,9 @@ const FELD_ZUM_API_FELD: Readonly<Record<string, VertragFeld>> = {
   vertragsnummer: 'vertragsnummer',
   preise: 'betrag',
   zahlweise: 'zahlweise',
-  abbuchungAb: 'abbuchungAb',
+  beginn: 'beginn',
   zahlungsweg: 'zahlungsweg',
   kuendbar: 'nichtKuendbar',
-  beginn: 'beginn',
   laufzeitende: 'laufzeitende',
   verlaengerung: 'verlaengerung',
   kuendigungsfristMonate: 'kuendigungsfristMonate',

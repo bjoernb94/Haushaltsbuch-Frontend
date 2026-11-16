@@ -21,13 +21,6 @@ const KEINE: Kuendigung = {
   zum: null,
 };
 
-/** Mit Vertragsbeginn ist „Betrag gilt seit“ auch bei weiteren Preisen optional. */
-function setzenBeginn(el: HTMLElement) {
-  const beginn = el.querySelector<HTMLInputElement>('[formcontrolname="beginn"]')!;
-  beginn.value = '2026-01-01';
-  beginn.dispatchEvent(new Event('input'));
-}
-
 const KATEGORIEN: VertragKategorieAntwort[] = [
   { id: 'k1', schluessel: 'VERSICHERUNG', name: null },
   { id: 'k2', schluessel: null, name: 'Eigene Kategorie' },
@@ -43,7 +36,6 @@ function vorschauAntwort(
     eigenerAnteil: null,
     einmalkosten: null,
     kostenProMonat: null,
-    naechsteAbbuchung: null,
     naechstePreisaenderung: null,
     preise: [],
     prognose: [],
@@ -108,7 +100,7 @@ async function erstellen() {
     setzen('kategorieId', 'k1');
     setzen('betrag', '19,99');
     setzen('zahlweise', 'MONATLICH');
-    setzen('abbuchungAb', '2027-01-01');
+    setzen('beginn', '2026-01-01');
   };
   const absenden = async () => {
     el.querySelector('form')!.dispatchEvent(new Event('submit'));
@@ -162,7 +154,6 @@ describe('VertragFormular', () => {
       preissteigerung: null,
       preisgarantieBis: null,
       zahlweise: null,
-      abbuchungAb: null,
       beginn: null,
       laufzeitende: null,
       verlaengerung: null,
@@ -440,7 +431,7 @@ describe('VertragFormular', () => {
     expect(box()).toBeUndefined();
   });
 
-  it('blendet Verlängerung und Frist bei „Nicht kündbar“ aus, Beginn und Laufzeitende bleiben', async () => {
+  it('blendet Verlängerung und Frist bei „Nicht kündbar“ aus, das Laufzeitende bleibt', async () => {
     const { host, feld, setzen, ankreuzen, absenden, pflichtfelderFuellen } = await erstellen();
     pflichtfelderFuellen();
     setzen('verlaengerung', 'MONATLICH');
@@ -450,7 +441,6 @@ describe('VertragFormular', () => {
 
     expect(feld('verlaengerung')).toBeNull();
     expect(feld('kuendigungsfristMonate')).toBeNull();
-    expect(feld('beginn')).not.toBeNull();
     expect(feld('laufzeitende')).not.toBeNull();
 
     await absenden();
@@ -527,11 +517,13 @@ describe('VertragFormular', () => {
       tabs(el)[1].click();
       await fixture.whenStable();
       expect(sichtbar(el, 'betrag')).toBe(true);
+      expect(sichtbar(el, 'beginn')).toBe(true);
       expect(sichtbar(el, 'anbieter')).toBe(false);
 
       tabs(el)[2].click();
       await fixture.whenStable();
-      expect(sichtbar(el, 'beginn')).toBe(true);
+      expect(sichtbar(el, 'laufzeitende')).toBe(true);
+      expect(sichtbar(el, 'beginn')).toBe(false);
       expect(sichtbar(el, 'gekuendigt')).toBe(true);
       expect(tabs(el)[2].getAttribute('aria-selected')).toBe('true');
     });
@@ -613,7 +605,6 @@ describe('VertragFormular', () => {
       expect(zeilen()).toEqual({
         Betrag: 'Noch offen',
         'Pro Monat': 'Noch offen',
-        'Nächste Abbuchung': 'Noch offen',
         Kündigung: 'Noch offen',
         'Nächste Preisänderung': 'Noch offen',
         Einmalkosten: 'Keine',
@@ -640,7 +631,6 @@ describe('VertragFormular', () => {
           betrag: EUR(586.8),
           kostenProMonat: EUR(48.9),
           eigenerAnteil: { betrag: EUR(195.4), kostenProMonat: EUR(16.28) },
-          naechsteAbbuchung: { am: '2027-01-01', betrag: EUR(586.8) },
           naechstePreisaenderung: { ab: '2027-06-01', betrag: EUR(601.47), art: 'PROGNOSE' },
           einmalkosten: EUR(49.9),
         }),
@@ -650,31 +640,26 @@ describe('VertragFormular', () => {
       expect(zeilen()).toEqual({
         Betrag: '586,80 € jährlich',
         'Pro Monat': '48,90 €, dein Anteil 16,28 €',
-        'Nächste Abbuchung': '01.01.2027, 586,80 €',
         Kündigung: 'Kein Termin bekannt',
         'Nächste Preisänderung': 'ab 01.06.2027: 601,47 € (Prognose)',
         Einmalkosten: '49,90 €',
       });
     });
 
-    it('null der Vorschau: „Noch offen“, mit allen Angaben „Keine weiteren Abbuchungen“', async () => {
+    it('null der Vorschau: „Noch offen“, unvollständige Einmalkosten ebenso', async () => {
       const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
       vorschau.mockReturnValue(antwort);
-      const { fixture, el, setzen, zeilen } = await mitZusammenfassung();
+      const { fixture, el, zeilen } = await mitZusammenfassung();
       antwort.next(vorschauAntwort(KEINE));
       await new Promise((fertig) => setTimeout(fertig, 5));
       await fixture.whenStable();
       expect(zeilen()).toMatchObject({
         Betrag: 'Noch offen',
         'Pro Monat': 'Noch offen',
-        'Nächste Abbuchung': 'Noch offen',
         'Nächste Preisänderung': 'Keine bekannt',
         Einmalkosten: 'Keine',
       });
 
-      await setzen('betrag', '10');
-      await setzen('zahlweise', 'MONATLICH');
-      await setzen('abbuchungAb', '2025-01-01');
       el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
       await fixture.whenStable();
       [...el.querySelectorAll<HTMLButtonElement>('button')]
@@ -682,7 +667,7 @@ describe('VertragFormular', () => {
         .click();
       await new Promise((fertig) => setTimeout(fertig, 450));
       await fixture.whenStable();
-      expect(zeilen()['Nächste Abbuchung']).toBe('Keine weiteren Abbuchungen');
+      expect(zeilen()).not.toHaveProperty('Nächste Abbuchung');
       expect(zeilen()['Einmalkosten']).toBe('Noch offen');
     });
 
@@ -702,7 +687,7 @@ describe('VertragFormular', () => {
       await new Promise((fertig) => setTimeout(fertig, 450));
       antworten[1].error(validierung(['laufzeitende', 'LaufzeitendeNachBeginn']));
       await fixture.whenStable();
-      expect(Object.values(zeilen()).slice(0, 5)).toEqual(Array(5).fill('Noch offen'));
+      expect(Object.values(zeilen()).slice(0, 4)).toEqual(Array(4).fill('Noch offen'));
     });
 
     it('nennt „Nicht kündbar“ und sonst den Termin der Vorschau', async () => {
@@ -710,7 +695,7 @@ describe('VertragFormular', () => {
       vorschau.mockReturnValue(antwort);
       const { fixture, setzen, zeilen } = await mitZusammenfassung();
       await setzen('zahlweise', 'MONATLICH');
-      await setzen('abbuchungAb', '2027-01-01');
+      await setzen('beginn', '2027-01-01');
       await new Promise((fertig) => setTimeout(fertig, 450));
       antwort.next(
         vorschauAntwort({
@@ -799,7 +784,6 @@ describe('VertragFormular', () => {
         await imTabPreise();
       await hinzufuegen();
       pflichtfelderFuellen();
-      setzenBeginn(el);
       await absenden();
       const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
         t.textContent?.replace(/\s+/g, ' ').trim(),
@@ -1206,10 +1190,9 @@ describe('VertragFormular', () => {
       preisgarantieBis: null,
       erinnerungSonderkuendigung: true,
       zahlweise: 'MONATLICH',
-      abbuchungAb: '2026-01-31',
       zahlungsweg: 'PAYPAL',
       kuendbar: true,
-      beginn: null,
+      beginn: '2026-01-31',
       laufzeitende: null,
       verlaengerung: 'MONATLICH',
       kuendigungsfristMonate: 4,
@@ -1223,10 +1206,10 @@ describe('VertragFormular', () => {
         jahr: 2026,
         eigenerAnteil: null,
         einmalkosten: { wert: 0, waehrung: 'USD' },
-        naechsteAbbuchung: { am: '2026-11-30', betrag: { wert: 586.8, waehrung: 'USD' } },
         naechstePreisaenderung: null,
         preisverlauf: [],
         prognose: [],
+        vertragsende: '2027-06-30',
         kuendigung: {
           art: 'GEKUENDIGT',
           dringend: false,
@@ -1271,11 +1254,11 @@ describe('VertragFormular', () => {
       return { fixture, el, host: fixture.componentInstance, feld, setzen };
     }
 
-    it('die Vorschau zählt beim Öffnen vom gespeicherten Anker aus', async () => {
+    it('fragt die Vorschau beim Öffnen mit dem gespeicherten Beginn', async () => {
       await offen();
       await new Promise((fertig) => setTimeout(fertig, 5));
       expect(vorschau).toHaveBeenCalledOnce();
-      expect(vorschau.mock.calls[0][0].abbuchungAb).toBe(VERTRAG.abbuchungAb);
+      expect(vorschau.mock.calls[0][0].beginn).toBe(VERTRAG.beginn);
     });
 
     it('belegt alle Felder vor, auch Auswahlfelder und abhängige Felder', async () => {
@@ -1284,7 +1267,7 @@ describe('VertragFormular', () => {
       expect(feld('kategorieId').value).toBe('k2');
       expect(feld('betrag').value).toBe('586,80');
       expect(feld('zahlweise').value).toBe('MONATLICH');
-      expect(feld('abbuchungAb').value).toBe('2026-11-30');
+      expect(feld('beginn').value).toBe('2026-01-31');
       expect(feld('zahlungsweg').value).toBe('PAYPAL');
       expect(feld('verlaengerung').value).toBe('MONATLICH');
       expect(feld('gekuendigt').checked).toBe(true);
@@ -1321,29 +1304,15 @@ describe('VertragFormular', () => {
       expect([...frist.options].map((o) => o.value)).toEqual(['', '0', '1', '2', '3', '6']);
     });
 
-    it('schickt ohne Änderung den gespeicherten Anker', async () => {
+    it('schickt ohne Änderung die gespeicherten Werte', async () => {
       const { fixture, el, host } = await offen();
       el.querySelector('form')!.dispatchEvent(new Event('submit'));
       await fixture.whenStable();
       expect(host.gespeichert[0]).toMatchObject({
-        abbuchungAb: '2026-01-31',
+        beginn: '2026-01-31',
         kuendigungsfristMonate: 4,
         preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'USD' } }],
       });
-    });
-
-    it('zeigt den Hinweis nur, solange die Zahlweise geändert ist', async () => {
-      const { el, feld, setzen } = await offen();
-      const hinweis = 'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.';
-      expect(el.textContent).not.toContain(hinweis);
-
-      await setzen('zahlweise', 'JAEHRLICH');
-      expect(el.textContent).toContain(hinweis);
-      const ids = feld('abbuchungAb').getAttribute('aria-describedby')!;
-      expect(document.getElementById(ids)?.textContent?.trim()).toBe(hinweis);
-
-      await setzen('zahlweise', 'MONATLICH');
-      expect(el.textContent).not.toContain(hinweis);
     });
 
     it('meldet ungespeicherte Eingaben, auch wenn sie zurückgenommen werden', async () => {

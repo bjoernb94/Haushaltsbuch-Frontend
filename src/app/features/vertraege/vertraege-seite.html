@@ -41,6 +41,9 @@
     </div>
     <div class="kennzahl">
       <span>Kosten pro Monat</span><b>{{ stand.uebersicht.kostenProMonat | betraege }}</b>
+      @if (stand.uebersicht.hatNichtBegonnene) {
+        <small>{{ ohneNichtBegonnene }}</small>
+      }
       @if (stand.uebersicht.hatAnteile) {
         <small>{{ nurAnteil }}</small>
       }

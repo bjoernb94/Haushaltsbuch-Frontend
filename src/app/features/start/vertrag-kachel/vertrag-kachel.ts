@@ -13,7 +13,12 @@ import { problemCode } from '../../../core/fehler/problem';
 import { BetraegePipe, BetragPipe } from '../../../shared/format/betrag.pipe';
 import { DatumPipe } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
-import { NUR_ANTEIL, vertragName, ZAHLWEISE_EINHEIT } from '../../vertraege/vertrag-texte';
+import {
+  NUR_ANTEIL,
+  OHNE_NICHT_BEGONNENE,
+  vertragName,
+  ZAHLWEISE_EINHEIT,
+} from '../../vertraege/vertrag-texte';
 import { VertragService } from '../../vertraege/vertrag.service';
 import { Kachel } from '../kachel/kachel';
 
@@ -34,6 +39,7 @@ export class VertragKachel {
   /** Komponente inzwischen abbestellt: keine Fehlermeldung, die Kachel verschwindet. */
   protected readonly keinZugriff = signal(false);
   protected readonly nurAnteil = NUR_ANTEIL;
+  protected readonly ohneNichtBegonnene = OHNE_NICHT_BEGONNENE;
 
   protected readonly fristen = computed(() =>
     (this.uebersicht()?.naechsteKuendigungsfristen ?? []).map((frist) => ({

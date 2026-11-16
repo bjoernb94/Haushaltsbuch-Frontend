@@ -28,7 +28,7 @@ const ANFRAGE = {
   einmalkosten: [],
   erinnerungSonderkuendigung: true,
   zahlweise: 'JAEHRLICH',
-  abbuchungAb: '2027-01-01',
+  beginn: '2026-01-01',
   kuendbar: true,
 };
 
@@ -51,7 +51,9 @@ test.describe('Simulation der Verträge', () => {
     // Nur die 2026 fällige Einrichtung, zur Hälfte.
     expect(uebersicht.einmalkostenImJahr).toEqual([{ wert: 15, waehrung: 'EUR' }]);
     expect(uebersicht.hatAnteile).toBe(true);
-    expect(uebersicht.naechsteKuendigungsfristen).toHaveLength(1);
+    expect(uebersicht.hatNichtBegonnene).toBe(true);
+    // Auch der noch nicht begonnene Vertrag.
+    expect(uebersicht.naechsteKuendigungsfristen).toHaveLength(2);
   });
 
   test('deckt jede Kündigungsart ab', () => {
@@ -64,7 +66,14 @@ test.describe('Simulation der Verträge', () => {
         'NICHT_KUENDBAR',
         'GEKUENDIGT',
         'BEENDET',
+        'STORNIERT',
       ]),
+    );
+  });
+
+  test('deckt jeden Status ab', () => {
+    expect(new Set(BEISPIEL_VERTRAEGE.map((v) => v.berechnet.status))).toEqual(
+      new Set(['NICHT_BEGONNEN', 'AKTIV', 'GEKUENDIGT', 'BEENDET', 'STORNIERT']),
     );
   });
 
