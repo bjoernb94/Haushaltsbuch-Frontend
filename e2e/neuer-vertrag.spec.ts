@@ -614,12 +614,14 @@ test.describe('Neuer Vertrag', () => {
       await expect(zusammenfassung).toContainText('Neuer Vertrag');
       await expect(zusammenfassung).toContainText('Noch keine Angaben');
       await expect(zusammenfassung).toContainText('BetragNoch offen');
+      await expect(zusammenfassung).toContainText('VertragsbeginnNoch offen');
 
       await pflichtfelderFuellen(page, 'Musterversicherung AG');
       await expect(zusammenfassung).toContainText('Musterversicherung AG');
       await expect(zusammenfassung).toContainText('Versicherung');
       await expect(zusammenfassung).toContainText('Betrag19,99 € monatlich');
       await expect(zusammenfassung).toContainText('Pro Monat19,99 €');
+      await expect(zusammenfassung).toContainText('Vertragsbeginn01.01.2026');
       await expect(zusammenfassung).not.toContainText('Nächste Abbuchung');
       await expect(zusammenfassung).toContainText('KündigungKein Termin bekannt');
       await expect(zusammenfassung).toContainText('Nächste PreisänderungKeine bekannt');

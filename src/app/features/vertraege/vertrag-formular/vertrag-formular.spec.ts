@@ -605,6 +605,7 @@ describe('VertragFormular', () => {
       expect(zeilen()).toEqual({
         Betrag: 'Noch offen',
         'Pro Monat': 'Noch offen',
+        Vertragsbeginn: 'Noch offen',
         Kündigung: 'Noch offen',
         'Nächste Preisänderung': 'Noch offen',
         Einmalkosten: 'Keine',
@@ -625,6 +626,7 @@ describe('VertragFormular', () => {
       vorschau.mockReturnValue(antwort);
       const { fixture, setzen, zeilen } = await mitZusammenfassung();
       await setzen('zahlweise', 'JAEHRLICH');
+      await setzen('beginn', '2026-02-01');
       const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
       antwort.next(
         vorschauAntwort(KEINE, {
@@ -640,6 +642,7 @@ describe('VertragFormular', () => {
       expect(zeilen()).toEqual({
         Betrag: '586,80 € jährlich',
         'Pro Monat': '48,90 €, dein Anteil 16,28 €',
+        Vertragsbeginn: '01.02.2026',
         Kündigung: 'Kein Termin bekannt',
         'Nächste Preisänderung': 'ab 01.06.2027: 601,47 € (Prognose)',
         Einmalkosten: '49,90 €',
@@ -671,7 +674,7 @@ describe('VertragFormular', () => {
       expect(zeilen()['Einmalkosten']).toBe('Noch offen');
     });
 
-    it('scheitert die Vorschau, ist alles „Noch offen“ statt eines alten Stands', async () => {
+    it('scheitert die Vorschau, ist alles Berechnete „Noch offen“, der Beginn bleibt', async () => {
       const antworten = [
         new ReplaySubject<VertragVorschauAntwort>(1),
         new Subject<VertragVorschauAntwort>(),
@@ -683,11 +686,18 @@ describe('VertragFormular', () => {
       await fixture.whenStable();
       expect(zeilen()['Betrag']).toBe('10,00 €');
 
+      await setzen('beginn', '2026-02-01');
       await setzen('laufzeitende', '2020-01-01');
       await new Promise((fertig) => setTimeout(fertig, 450));
       antworten[1].error(validierung(['laufzeitende', 'LaufzeitendeNachBeginn']));
       await fixture.whenStable();
-      expect(Object.values(zeilen()).slice(0, 4)).toEqual(Array(4).fill('Noch offen'));
+      expect(zeilen()).toMatchObject({
+        Betrag: 'Noch offen',
+        'Pro Monat': 'Noch offen',
+        Vertragsbeginn: '01.02.2026',
+        Kündigung: 'Noch offen',
+        'Nächste Preisänderung': 'Noch offen',
+      });
     });
 
     it('nennt „Nicht kündbar“ und sonst den Termin der Vorschau', async () => {
