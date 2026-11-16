@@ -35,9 +35,34 @@ import {
   ZAHLUNGSWEG_TEXT,
   ZAHLWEISE_TEXT,
 } from '../vertrag-texte';
-import { KEINE_ABBUCHUNG } from '../vertrag-zeile/vertrag-zeile';
 
 const NICHT_HINTERLEGT = 'Nicht hinterlegt';
+
+/**
+ * Kachel „Laufzeit“: „seit …“ bzw. „ab …“, darunter die Mindestlaufzeit (ohne Verlängerung das Ende).
+ * Beendete zeigen „Beginn – Ende“, stornierte nur das; beide ohne Zusatz, nicht kündbare auch.
+ */
+function laufzeitKachel(v: VertragAntwort): { wert: string; zusatz: string } {
+  const { status, vertragsende } = v.berechnet;
+  switch (status) {
+    case 'BEENDET':
+      return { wert: `${datumText(v.beginn)} – ${datumText(vertragsende)}`, zusatz: '' };
+    case 'STORNIERT':
+      return { wert: 'Storniert', zusatz: '' };
+  }
+  const wert = `${status === 'NICHT_BEGONNEN' ? 'ab' : 'seit'} ${datumText(v.beginn)}`;
+  if (!v.kuendbar) {
+    return { wert, zusatz: '' };
+  }
+  if (!v.laufzeitende) {
+    return { wert, zusatz: 'Keine Mindestlaufzeit' };
+  }
+  const ende = datumText(v.laufzeitende);
+  return {
+    wert,
+    zusatz: v.verlaengerung === 'KEINE' ? `Endet am ${ende}` : `Mindestlaufzeit bis ${ende}`,
+  };
+}
 
 const TABS = [
   { key: 'allgemein', label: 'Allgemein' },
@@ -99,8 +124,7 @@ export class VertragDetails {
     if (!v) {
       return [];
     }
-    const { kostenProMonat, naechsteAbbuchung, kuendigung, naechstePreisaenderung, eigenerAnteil } =
-      v.berechnet;
+    const { kostenProMonat, kuendigung, naechstePreisaenderung, eigenerAnteil } = v.berechnet;
     const anzeige = kuendigungAnzeige(kuendigung);
     return [
       {
@@ -112,12 +136,7 @@ export class VertragDetails {
             : '',
         ton: '',
       },
-      {
-        label: 'Nächste Abbuchung',
-        wert: naechsteAbbuchung ? datumText(naechsteAbbuchung.am) : KEINE_ABBUCHUNG,
-        zusatz: naechsteAbbuchung ? betragText(naechsteAbbuchung.betrag, this.locale) : '',
-        ton: '',
-      },
+      { label: 'Laufzeit', ...laufzeitKachel(v), ton: '' },
       { label: 'Kündigung', wert: anzeige.text, zusatz: anzeige.zusatz, ton: anzeige.ton },
       naechstePreisaenderung
         ? {
@@ -207,14 +226,8 @@ export class VertragDetails {
   }
 
   private kosten(v: VertragAntwort): Eintrag[] {
-    const {
-      kostenProMonat,
-      kostenImJahr,
-      kostenImJahrMitPrognose,
-      jahr,
-      naechsteAbbuchung,
-      eigenerAnteil,
-    } = v.berechnet;
+    const { kostenProMonat, kostenImJahr, kostenImJahrMitPrognose, jahr, eigenerAnteil } =
+      v.berechnet;
     return [
       {
         label: 'Aktueller Betrag',
@@ -235,12 +248,6 @@ export class VertragDetails {
       {
         label: 'Zahlungsweg',
         wert: v.zahlungsweg ? ZAHLUNGSWEG_TEXT[v.zahlungsweg] : NICHT_HINTERLEGT,
-      },
-      {
-        label: 'Nächste Abbuchung',
-        wert: naechsteAbbuchung
-          ? `${datumText(naechsteAbbuchung.am)}, ${betragText(naechsteAbbuchung.betrag, this.locale)}`
-          : KEINE_ABBUCHUNG,
       },
     ].filter((eintrag) => !!eintrag);
   }
@@ -267,7 +274,7 @@ export class VertragDetails {
 
   private laufzeit(v: VertragAntwort): Eintrag[] {
     return [
-      { label: 'Vertragsbeginn', wert: datumText(v.beginn) || NICHT_HINTERLEGT },
+      { label: 'Vertragsbeginn', wert: datumText(v.beginn) },
       (v.kuendbar || v.laufzeitende) && {
         label: 'Laufzeitende',
         wert: datumText(v.laufzeitende) || 'Keine Mindestlaufzeit',

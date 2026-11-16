@@ -131,6 +131,8 @@ test.describe('Vertrag löschen', () => {
       ERSTE_NACH_KFZ,
       'Rundfunkbeitrag',
       'Sprachschule',
+      'Internet',
+      'Streamingdienst',
       'Software GmbH',
       'Zeitschriften-Abo',
     ]) {

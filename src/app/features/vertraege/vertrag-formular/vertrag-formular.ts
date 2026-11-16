@@ -62,7 +62,6 @@ import {
   ZAHLWEISE_TEXT,
 } from '../vertrag-texte';
 import { VertragEingabe, VertragService } from '../vertrag.service';
-import { KEINE_ABBUCHUNG } from '../vertrag-zeile/vertrag-zeile';
 import {
   anfrageAus,
   EinmalkostenWerte,
@@ -110,11 +109,10 @@ const TAB_VON: Record<EinzelFeld, TabKey> = {
   gueltigSeit: 'kosten',
   anteilProzent: 'kosten',
   zahlweise: 'kosten',
-  abbuchungAb: 'kosten',
+  beginn: 'kosten',
   zahlungsweg: 'kosten',
   einmalkosten: 'kosten',
   nichtKuendbar: 'laufzeit',
-  beginn: 'laufzeit',
   laufzeitende: 'laufzeit',
   verlaengerung: 'laufzeit',
   kuendigungsfristMonate: 'laufzeit',
@@ -162,8 +160,6 @@ const PROGNOSE_UNVOLLSTAENDIG =
   'Gib Wert und Datum der nächsten Erhöhung ein, dann zeigen wir hier die nächsten drei Preise.';
 
 const PROGNOSE_KEINE = 'Bis zum Vertragsende ist keine Erhöhung zu erwarten.';
-
-const HINWEIS_ZAHLWEISE = 'Bitte Datum der nächsten Abbuchung im neuen Rhythmus prüfen.';
 
 const FRISTEN = [
   { wert: '0', text: 'Keine Frist' },
@@ -252,7 +248,6 @@ export class VertragFormular implements OnInit {
     ...VERLAENGERUNG_TEXT,
     KEINE: 'Keine – Vertrag endet zum Laufzeitende',
   });
-  protected readonly hinweisZahlweise = HINWEIS_ZAHLWEISE;
   protected readonly fristen = computed(() => fristenMit(this.vertrag()?.kuendigungsfristMonate));
   protected readonly waehrung = computed(() =>
     waehrungZeichen(this.vertrag()?.betrag.waehrung ?? 'EUR', this.locale),
@@ -275,10 +270,9 @@ export class VertragFormular implements OnInit {
     preise: this.fb.array<PreisZeile>([]),
     anteilProzent: [''],
     zahlweise: this.fb.control<Zahlweise | ''>(''),
-    abbuchungAb: [''],
+    beginn: [''],
     zahlungsweg: this.fb.control<Zahlungsweg | ''>(''),
     nichtKuendbar: [false],
-    beginn: [''],
     laufzeitende: [''],
     verlaengerung: this.fb.control<Verlaengerung | ''>(''),
     kuendigungsfristMonate: [''],
@@ -301,14 +295,6 @@ export class VertragFormular implements OnInit {
   protected readonly werte = signal(this.formular.getRawValue());
 
   protected readonly tab = signal<TabKey>('allgemein');
-
-  private readonly zahlweise = toSignal(this.formular.controls.zahlweise.valueChanges);
-
-  protected readonly zahlweiseGeaendert = computed(() => {
-    const zahlweise = this.zahlweise();
-    const vertrag = this.vertrag();
-    return !!vertrag && !!zahlweise && zahlweise !== vertrag.zahlweise;
-  });
 
   protected readonly nichtKuendbar = toSignal(this.formular.controls.nichtKuendbar.valueChanges, {
     initialValue: false,
@@ -406,8 +392,8 @@ export class VertragFormular implements OnInit {
 
   /**
    * Alle Werte aus der Vorschau des Backends, die SPA formatiert nur (ADR 0010). Scheitert die
-   * Vorschau, ist alles „Noch offen“. {@code null} trotz ausgefüllter Felder heißt: Es folgt nichts
-   * mehr (Abbuchung) bzw. noch keine vollständige Zeile (Einmalkosten).
+   * Vorschau, ist alles „Noch offen“. {@code null} trotz ausgefüllter Einmalkosten heißt: noch keine
+   * vollständige Zeile.
    */
   protected readonly uebersicht = computed<Uebersicht>(() => {
     const w = this.werte();
@@ -424,12 +410,6 @@ export class VertragFormular implements OnInit {
           ? `, dein Anteil ${text(v.eigenerAnteil.kostenProMonat)}`
           : '')
       : NOCH_OFFEN;
-    const abbuchungMoeglich = !!(w.betrag.trim() && w.zahlweise && w.abbuchungAb);
-    const abbuchung = v?.naechsteAbbuchung
-      ? `${datumText(v.naechsteAbbuchung.am)}, ${text(v.naechsteAbbuchung.betrag)}`
-      : v && abbuchungMoeglich
-        ? KEINE_ABBUCHUNG
-        : NOCH_OFFEN;
     const kuendigung = w.nichtKuendbar
       ? 'Nicht kündbar'
       : v
@@ -455,7 +435,6 @@ export class VertragFormular implements OnInit {
       zeilen: [
         { label: 'Betrag', wert: v?.betrag ? text(v.betrag) + zahlweise : NOCH_OFFEN },
         { label: 'Pro Monat', wert: proMonat },
-        { label: 'Nächste Abbuchung', wert: abbuchung },
         { label: 'Kündigung', wert: kuendigung },
         { label: 'Nächste Preisänderung', wert: preis },
         { label: 'Einmalkosten', wert: einmalkosten },

@@ -157,26 +157,16 @@
             }
           </div>
           <div class="feld">
-            <label [for]="id('abbuchungAb')">Nächste Abbuchung *</label>
+            <label [for]="id('beginn')">Vertragsbeginn *</label>
             <input
-              [id]="id('abbuchungAb')"
+              [id]="id('beginn')"
               type="date"
-              formControlName="abbuchungAb"
-              [attr.aria-invalid]="!!fehlerText('abbuchungAb')"
-              [attr.aria-describedby]="
-                beschreibung(
-                  'abbuchungAb',
-                  zahlweiseGeaendert() ? id('abbuchungAb') + '-hinweis' : ''
-                )
-              "
+              formControlName="beginn"
+              [attr.aria-invalid]="!!fehlerText('beginn')"
+              [attr.aria-describedby]="beschreibung('beginn')"
             />
-            @if (zahlweiseGeaendert()) {
-              <p class="feldhinweis" [id]="id('abbuchungAb') + '-hinweis'">
-                {{ hinweisZahlweise }}
-              </p>
-            }
-            @if (fehlerText('abbuchungAb'); as text) {
-              <p class="feldfehler" [id]="id('abbuchungAb') + '-fehler'">{{ text }}</p>
+            @if (fehlerText('beginn'); as text) {
+              <p class="feldfehler" [id]="id('beginn') + '-fehler'">{{ text }}</p>
             }
           </div>
           <div class="feld">
@@ -210,8 +200,7 @@
               [attr.aria-describedby]="beschreibung('gueltigSeit', id('gueltigSeit') + '-hinweis')"
             />
             <span class="feldhinweis" [id]="id('gueltigSeit') + '-hinweis'"
-              >Leer = ab Vertragsbeginn. Ohne Vertragsbeginn nötig, sobald du weitere Preise
-              einträgst.</span
+              >Leer = ab Vertragsbeginn.</span
             >
             @if (fehlerText('gueltigSeit'); as text) {
               <p class="feldfehler" [id]="id('gueltigSeit') + '-fehler'">{{ text }}</p>
@@ -280,26 +269,11 @@
             <label [for]="id('nichtKuendbar')">Nicht kündbar</label>
             <span class="feldhinweis" [id]="id('nichtKuendbar') + '-hinweis'"
               >Für Pflichtbeiträge wie den Rundfunkbeitrag. Verlängerung und Kündigungsfrist werden
-              dann ausgeblendet; Beginn und Laufzeitende bleiben.</span
+              dann ausgeblendet; das Laufzeitende bleibt.</span
             >
           </div>
         </div>
         <div class="raster">
-          <div class="feld">
-            <label [for]="id('beginn')"
-              >Vertragsbeginn <span class="optional">(optional)</span></label
-            >
-            <input
-              [id]="id('beginn')"
-              type="date"
-              formControlName="beginn"
-              [attr.aria-invalid]="!!fehlerText('beginn')"
-              [attr.aria-describedby]="beschreibung('beginn')"
-            />
-            @if (fehlerText('beginn'); as text) {
-              <p class="feldfehler" [id]="id('beginn') + '-fehler'">{{ text }}</p>
-            }
-          </div>
           <div class="feld">
             <label [for]="id('laufzeitende')"
               >Laufzeitende <span class="optional">(optional)</span></label

@@ -31,10 +31,22 @@ test.describe('Seite Verträge', () => {
       'Kein Termin bekannt',
       'Gekündigt zum 31.12.2026',
       'Beendet',
+      'Storniert',
     ]) {
       await expect(page.getByText(badge, { exact: true })).toBeVisible();
     }
-    await expect(page.getByText('Keine weiteren Abbuchungen')).toBeVisible();
+    for (const laufzeit of [
+      'Seit 01.01.2023',
+      '15.01.2024 – 30.06.2026',
+      'Beginnt am 01.01.2027',
+      'Storniert, Beginn wäre 01.12.2026',
+    ]) {
+      await expect(page.getByText(laufzeit, { exact: true })).toBeVisible();
+    }
+    await expect(page.getByText('Nächste Abbuchung')).toHaveCount(0);
+    await expect(page.locator('.kennzahl').filter({ hasText: 'Kosten pro Monat' })).toContainText(
+      'Ohne Verträge, die erst später beginnen',
+    );
     await expect(page.getByRole('link', { name: 'Zur Übersicht' })).toHaveCount(0);
   });
 

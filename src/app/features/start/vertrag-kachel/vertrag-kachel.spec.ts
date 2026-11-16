@@ -14,6 +14,7 @@ const UEBERSICHT: VertragsuebersichtAntwort = {
   kostenImJahrMitPrognose: false,
   einmalkostenImJahr: [],
   hatAnteile: false,
+  hatNichtBegonnene: false,
   jahr: 2026,
   naechsteKuendigungsfristen: [
     {
@@ -81,6 +82,13 @@ describe('VertragKachel', () => {
     uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatAnteile: true }));
     expect(text((await kachel()).element.querySelectorAll('.kennzahl')[1])).toBe(
       'Kosten pro Monat202,08 €Bei geteilten Verträgen nur dein Anteil',
+    );
+  });
+
+  it('nennt, dass Verträge mit späterem Beginn fehlen', async () => {
+    uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatNichtBegonnene: true }));
+    expect(text((await kachel()).element.querySelectorAll('.kennzahl')[1])).toBe(
+      'Kosten pro Monat202,08 €Ohne Verträge, die erst später beginnen',
     );
   });
 

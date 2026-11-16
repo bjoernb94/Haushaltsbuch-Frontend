@@ -14,7 +14,7 @@ async function pflichtfelderFuellen(page: Page, anbieter = 'Neuer Anbieter') {
   await tab(page, 'Kosten');
   await page.getByLabel('Betrag in € *').fill('19,99');
   await page.getByLabel('Zahlweise *').selectOption({ label: 'monatlich' });
-  await page.getByLabel('Nächste Abbuchung *').fill('2027-01-01');
+  await page.getByLabel('Vertragsbeginn *').fill('2026-01-01');
 }
 
 /** Bis 900 px heißt der Knopf in der Leiste oben „Sichern“. */
@@ -125,7 +125,6 @@ test.describe('Neuer Vertrag', () => {
     await page.getByLabel('Vertrags- oder Kundennummer').fill('V-1');
     await page.getByLabel('Notiz').fill('Familien-Abo');
     await tab(page, 'Laufzeit');
-    await page.getByLabel('Vertragsbeginn').fill('2026-01-01');
     await page.getByLabel('Laufzeitende').fill('2027-12-31');
     await page.getByLabel('Verlängerung').selectOption({ label: 'Nach Laufzeitende um 12 Monate' });
     await page.getByLabel('Kündigungsfrist').selectOption({ label: '3 Monate' });
@@ -137,10 +136,9 @@ test.describe('Neuer Vertrag', () => {
       vertragsnummer: 'V-1',
       preise: [{ gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } }],
       zahlweise: 'MONATLICH',
-      abbuchungAb: '2027-01-01',
+      beginn: '2026-01-01',
       zahlungsweg: 'PAYPAL',
       kuendbar: true,
-      beginn: '2026-01-01',
       laufzeitende: '2027-12-31',
       verlaengerung: 'ZWOELF_MONATE',
       kuendigungsfristMonate: 3,
@@ -304,9 +302,7 @@ test.describe('Neuer Vertrag', () => {
     await expect(meldung).toHaveCount(0);
   });
 
-  test('legt einen nicht kündbaren Vertrag an: Beginn und Laufzeitende bleiben', async ({
-    page,
-  }) => {
+  test('legt einen nicht kündbaren Vertrag an: das Laufzeitende bleibt', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true });
     await page.goto('/vertraege/neu');
     await pflichtfelderFuellen(page);
@@ -317,11 +313,11 @@ test.describe('Neuer Vertrag', () => {
     await page.getByLabel('Nicht kündbar').check();
     await expect(page.getByLabel('Verlängerung')).toHaveCount(0);
     await expect(page.getByLabel('Kündigungsfrist')).toHaveCount(0);
-    await page.getByLabel('Vertragsbeginn').fill('2013-01-01');
+    await page.getByLabel('Laufzeitende').fill('2030-12-31');
 
     expect(await speichernUndAnfrageLesen(page)).toMatchObject({
       kuendbar: false,
-      beginn: '2013-01-01',
+      laufzeitende: '2030-12-31',
       verlaengerung: null,
       kuendigungsfristMonate: null,
     });
@@ -399,8 +395,7 @@ test.describe('Neuer Vertrag', () => {
       await page.goto('/vertraege/neu');
       await pflichtfelderFuellen(page);
       await tab(page, 'Laufzeit');
-      await page.getByLabel('Vertragsbeginn').fill('2027-01-01');
-      await page.getByLabel('Laufzeitende').fill('2026-01-01');
+      await page.getByLabel('Laufzeitende').fill('2025-01-01');
       await page.getByRole('button', { name: 'Vertrag speichern' }).click();
 
       await expect(page.getByLabel('Laufzeitende')).toHaveAttribute('aria-invalid', 'true');
@@ -532,7 +527,7 @@ test.describe('Neuer Vertrag', () => {
     });
   });
 
-  test('Preise: ohne Vertragsbeginn braucht „Betrag gilt seit“ ein Datum, danach geht alles mit', async ({
+  test('Preise: weitere Preise brauchen kein „Betrag gilt seit“, er gilt ab Vertragsbeginn', async ({
     page,
   }) => {
     await backendSimulieren(page, { angemeldet: true });
@@ -543,19 +538,8 @@ test.describe('Neuer Vertrag', () => {
     const zeile = page.locator('.preis');
     await zeile.getByLabel('Gilt ab *').fill('2027-06-01');
     await zeile.getByLabel('Betrag in € *').fill('24,99');
-    await page.getByRole('button', { name: 'Vertrag speichern' }).click();
-
-    await expect(page.getByRole('tab', { name: /^Kosten.*1 Fehler$/ })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    await expect(page.getByLabel('Betrag gilt seit')).toBeFocused();
-    await expect(page.getByLabel('Betrag gilt seit')).toHaveAccessibleDescription(
-      /^Bitte gib an, seit wann der Betrag oben gilt\./,
-    );
-    await page.getByLabel('Betrag gilt seit').fill('2026-01-01');
     expect((await speichernUndAnfrageLesen(page)).preise).toEqual([
-      { gueltigAb: '2026-01-01', betrag: { wert: 19.99, waehrung: 'EUR' } },
+      { gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } },
       { gueltigAb: '2027-06-01', betrag: { wert: 24.99, waehrung: 'EUR' } },
     ]);
   });
@@ -636,7 +620,7 @@ test.describe('Neuer Vertrag', () => {
       await expect(zusammenfassung).toContainText('Versicherung');
       await expect(zusammenfassung).toContainText('Betrag19,99 € monatlich');
       await expect(zusammenfassung).toContainText('Pro Monat19,99 €');
-      await expect(zusammenfassung).toContainText('Nächste Abbuchung01.01.2027, 19,99 €');
+      await expect(zusammenfassung).not.toContainText('Nächste Abbuchung');
       await expect(zusammenfassung).toContainText('KündigungKein Termin bekannt');
       await expect(zusammenfassung).toContainText('Nächste PreisänderungKeine bekannt');
       await expect(zusammenfassung).toContainText('EinmalkostenKeine');

@@ -23,7 +23,7 @@ import { BetraegePipe } from '../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../shared/hinweis-box/hinweis-box';
 import { inDenBlick } from '../../shared/in-den-blick/in-den-blick';
 import { seitenaktionenMelden } from '../../shared/seitenaktionen/seitenaktionen';
-import { NUR_ANTEIL, vertragName } from './vertrag-texte';
+import { NUR_ANTEIL, OHNE_NICHT_BEGONNENE, vertragName } from './vertrag-texte';
 import { VertragZeile, ZeilenMeldung } from './vertrag-zeile/vertrag-zeile';
 import { VertragService } from './vertrag.service';
 
@@ -115,6 +115,7 @@ export class VertraegeSeite {
 
   protected readonly neu = NEU;
   protected readonly nurAnteil = NUR_ANTEIL;
+  protected readonly ohneNichtBegonnene = OHNE_NICHT_BEGONNENE;
 
   private ladevorgang?: Subscription;
 

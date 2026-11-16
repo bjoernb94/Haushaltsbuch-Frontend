@@ -169,11 +169,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        Abbuchung: {
-            /** Format: date */
-            am: string;
-            betrag: components["schemas"]["Betrag"];
-        };
         AnmeldungAnfrage: {
             email: string;
             passwort: string;
@@ -220,7 +215,7 @@ export interface components {
             zum: string | null;
         };
         /** @enum {string} */
-        Kuendigungsart: "KUENDIGEN_BIS" | "MONATLICH_KUENDBAR" | "ENDET" | "KEINE_LAUFZEIT" | "NICHT_KUENDBAR" | "GEKUENDIGT" | "BEENDET";
+        Kuendigungsart: "KUENDIGEN_BIS" | "MONATLICH_KUENDBAR" | "ENDET" | "KEINE_LAUFZEIT" | "NICHT_KUENDBAR" | "GEKUENDIGT" | "BEENDET" | "STORNIERT";
         Preisaenderung: {
             /** Format: date */
             ab: string;
@@ -274,12 +269,10 @@ export interface components {
         /** @enum {string} */
         Verlaengerung: "ZAHLUNGSINTERVALL" | "MONATLICH" | "ZWOELF_MONATE" | "KEINE";
         VertragAenderung: {
-            /** Format: date */
-            abbuchungAb: string;
             anbieter: string;
             anteilProzent?: number | null;
             /** Format: date */
-            beginn?: string | null;
+            beginn: string;
             bezeichnung?: string | null;
             einmalkosten: components["schemas"]["VertragEinmalkostenAnfrage"][];
             erinnerungSonderkuendigung: boolean;
@@ -305,12 +298,10 @@ export interface components {
             zahlweise: components["schemas"]["Zahlweise"];
         };
         VertragAnfrage: {
-            /** Format: date */
-            abbuchungAb: string;
             anbieter: string;
             anteilProzent?: number | null;
             /** Format: date */
-            beginn?: string | null;
+            beginn: string;
             bezeichnung?: string | null;
             einmalkosten: components["schemas"]["VertragEinmalkostenAnfrage"][];
             erinnerungSonderkuendigung: boolean;
@@ -334,12 +325,10 @@ export interface components {
             zahlweise: components["schemas"]["Zahlweise"];
         };
         VertragAntwort: {
-            /** Format: date */
-            abbuchungAb: string;
             anbieter: string;
             anteilProzent: number | null;
             /** Format: date */
-            beginn: string | null;
+            beginn: string;
             berechnet: components["schemas"]["VertragBerechnet"];
             betrag: components["schemas"]["Betrag"];
             bezeichnung: string | null;
@@ -376,11 +365,12 @@ export interface components {
             kostenImJahrMitPrognose: boolean;
             kostenProMonat: components["schemas"]["Betrag"];
             kuendigung: components["schemas"]["Kuendigung"];
-            naechsteAbbuchung: components["schemas"]["Abbuchung"] | null;
             naechstePreisaenderung: components["schemas"]["Preisaenderung"] | null;
             preisverlauf: components["schemas"]["Preispunkt"][];
             prognose: components["schemas"]["Prognosepreis"][];
             status: components["schemas"]["Vertragsstatus"];
+            /** Format: date */
+            vertragsende: string | null;
         };
         VertragEigenerAnteil: {
             betrag: components["schemas"]["Betrag"];
@@ -435,8 +425,6 @@ export interface components {
             rhythmus: components["schemas"]["Erhoehungsrhythmus"];
         };
         VertragVorschauAnfrage: {
-            /** Format: date */
-            abbuchungAb?: string | null;
             anteilProzent?: number | null;
             /** Format: date */
             beginn?: string | null;
@@ -461,7 +449,6 @@ export interface components {
             einmalkosten: components["schemas"]["Betrag"] | null;
             kostenProMonat: components["schemas"]["Betrag"] | null;
             kuendigung: components["schemas"]["Kuendigung"];
-            naechsteAbbuchung: components["schemas"]["Abbuchung"] | null;
             naechstePreisaenderung: components["schemas"]["Preisaenderung"] | null;
             preise: components["schemas"]["VertragPreisAntwort"][];
             prognose: components["schemas"]["Prognosepreis"][];
@@ -490,10 +477,11 @@ export interface components {
             rhythmus?: components["schemas"]["Erhoehungsrhythmus"] | null;
         };
         /** @enum {string} */
-        Vertragsstatus: "AKTIV" | "GEKUENDIGT" | "BEENDET";
+        Vertragsstatus: "NICHT_BEGONNEN" | "AKTIV" | "GEKUENDIGT" | "BEENDET" | "STORNIERT";
         VertragsuebersichtAntwort: {
             einmalkostenImJahr: components["schemas"]["Betrag"][];
             hatAnteile: boolean;
+            hatNichtBegonnene: boolean;
             /** Format: int32 */
             jahr: number;
             kostenImJahr: components["schemas"]["Betrag"][];

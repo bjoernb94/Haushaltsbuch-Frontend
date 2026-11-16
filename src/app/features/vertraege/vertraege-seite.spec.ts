@@ -18,7 +18,7 @@ const LEER = {
   bezeichnung: null,
   vertragsnummer: null,
   zahlungsweg: null,
-  beginn: null,
+  beginn: '2025-01-01',
   laufzeitende: null,
   verlaengerung: null,
   kuendigungsfristMonate: null,
@@ -26,7 +26,6 @@ const LEER = {
   notiz: null,
   kuendbar: true,
   version: 0,
-  abbuchungAb: '2025-01-01',
   kategorie: { id: 'k', schluessel: 'VERSICHERUNG', name: null },
   zahlweise: 'MONATLICH',
   betrag: EUR(10),
@@ -41,7 +40,7 @@ const LEER = {
 /** Was in `berechnet` für diese Tests keine Rolle spielt. */
 const BERECHNET: Omit<
   VertragAntwort['berechnet'],
-  'status' | 'kostenProMonat' | 'kostenImJahr' | 'naechsteAbbuchung' | 'kuendigung'
+  'status' | 'kostenProMonat' | 'kostenImJahr' | 'kuendigung'
 > = {
   kostenImJahrMitPrognose: false,
   jahr: 2026,
@@ -50,6 +49,7 @@ const BERECHNET: Omit<
   naechstePreisaenderung: null,
   preisverlauf: [],
   prognose: [],
+  vertragsende: null,
 };
 
 const KEINE_KUENDIGUNG = {
@@ -80,7 +80,6 @@ const JAEHRLICH: VertragAntwort = {
     status: 'AKTIV',
     kostenProMonat: EUR(48.9),
     kostenImJahr: EUR(586.8),
-    naechsteAbbuchung: { am: '2027-01-01', betrag: EUR(586.8) },
     kuendigung: {
       art: 'KUENDIGEN_BIS',
       dringend: true,
@@ -100,8 +99,8 @@ const BEENDET: VertragAntwort = {
     status: 'BEENDET',
     kostenProMonat: EUR(10),
     kostenImJahr: EUR(120),
-    naechsteAbbuchung: null,
     kuendigung: { ...KEINE_KUENDIGUNG, art: 'BEENDET' },
+    vertragsende: '2025-12-31',
   },
 };
 
@@ -115,8 +114,42 @@ const PFLICHT: VertragAntwort = {
     status: 'AKTIV',
     kostenProMonat: EUR(10),
     kostenImJahr: EUR(120),
-    naechsteAbbuchung: { am: '2027-01-15', betrag: EUR(10) },
     kuendigung: { ...KEINE_KUENDIGUNG, art: 'NICHT_KUENDBAR' },
+  },
+};
+
+/** Beginnt erst später, ohne Verlängerung. */
+const SPAETER: VertragAntwort = {
+  ...LEER,
+  id: 'spaeter',
+  anbieter: 'Später GmbH',
+  beginn: '2027-03-01',
+  laufzeitende: '2028-02-29',
+  verlaengerung: 'KEINE',
+  berechnet: {
+    ...BERECHNET,
+    status: 'NICHT_BEGONNEN',
+    kostenProMonat: EUR(10),
+    kostenImJahr: EUR(0),
+    kuendigung: { ...KEINE_KUENDIGUNG, art: 'ENDET', zum: '2028-02-29' },
+    vertragsende: '2028-02-29',
+  },
+};
+
+/** Vor dem Beginn gekündigt. */
+const STORNIERT: VertragAntwort = {
+  ...LEER,
+  id: 'storniert',
+  anbieter: 'Storno AG',
+  beginn: '2027-03-01',
+  gekuendigtZum: '2027-02-28',
+  berechnet: {
+    ...BERECHNET,
+    status: 'STORNIERT',
+    kostenProMonat: EUR(10),
+    kostenImJahr: EUR(0),
+    kuendigung: { ...KEINE_KUENDIGUNG, art: 'STORNIERT' },
+    vertragsende: '2027-02-28',
   },
 };
 
@@ -158,6 +191,7 @@ const UEBERSICHT: VertragsuebersichtAntwort = {
   kostenImJahrMitPrognose: false,
   einmalkostenImJahr: [],
   hatAnteile: false,
+  hatNichtBegonnene: false,
   jahr: 2026,
   naechsteKuendigungsfristen: [],
 };
@@ -281,6 +315,15 @@ describe('VertraegeSeite', () => {
       expect(text(kennzahlen[3])).toBe('Einmalkosten 2027149,90 € · 20,00 $');
     });
 
+    it('nennt unter „Kosten pro Monat“, dass später beginnende fehlen', async () => {
+      uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatNichtBegonnene: true }));
+      const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
+      expect(text(kennzahlen[1])).toBe(
+        'Kosten pro Monat58,90 € · 5,00 $Ohne Verträge, die erst später beginnen',
+      );
+      expect(text(kennzahlen[2])).toBe('Kosten 2026706,80 €Alle Abbuchungen im Kalenderjahr');
+    });
+
     it('nennt bei geteilten Verträgen unter allen Kosten „nur dein Anteil“', async () => {
       uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatAnteile: true }));
       const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
@@ -308,18 +351,31 @@ describe('VertraegeSeite', () => {
       expect(text(zeile.querySelector('.notiz'))).toBe('Wichtig');
       expect(text(zeile.querySelector('.betrag'))).toBe('586,80 €');
       expect(text(zeile.querySelectorAll('.klein')[0])).toBe('jährlich · 48,90 €/Monat');
-      expect(text(zeile.querySelectorAll('.klein')[1])).toBe('Nächste Abbuchung 01.01.2027');
+      expect(text(zeile.querySelectorAll('.klein')[1])).toBe('Seit 01.01.2023');
       expect(text(zeile.querySelector('.badge'))).toBe('Kündbar bis 30.11.2026');
       expect(zeile.querySelector('.badge')?.classList).toContain('ton-warnung');
       expect(text(zeile.querySelector('.zusatz'))).toBe('Vertrag endet zum 31.12.2026');
     });
 
-    it('rechnet bei monatlicher Zahlung nicht um und nennt fehlende Abbuchungen', async () => {
+    it('rechnet bei monatlicher Zahlung nicht um und nennt bei beendeten Beginn und Ende', async () => {
       const zeile = zeilen((await seite()).element)[1];
       expect(text(zeile.querySelector('.meta'))).toBe('Versicherung');
       expect(text(zeile.querySelectorAll('.klein')[0])).toBe('monatlich');
-      expect(text(zeile.querySelectorAll('.klein')[1])).toBe('Keine weiteren Abbuchungen');
+      expect(text(zeile.querySelectorAll('.klein')[1])).toBe('01.01.2025 – 31.12.2025');
       expect(zeile.querySelector('.zeile')?.classList).toContain('beendet');
+    });
+
+    it('nennt den späteren Beginn und stornierte Verträge, diese ausgegraut', async () => {
+      auflisten.mockReturnValue(of([SPAETER, STORNIERT]));
+      const [spaeter, storniert] = zeilen((await seite()).element);
+      expect(text(spaeter.querySelectorAll('.klein')[1])).toBe('Beginnt am 01.03.2027');
+      expect(spaeter.querySelector('.zeile')?.classList).not.toContain('beendet');
+      expect(text(storniert.querySelectorAll('.klein')[1])).toBe(
+        'Storniert, Beginn wäre 01.03.2027',
+      );
+      expect(text(storniert.querySelector('.badge'))).toBe('Storniert');
+      expect(storniert.querySelector('.badge')?.classList).toContain('ton-neutral');
+      expect(storniert.querySelector('.zeile')?.classList).toContain('beendet');
     });
 
     it('zeigt den Leerzustand mit Link zum ersten Vertrag', async () => {
@@ -456,7 +512,7 @@ describe('VertraegeSeite', () => {
       const { element, stabil, url } = await seite('/vertraege/kfz');
       expect([...element.querySelectorAll('.kachel')].map(text)).toEqual([
         'Pro Monat48,90 €',
-        'Nächste Abbuchung01.01.2027586,80 €',
+        'Laufzeitseit 01.01.2023Mindestlaufzeit bis 31.12.2023',
         'KündigungKündbar bis 30.11.2026Vertrag endet zum 31.12.2026',
         'Nächste PreisänderungKeine bekannt',
       ]);
@@ -482,7 +538,6 @@ describe('VertraegeSeite', () => {
         'Pro Monat': '48,90 €',
         'Kosten 2026': '586,80 €',
         Zahlungsweg: 'Lastschrift',
-        'Nächste Abbuchung': '01.01.2027, 586,80 €',
       });
 
       tabs[2].click();
@@ -667,6 +722,35 @@ describe('VertraegeSeite', () => {
       expect(formular.querySelectorAll('.preis')).toHaveLength(1);
     });
 
+    it('Kachel „Laufzeit“ je nach Status, Mindestlaufzeit und Verlängerung', async () => {
+      const offen: VertragAntwort = { ...JAEHRLICH, id: 'offen', laufzeitende: null };
+      auflisten.mockReturnValue(of([BEENDET, PFLICHT, SPAETER, STORNIERT, offen]));
+      const { element, stabil } = await seite('/vertraege/alt');
+      const laufzeit = () => text(element.querySelectorAll('.kachel')[1]);
+      expect(laufzeit()).toBe('Laufzeit01.01.2025 – 31.12.2025');
+
+      const erwartet = {
+        rundfunk: 'Laufzeitseit 01.01.2025',
+        spaeter: 'Laufzeitab 01.03.2027Endet am 29.02.2028',
+        storniert: 'LaufzeitStorniert',
+        offen: 'Laufzeitseit 01.01.2023Keine Mindestlaufzeit',
+      };
+      for (const [id, kachel] of Object.entries(erwartet)) {
+        await TestBed.inject(Router).navigateByUrl(`/vertraege/${id}`);
+        await stabil();
+        expect(laufzeit()).toBe(kachel);
+      }
+    });
+
+    it('nennt im Tab Laufzeit die neuen Status', async () => {
+      auflisten.mockReturnValue(of([SPAETER, STORNIERT]));
+      const { element, stabil } = await seite('/vertraege/spaeter?tab=laufzeit');
+      expect(eintraege(element)).toMatchObject({ Status: 'Noch nicht begonnen' });
+      await TestBed.inject(Router).navigateByUrl('/vertraege/storniert?tab=laufzeit');
+      await stabil();
+      expect(eintraege(element)).toMatchObject({ Kündigung: 'Storniert', Status: 'Storniert' });
+    });
+
     it('zeigt bei unbekanntem Tab „Allgemein“', async () => {
       const { element } = await seite('/vertraege/kfz?tab=unbekannt');
       expect(text(element.querySelector('[role="tab"][aria-selected="true"]'))).toBe('Allgemein');
@@ -674,14 +758,12 @@ describe('VertraegeSeite', () => {
 
     it('nennt fehlende Angaben und lässt Felder weg, die nicht passen', async () => {
       const { element, stabil } = await seite('/vertraege/alt?tab=kosten');
-      expect(eintraege(element)).toMatchObject({
-        'Nächste Abbuchung': 'Keine weiteren Abbuchungen',
-        Zahlungsweg: 'Nicht hinterlegt',
-      });
+      expect(eintraege(element)).toMatchObject({ Zahlungsweg: 'Nicht hinterlegt' });
+      expect(eintraege(element)).not.toHaveProperty('Nächste Abbuchung');
       await TestBed.inject(Router).navigateByUrl('/vertraege/alt?tab=laufzeit');
       await stabil();
       expect(eintraege(element)).toMatchObject({
-        Vertragsbeginn: 'Nicht hinterlegt',
+        Vertragsbeginn: '01.01.2025',
         Laufzeitende: 'Keine Mindestlaufzeit',
         Verlängerung: 'Nicht hinterlegt',
         Kündigungsfrist: 'Nicht hinterlegt',
@@ -1030,7 +1112,7 @@ describe('VertraegeSeite', () => {
 
       expect(aendern).toHaveBeenCalledWith(
         'kfz',
-        expect.objectContaining({ version: 0, abbuchungAb: '2025-01-01', kategorieId: 'k' }),
+        expect.objectContaining({ version: 0, beginn: '2023-01-01', kategorieId: 'k' }),
       );
       expect(TestBed.inject(UngespeicherteEingaben).vorhanden()).toBe(false);
       expect(url()).toBe('/vertraege/kfz');

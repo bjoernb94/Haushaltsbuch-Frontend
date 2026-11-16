@@ -21,10 +21,9 @@ const LEER: VertragWerte = {
   preise: [],
   anteilProzent: '',
   zahlweise: '',
-  abbuchungAb: '',
+  beginn: '',
   zahlungsweg: '',
   nichtKuendbar: false,
-  beginn: '',
   laufzeitende: '',
   verlaengerung: '',
   kuendigungsfristMonate: '',
@@ -43,7 +42,7 @@ const PFLICHT: VertragWerte = {
   kategorieId: 'k1',
   betrag: '19,99',
   zahlweise: 'MONATLICH',
-  abbuchungAb: '2027-01-01',
+  beginn: '2027-01-01',
 };
 
 describe('betragLesen', () => {
@@ -109,7 +108,7 @@ describe('vertragPruefen', () => {
       'kategorieId',
       'betrag',
       'zahlweise',
-      'abbuchungAb',
+      'beginn',
     ]);
   });
 
@@ -141,12 +140,9 @@ describe('vertragPruefen', () => {
       expect(vertragPruefen(mitSeit).size).toBe(0);
     });
 
-    it('verlangt „Betrag gilt seit“ bei weiteren Preisen nur ohne Vertragsbeginn', () => {
+    it('verlangt „Betrag gilt seit“ bei weiteren Preisen nicht, er gilt ab Vertragsbeginn', () => {
       const preise = [{ gueltigAb: '2027-01-01', betrag: '25' }];
       expect(vertragPruefen({ ...MIT_BEGINN, preise }).size).toBe(0);
-      const fehler = vertragPruefen({ ...PFLICHT, preise });
-      expect(fehler.get('gueltigSeit')).toBe('Bitte gib an, seit wann der Betrag oben gilt.');
-      expect(vertragPruefen(PFLICHT).has('gueltigSeit')).toBe(false);
     });
   });
 
@@ -200,10 +196,9 @@ describe('anfrageAus', () => {
       vertragsnummer: null,
       preise: [{ gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } }],
       zahlweise: 'MONATLICH',
-      abbuchungAb: '2027-01-01',
+      beginn: '2027-01-01',
       zahlungsweg: null,
       kuendbar: true,
-      beginn: null,
       laufzeitende: null,
       verlaengerung: null,
       kuendigungsfristMonate: null,
@@ -582,10 +577,9 @@ describe('Bearbeiten', () => {
     preisgarantieBis: null,
     erinnerungSonderkuendigung: true,
     zahlweise: 'MONATLICH',
-    abbuchungAb: '2026-01-31',
+    beginn: '2026-01-31',
     zahlungsweg: null,
     kuendbar: true,
-    beginn: null,
     laufzeitende: null,
     verlaengerung: null,
     kuendigungsfristMonate: null,
@@ -599,10 +593,10 @@ describe('Bearbeiten', () => {
       jahr: 2026,
       eigenerAnteil: null,
       einmalkosten: { wert: 0, waehrung: 'USD' },
-      naechsteAbbuchung: { am: '2026-11-30', betrag: { wert: 586.8, waehrung: 'USD' } },
       naechstePreisaenderung: null,
       preisverlauf: [],
       prognose: [],
+      vertragsende: null,
       kuendigung: {
         art: 'KEINE_LAUFZEIT',
         dringend: false,
@@ -614,9 +608,9 @@ describe('Bearbeiten', () => {
   };
 
   describe('werteAus', () => {
-    it('belegt mit der nächsten Abbuchung vor, der Betrag steht mit Komma', () => {
+    it('belegt mit dem Vertragsbeginn vor, der Betrag steht mit Komma', () => {
       expect(werteAus(VERTRAG)).toMatchObject({
-        abbuchungAb: '2026-11-30',
+        beginn: '2026-01-31',
         betrag: '586,80',
         kategorieId: 'k1',
         bezeichnung: '',
@@ -709,14 +703,6 @@ describe('Bearbeiten', () => {
       expect(werteAus(VERTRAG).anteilProzent).toBe('');
     });
 
-    it('nimmt abbuchungAb, wenn es keine nächste Abbuchung gibt', () => {
-      const beendet = {
-        ...VERTRAG,
-        berechnet: { ...VERTRAG.berechnet, naechsteAbbuchung: null },
-      };
-      expect(werteAus(beendet).abbuchungAb).toBe('2026-01-31');
-    });
-
     it('leitet „Gekündigt“ und „Nicht kündbar“ ab, Frist 0 bleibt erhalten', () => {
       const werte = werteAus({
         ...VERTRAG,
@@ -743,7 +729,6 @@ describe('Bearbeiten', () => {
         preissteigerung: null,
         preisgarantieBis: null,
         zahlweise: null,
-        abbuchungAb: null,
         beginn: null,
         laufzeitende: null,
         verlaengerung: null,
@@ -833,21 +818,10 @@ describe('Bearbeiten', () => {
       });
       expect(anfrage.preise?.map(({ betrag }) => betrag?.wert)).toEqual([19.99, 10]);
     });
-
-    it('nimmt den gespeicherten Anker, solange Datum und Zahlweise unverändert sind', () => {
-      const werte = werteAus(VERTRAG);
-      expect(vorschauAus(werte, VERTRAG)?.abbuchungAb).toBe('2026-01-31');
-      expect(vorschauAus({ ...werte, abbuchungAb: '2027-03-01' }, VERTRAG)?.abbuchungAb).toBe(
-        '2027-03-01',
-      );
-      expect(vorschauAus({ ...werte, zahlweise: 'JAEHRLICH' }, VERTRAG)?.abbuchungAb).toBe(
-        werte.abbuchungAb,
-      );
-    });
   });
 
   describe('anfrageAus mit gespeichertem Vertrag', () => {
-    it('schickt ohne Änderung alle Felder unverändert, auch den Anker', () => {
+    it('schickt ohne Änderung alle Felder unverändert', () => {
       expect(anfrageAus(werteAus(VERTRAG), VERTRAG)).toEqual({
         anbieter: 'Anbieter',
         bezeichnung: null,
@@ -855,10 +829,9 @@ describe('Bearbeiten', () => {
         vertragsnummer: null,
         preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'USD' } }],
         zahlweise: 'MONATLICH',
-        abbuchungAb: '2026-01-31',
+        beginn: '2026-01-31',
         zahlungsweg: null,
         kuendbar: true,
-        beginn: null,
         laufzeitende: null,
         verlaengerung: null,
         kuendigungsfristMonate: null,
@@ -900,30 +873,6 @@ describe('Bearbeiten', () => {
         preisgarantieBis: '2026-12-31',
         erinnerungSonderkuendigung: false,
       });
-    });
-
-    it('der Anker bleibt, wenn sich nur ein anderes Feld ändert', () => {
-      const werte = { ...werteAus(VERTRAG), notiz: 'Neu' };
-      expect(anfrageAus(werte, VERTRAG).abbuchungAb).toBe('2026-01-31');
-    });
-
-    it('ein geändertes Datum wird neuer Anker', () => {
-      const werte = { ...werteAus(VERTRAG), abbuchungAb: '2026-12-15' };
-      expect(anfrageAus(werte, VERTRAG).abbuchungAb).toBe('2026-12-15');
-    });
-
-    it('bei geänderter Zahlweise gilt das Feld als neuer Anker', () => {
-      const werte: VertragWerte = { ...werteAus(VERTRAG), zahlweise: 'JAEHRLICH' };
-      expect(anfrageAus(werte, VERTRAG).abbuchungAb).toBe('2026-11-30');
-    });
-
-    it('zurückgenommene Änderungen lassen den Anker unberührt', () => {
-      const werte = {
-        ...werteAus(VERTRAG),
-        abbuchungAb: '2026-11-30',
-        zahlweise: 'MONATLICH' as const,
-      };
-      expect(anfrageAus(werte, VERTRAG).abbuchungAb).toBe('2026-01-31');
     });
 
     it('übernimmt die Währung des Vertrags, nicht EUR', () => {

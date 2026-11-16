@@ -11,7 +11,7 @@ const ANFRAGE: VertragAnfrage = {
   einmalkosten: [],
   erinnerungSonderkuendigung: true,
   zahlweise: 'JAEHRLICH',
-  abbuchungAb: '2027-01-01',
+  beginn: '2026-01-01',
   kuendbar: true,
 };
 

@@ -47,7 +47,6 @@ const VERTRAG_LEER = {
   bezeichnung: null,
   vertragsnummer: null,
   zahlungsweg: null,
-  beginn: null,
   laufzeitende: null,
   verlaengerung: null,
   kuendigungsfristMonate: null,
@@ -75,6 +74,7 @@ const BERECHNET_LEER: Pick<
   | 'naechstePreisaenderung'
   | 'preisverlauf'
   | 'prognose'
+  | 'vertragsende'
 > = {
   kostenImJahrMitPrognose: false,
   jahr: 2026,
@@ -82,9 +82,10 @@ const BERECHNET_LEER: Pick<
   naechstePreisaenderung: null,
   preisverlauf: [],
   prognose: [],
+  vertragsende: null,
 };
 
-/** Je eine Kündigungsart; `berechnet` steht fest wie vom Backend geliefert. */
+/** Je eine Kündigungsart und jeder Status; `berechnet` steht fest wie vom Backend geliefert. */
 export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
   {
     ...VERTRAG_LEER,
@@ -96,7 +97,6 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     betrag: betrag(586.8),
     preise: einPreis(586.8),
     zahlweise: 'JAEHRLICH',
-    abbuchungAb: '2024-01-01',
     zahlungsweg: 'LASTSCHRIFT',
     beginn: '2023-01-01',
     laufzeitende: '2023-12-31',
@@ -108,7 +108,6 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       status: 'AKTIV',
       kostenProMonat: betrag(48.9),
       kostenImJahr: betrag(586.8),
-      naechsteAbbuchung: { am: '2027-01-01', betrag: betrag(586.8) },
       kuendigung: {
         art: 'KUENDIGEN_BIS',
         dringend: true,
@@ -130,7 +129,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       { gueltigAb: '2027-03-01', betrag: betrag(39.9), art: 'ANGEKUENDIGT' },
     ],
     zahlweise: 'MONATLICH',
-    abbuchungAb: '2025-05-01',
+    beginn: '2025-05-01',
     verlaengerung: 'ZAHLUNGSINTERVALL',
     kuendigungsfristMonate: 3,
     berechnet: {
@@ -140,7 +139,6 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       naechstePreisaenderung: { ab: '2027-03-01', betrag: betrag(39.9), art: 'ANGEKUENDIGT' },
       kostenProMonat: betrag(34.9),
       kostenImJahr: betrag(418.8),
-      naechsteAbbuchung: { am: '2026-12-01', betrag: betrag(34.9) },
       kuendigung: {
         art: 'MONATLICH_KUENDBAR',
         dringend: false,
@@ -159,7 +157,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     betrag: betrag(55.08),
     preise: einPreis(55.08),
     zahlweise: 'VIERTELJAEHRLICH',
-    abbuchungAb: '2013-01-15',
+    beginn: '2013-01-15',
     kuendbar: false,
     berechnet: {
       ...BERECHNET_LEER,
@@ -167,7 +165,6 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       status: 'AKTIV',
       kostenProMonat: betrag(18.36),
       kostenImJahr: betrag(220.32),
-      naechsteAbbuchung: { am: '2027-01-15', betrag: betrag(55.08) },
       kuendigung: { ...KEINE_KUENDIGUNG, art: 'NICHT_KUENDBAR' },
     },
   },
@@ -179,7 +176,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     betrag: betrag(60),
     preise: einPreis(60),
     zahlweise: 'HALBJAEHRLICH',
-    abbuchungAb: '2026-07-01',
+    beginn: '2026-07-01',
     laufzeitende: '2027-06-30',
     verlaengerung: 'KEINE',
     berechnet: {
@@ -188,8 +185,56 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       status: 'AKTIV',
       kostenProMonat: betrag(10),
       kostenImJahr: betrag(120),
-      naechsteAbbuchung: { am: '2027-01-01', betrag: betrag(60) },
       kuendigung: { ...KEINE_KUENDIGUNG, art: 'ENDET', zum: '2027-06-30' },
+      vertragsende: '2027-06-30',
+    },
+  },
+  {
+    ...VERTRAG_LEER,
+    id: 'glasfaser',
+    anbieter: 'Glasfaser Nord',
+    bezeichnung: 'Internet',
+    kategorie: kategorie('MOBILFUNK_INTERNET'),
+    betrag: betrag(39.99),
+    preise: einPreis(39.99),
+    zahlweise: 'MONATLICH',
+    beginn: '2027-01-01',
+    laufzeitende: '2028-12-31',
+    verlaengerung: 'ZAHLUNGSINTERVALL',
+    kuendigungsfristMonate: 1,
+    berechnet: {
+      ...BERECHNET_LEER,
+      einmalkosten: betrag(0),
+      status: 'NICHT_BEGONNEN',
+      kostenProMonat: betrag(39.99),
+      kostenImJahr: betrag(0),
+      kuendigung: {
+        art: 'KUENDIGEN_BIS',
+        dringend: false,
+        fristMonate: 1,
+        kuendigenBis: '2028-11-30',
+        zum: '2028-12-31',
+      },
+    },
+  },
+  {
+    ...VERTRAG_LEER,
+    id: 'storniert',
+    anbieter: 'Streamingdienst',
+    kategorie: kategorie('STREAMING_ABOS'),
+    betrag: betrag(12.99),
+    preise: einPreis(12.99),
+    zahlweise: 'MONATLICH',
+    beginn: '2026-12-01',
+    gekuendigtZum: '2026-11-30',
+    berechnet: {
+      ...BERECHNET_LEER,
+      einmalkosten: betrag(0),
+      status: 'STORNIERT',
+      kostenProMonat: betrag(12.99),
+      kostenImJahr: betrag(0),
+      kuendigung: { ...KEINE_KUENDIGUNG, art: 'STORNIERT' },
+      vertragsende: '2026-11-30',
     },
   },
   {
@@ -212,7 +257,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       { bezeichnung: 'Einrichtung', betrag: betrag(30), faelligAm: '2026-02-01' },
     ],
     zahlweise: 'MONATLICH',
-    abbuchungAb: '2026-01-05',
+    beginn: '2025-11-15',
     berechnet: {
       ...BERECHNET_LEER,
       eigenerAnteil: { betrag: betrag(2.5), kostenProMonat: betrag(2.5), kostenImJahr: betrag(30) },
@@ -232,7 +277,6 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       status: 'AKTIV',
       kostenProMonat: betrag(5),
       kostenImJahr: betrag(60),
-      naechsteAbbuchung: { am: '2026-12-05', betrag: betrag(5) },
       kuendigung: KEINE_KUENDIGUNG,
     },
   },
@@ -245,7 +289,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     betrag: betrag(9.9),
     preise: einPreis(9.9),
     zahlweise: 'MONATLICH',
-    abbuchungAb: '2024-01-05',
+    beginn: '2024-01-05',
     zahlungsweg: 'PAYPAL',
     verlaengerung: 'ZAHLUNGSINTERVALL',
     kuendigungsfristMonate: 1,
@@ -257,8 +301,8 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       status: 'GEKUENDIGT',
       kostenProMonat: betrag(9.9),
       kostenImJahr: betrag(118.8),
-      naechsteAbbuchung: { am: '2026-12-05', betrag: betrag(9.9) },
       kuendigung: { ...KEINE_KUENDIGUNG, art: 'GEKUENDIGT', fristMonate: 1, zum: '2026-12-31' },
+      vertragsende: '2026-12-31',
     },
   },
   {
@@ -269,7 +313,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     betrag: betrag(19.99),
     preise: einPreis(19.99),
     zahlweise: 'MONATLICH',
-    abbuchungAb: '2024-01-15',
+    beginn: '2024-01-15',
     gekuendigtZum: '2026-06-30',
     berechnet: {
       ...BERECHNET_LEER,
@@ -277,11 +321,16 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       status: 'BEENDET',
       kostenProMonat: betrag(19.99),
       kostenImJahr: betrag(239.88),
-      naechsteAbbuchung: null,
       kuendigung: { ...KEINE_KUENDIGUNG, art: 'BEENDET' },
+      vertragsende: '2026-06-30',
     },
   },
 ];
+
+/** Beendet oder storniert. */
+function vorbei({ berechnet }: VertragAntwort): boolean {
+  return berechnet.status === 'BEENDET' || berechnet.status === 'STORNIERT';
+}
 
 function summeJeWaehrung(betraege: Betrag[]): Betrag[] {
   const summen = new Map<string, number>();
@@ -304,7 +353,9 @@ function einmalkostenImJahr(vertraege: VertragAntwort[]): Betrag[] {
 }
 
 function uebersicht(vertraege: VertragAntwort[]): VertragsuebersichtAntwort {
-  const laufend = vertraege.filter((v) => v.berechnet.status !== 'BEENDET');
+  const laufend = vertraege.filter(
+    (v) => v.berechnet.status === 'AKTIV' || v.berechnet.status === 'GEKUENDIGT',
+  );
   return {
     laufendeVertraege: laufend.length,
     kostenProMonat: summeJeWaehrung(
@@ -316,8 +367,10 @@ function uebersicht(vertraege: VertragAntwort[]): VertragsuebersichtAntwort {
     kostenImJahrMitPrognose: vertraege.some((v) => v.berechnet.kostenImJahrMitPrognose),
     einmalkostenImJahr: einmalkostenImJahr(vertraege),
     hatAnteile: vertraege.some((v) => v.anteilProzent !== null && v.anteilProzent < 100),
+    hatNichtBegonnene: vertraege.some((v) => v.berechnet.status === 'NICHT_BEGONNEN'),
     jahr: JAHR,
-    naechsteKuendigungsfristen: laufend
+    naechsteKuendigungsfristen: vertraege
+      .filter((v) => !vorbei(v))
       .flatMap(({ id, anbieter, bezeichnung, betrag, zahlweise, berechnet }) => {
         const { art, kuendigenBis, zum, dringend } = berechnet.kuendigung;
         return art === 'KUENDIGEN_BIS' && kuendigenBis && zum
@@ -331,6 +384,9 @@ function uebersicht(vertraege: VertragAntwort[]): VertragsuebersichtAntwort {
 /** Grob wie das Backend; genau genug, damit sich die Vorschau im Test ändert. */
 function vorschau(anfrage: VertragVorschauAnfrage): Kuendigung {
   const fristMonate = anfrage.kuendigungsfristMonate ?? null;
+  if (anfrage.gekuendigtZum && anfrage.beginn && anfrage.gekuendigtZum < anfrage.beginn) {
+    return { ...KEINE_KUENDIGUNG, art: 'STORNIERT', fristMonate };
+  }
   if (anfrage.gekuendigtZum) {
     return { ...KEINE_KUENDIGUNG, art: 'GEKUENDIGT', fristMonate, zum: anfrage.gekuendigtZum };
   }
@@ -456,18 +512,17 @@ function prognoseFuer(
   return prognose;
 }
 
-/** Erster Preis ohne Datum: Beginn, sonst 12 Monate vor dem zweiten bzw. vor heute. */
+/** Erster Preis ohne Datum: ab Beginn. */
 function preisverlaufFuer(
   preise: VertragPreisAntwort[],
   prognose: Prognosepreis[],
-  beginn: string | null | undefined,
+  beginn: string,
 ): Preispunkt[] {
-  const heute = new Date().toISOString().slice(0, 10);
   return [
     ...preise
       .filter(({ art }) => art !== 'NACH_ENDE')
-      .map(({ gueltigAb, betrag, art }, i, alle) => ({
-        ab: gueltigAb ?? beginn ?? plusMonate(alle[i + 1]?.gueltigAb ?? heute, -12),
+      .map(({ gueltigAb, betrag, art }) => ({
+        ab: gueltigAb ?? beginn,
         betrag,
         art: art === 'ANGEKUENDIGT' ? ('ANGEKUENDIGT' as const) : ('GEZAHLT' as const),
       })),
@@ -500,11 +555,6 @@ function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwor
           }
         : null,
     einmalkosten: einmalkostenSumme(vollstaendigeEinmalkosten(anfrage.einmalkosten ?? [])),
-    // Grob: der Anker selbst, ohne Rhythmus; null ohne Zahlweise, Anker oder Preis wie im Backend.
-    naechsteAbbuchung:
-      aktuell && anfrage.zahlweise && anfrage.abbuchungAb
-        ? { am: anfrage.abbuchungAb, betrag: aktuell }
-        : null,
     naechstePreisaenderung: angekuendigt
       ? { ab: angekuendigt.gueltigAb!, betrag: angekuendigt.betrag, art: 'ANGEKUENDIGT' }
       : prognose[0]
@@ -513,6 +563,27 @@ function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwor
     prognose,
     kuendigung: vorschau(anfrage),
   };
+}
+
+/** Grob wie das Backend, „heute“ ist der Tag des Browsers. */
+function statusFuer({
+  beginn,
+  gekuendigtZum,
+}: VertragAnfrage): VertragAntwort['berechnet']['status'] {
+  const heute = new Date().toISOString().slice(0, 10);
+  if (gekuendigtZum && gekuendigtZum < beginn) return 'STORNIERT';
+  if (beginn > heute) return 'NICHT_BEGONNEN';
+  if (gekuendigtZum && gekuendigtZum < heute) return 'BEENDET';
+  return gekuendigtZum ? 'GEKUENDIGT' : 'AKTIV';
+}
+
+/** `gekuendigtZum` bzw. Laufzeitende ohne Verlängerung, das frühere. */
+function vertragsendeFuer(anfrage: VertragAnfrage): string | null {
+  const enden = [
+    anfrage.gekuendigtZum,
+    anfrage.verlaengerung === 'KEINE' ? anfrage.laufzeitende : null,
+  ].filter((ende): ende is string => !!ende);
+  return enden.sort()[0] ?? null;
 }
 
 function ausAnfrage(
@@ -551,12 +622,12 @@ function ausAnfrage(
     berechnet: {
       ...BERECHNET_LEER,
       einmalkosten: einmalkostenSumme(einmalkosten) ?? { wert: 0, waehrung },
-      status: anfrage.gekuendigtZum ? 'GEKUENDIGT' : 'AKTIV',
+      status: statusFuer(anfrage),
       kostenProMonat: { wert: Math.round((proJahr * 100) / 12) / 100, waehrung },
       kostenImJahr: { wert: proJahr, waehrung },
-      naechsteAbbuchung: { am: anfrage.abbuchungAb, betrag: aktuell! },
       naechstePreisaenderung,
       prognose,
+      vertragsende: vertragsendeFuer(anfrage),
       preisverlauf: preisverlaufFuer(preise, prognose, anfrage.beginn),
       kostenImJahrMitPrognose: prognose.some(({ ab }) => ab.startsWith(`${JAHR}-`)),
       eigenerAnteil: eigenerAnteil && {
@@ -577,7 +648,7 @@ function nichtLesbar(anfrage: Record<string, unknown>): boolean {
   ];
   return (
     zeilen.some(({ betrag }) => betrag?.wert === null) ||
-    ['kategorieId', 'zahlweise', 'abbuchungAb', 'zahlungsweg', 'beginn', 'laufzeitende'].some(
+    ['kategorieId', 'zahlweise', 'zahlungsweg', 'beginn', 'laufzeitende'].some(
       (feld) => anfrage[feld] === '',
     )
   );
@@ -592,7 +663,7 @@ function feldfehler(anfrage: VertragAnfrage): Feldfehler[] {
   if (!anfrage.kategorieId) melden('kategorieId', 'NotNull');
   if (anfrage.kategorieId === 'unbekannt') melden('kategorieId', 'Unbekannt');
   if (!anfrage.zahlweise) melden('zahlweise', 'NotNull');
-  if (!anfrage.abbuchungAb) melden('abbuchungAb', 'NotNull');
+  if (!anfrage.beginn) melden('beginn', 'NotNull');
   if (!anfrage.preise?.length) {
     melden('preise', 'NotEmpty');
   }
