@@ -9,6 +9,9 @@
         <li [class]="preis.art">{{ preis.text }}</li>
       }
     </ul>
+    @if (vertrag().berechnet.prognose.length) {
+      <app-rundungshinweis kurz />
+    }
   </div>
 } @else {
   <div class="keine-preise">

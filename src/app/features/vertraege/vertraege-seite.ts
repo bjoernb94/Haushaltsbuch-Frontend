@@ -23,6 +23,7 @@ import { BetraegePipe } from '../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../shared/hinweis-box/hinweis-box';
 import { inDenBlick } from '../../shared/in-den-blick/in-den-blick';
 import { seitenaktionenMelden } from '../../shared/seitenaktionen/seitenaktionen';
+import { Rundungshinweis } from '../../shared/rundungshinweis/rundungshinweis';
 import { NUR_ANTEIL, OHNE_NICHT_BEGONNENE, vertragName } from './vertrag-texte';
 import { VertragZeile, ZeilenMeldung } from './vertrag-zeile/vertrag-zeile';
 import { VertragService } from './vertrag.service';
@@ -63,7 +64,15 @@ const NEU = '/vertraege/neu';
  */
 @Component({
   selector: 'app-vertraege-seite',
-  imports: [RouterLink, RouterOutlet, HinweisBox, BetraegePipe, VertragZeile, BestaetigenDialog],
+  imports: [
+    RouterLink,
+    RouterOutlet,
+    HinweisBox,
+    BetraegePipe,
+    VertragZeile,
+    BestaetigenDialog,
+    Rundungshinweis,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertraege-seite.html',
   styleUrl: './vertraege-seite.scss',

@@ -109,6 +109,9 @@
       <span class="leer">{{ hinweis }}</span>
     }
   </div>
+  @if (prognose().zeilen.length) {
+    <app-rundungshinweis kurz />
+  }
 }
 
 @if (erinnerung()) {

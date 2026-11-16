@@ -10,6 +10,7 @@ import { VertragAntwort, VertragsuebersichtAntwort } from '../../core/api/api';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
 import { VERTRAEGE_ROUTES } from './vertraege.routes';
 import { VertraegeSeite } from './vertraege-seite';
+import { RUNDUNG_TEXT, RUNDUNG_TEXT_KURZ } from '../../shared/rundungshinweis/rundungshinweis';
 import { VertragService } from './vertrag.service';
 
 const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
@@ -295,6 +296,12 @@ describe('VertraegeSeite', () => {
       expect(text(kennzahlen[3])).toBe('Einmalkosten 20260,00 €');
     });
 
+    it('nennt die Rundung unter den Kennzahlen, nicht in den Zeilen', async () => {
+      const { element } = await seite();
+      expect(text(element.querySelector('.kennzahlen + app-rundungshinweis'))).toBe(RUNDUNG_TEXT);
+      expect(element.querySelectorAll('app-rundungshinweis')).toHaveLength(1);
+    });
+
     it('nennt „inkl. Prognose“ unter „Kosten <Jahr>“, wenn das Backend es meldet', async () => {
       uebersicht.mockReturnValue(of({ ...UEBERSICHT, kostenImJahrMitPrognose: true }));
       const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
@@ -516,6 +523,9 @@ describe('VertraegeSeite', () => {
         'KündigungKündbar bis 30.11.2026Vertrag endet zum 31.12.2026',
         'Nächste PreisänderungKeine bekannt',
       ]);
+      expect(text(panel(element)?.querySelector('.kacheln + app-rundungshinweis'))).toBe(
+        RUNDUNG_TEXT,
+      );
       const tabs = [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
       expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preise']);
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
@@ -582,6 +592,9 @@ describe('VertraegeSeite', () => {
       );
       expect(text(zeilen(element)[0].querySelector('.chip'))).toBe('Preis ↑ ab 01.01.2027');
       expect(zeilen(element)[1].querySelector('.chip')).toBeNull();
+      expect(text(element.querySelector('app-vertrag-preise app-rundungshinweis'))).toBe(
+        RUNDUNG_TEXT_KURZ,
+      );
     });
 
     it('Tab Preise: Diagramm ab zwei Punkten, darunter Garantie, Regel und Erinnerung', async () => {
@@ -711,6 +724,7 @@ describe('VertraegeSeite', () => {
     it('Tab Preise ohne Änderungen: „Preis hinzufügen“ öffnet Bearbeiten im Tab Preise', async () => {
       const { element, stabil, url } = await seite('/vertraege/kfz?tab=preise');
       expect(element.querySelector('app-vertrag-preise li')).toBeNull();
+      expect(element.querySelector('app-vertrag-preise app-rundungshinweis')).toBeNull();
       expect(text(element.querySelector('.keine-preise span'))).toBe(
         'Noch keine Preisänderungen hinterlegt.',
       );

@@ -37,6 +37,7 @@ import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicher
 import { betragText, waehrungName, waehrungZeichen } from '../../../shared/format/betrag.pipe';
 import { datumText } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import { Rundungshinweis } from '../../../shared/rundungshinweis/rundungshinweis';
 import {
   EinmalkostenZeile,
   VertragEinmalkostenZeilen,
@@ -196,6 +197,7 @@ let letztesFormular = 0;
     NgTemplateOutlet,
     ReactiveFormsModule,
     HinweisBox,
+    Rundungshinweis,
     Tabliste,
     VertragEinmalkostenZeilen,
     VertragPreisliste,

@@ -10,6 +10,7 @@ import {
   VertragVorschauAntwort,
 } from '../../../core/api/api';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
+import { RUNDUNG_TEXT, RUNDUNG_TEXT_KURZ } from '../../../shared/rundungshinweis/rundungshinweis';
 import { VertragEingabe, VertragService } from '../vertrag.service';
 import { VertragFormular } from './vertrag-formular';
 
@@ -311,6 +312,12 @@ describe('VertragFormular', () => {
         const feld = el.querySelector('[formcontrolname="anteilProzent"]')!.closest('.feld')!;
         return feld.querySelector('[role="status"]')?.textContent?.replace(/\s+/g, ' ').trim();
       };
+      const rundung = () =>
+        el
+          .querySelector('[formcontrolname="anteilProzent"]')!
+          .closest('.feld')!
+          .querySelector('app-rundungshinweis')
+          ?.textContent?.trim();
       setzen('betrag', '586,80');
       setzen('zahlweise', 'JAEHRLICH');
       setzen('anteilProzent', '33,3');
@@ -325,11 +332,13 @@ describe('VertragFormular', () => {
         }),
       );
       expect(status()).toBe('Dein Anteil:33,3 % von 586,80 € = 195,40 € jährlich');
+      expect(rundung()).toBe(RUNDUNG_TEXT);
 
       setzen('anteilProzent', '');
       vi.advanceTimersByTime(400);
       anfragen.at(-1)!.next(vorschauAntwort(ERGEBNIS, { betrag: EUR(586.8) }));
       expect(status()).toBe('');
+      expect(rundung()).toBeUndefined();
     });
 
     it('schickt ein eingetragenes Kündigungsdatum nur, solange „Gekündigt“ gesetzt ist', async () => {
@@ -602,6 +611,9 @@ describe('VertragFormular', () => {
         'complementary',
       );
       expect(titel()).toEqual(['Neuer Vertrag', 'Noch keine Angaben']);
+      expect(
+        el.querySelector('app-vertrag-zusammenfassung app-rundungshinweis')?.textContent?.trim(),
+      ).toBe(RUNDUNG_TEXT);
       expect(zeilen()).toEqual({
         Betrag: 'Noch offen',
         'Pro Monat': 'Noch offen',
@@ -956,7 +968,12 @@ describe('VertragFormular', () => {
       const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
       vorschau.mockReturnValue(antwort);
       const { setzen, einschalten, prognose, fixture } = await imTabPreise();
+      const rundung = () =>
+        (fixture.nativeElement as HTMLElement)
+          .querySelector('app-vertrag-preissteigerung app-rundungshinweis')
+          ?.textContent?.trim();
       await einschalten();
+      expect(rundung()).toBeUndefined();
       expect(prognose()).toEqual([
         'Prognose',
         'Gib Wert und Datum der nächsten Erhöhung ein, dann zeigen wir hier die nächsten drei Preise.',
@@ -979,6 +996,7 @@ describe('VertragFormular', () => {
         'ab 01.01.2027 voraussichtlich 20,49 €',
         'ab 01.01.2028 voraussichtlich 21,00 €',
       ]);
+      expect(rundung()).toBe(RUNDUNG_TEXT_KURZ);
 
       antwort.next(vorschauAntwort(KEINE));
       setzen('preisgarantieBis', '2030-01-01');
@@ -988,6 +1006,7 @@ describe('VertragFormular', () => {
         'Prognose',
         'Bis zum Vertragsende ist keine Erhöhung zu erwarten.',
       ]);
+      expect(rundung()).toBeUndefined();
     });
 
     it('Erinnerung: bei Regel oder angekündigtem Preis, nicht bei „Nicht kündbar“', async () => {
