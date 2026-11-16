@@ -391,9 +391,9 @@ export class VertragFormular implements OnInit {
   });
 
   /**
-   * Alle Werte aus der Vorschau des Backends, die SPA formatiert nur (ADR 0010). Scheitert die
-   * Vorschau, ist alles „Noch offen“. {@code null} trotz ausgefüllter Einmalkosten heißt: noch keine
-   * vollständige Zeile.
+   * Berechnete Werte aus der Vorschau des Backends, die SPA formatiert nur (ADR 0010). Scheitert die
+   * Vorschau, sind sie „Noch offen“; der Vertragsbeginn ist eine Eingabe und bleibt stehen.
+   * {@code null} trotz ausgefüllter Einmalkosten heißt: noch keine vollständige Zeile.
    */
   protected readonly uebersicht = computed<Uebersicht>(() => {
     const w = this.werte();
@@ -435,6 +435,7 @@ export class VertragFormular implements OnInit {
       zeilen: [
         { label: 'Betrag', wert: v?.betrag ? text(v.betrag) + zahlweise : NOCH_OFFEN },
         { label: 'Pro Monat', wert: proMonat },
+        { label: 'Vertragsbeginn', wert: datumText(w.beginn) || NOCH_OFFEN },
         { label: 'Kündigung', wert: kuendigung },
         { label: 'Nächste Preisänderung', wert: preis },
         { label: 'Einmalkosten', wert: einmalkosten },
