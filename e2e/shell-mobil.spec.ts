@@ -9,6 +9,27 @@ test.describe('bis 900 px', () => {
     await page.setViewportSize({ width: 390, height: 844 });
   });
 
+  test('überall derselbe Seitenrand von 16 px, auch in Details und Sheet', async ({ page }) => {
+    // Details und Sheet fahren sonst herein, die Position stimmt erst danach.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    const links = async (ziel: ReturnType<Page['locator']>) =>
+      Math.round((await ziel.first().boundingBox())!.x);
+    for (const [url, ziel] of [
+      ['/start', 'main h1'],
+      ['/vertraege', 'main h1'],
+      ['/vertraege/neu', 'main input'],
+      ['/einstellungen', 'main h1'],
+      ['/impressum', 'main h1'],
+      ['/vertraege/kfz', '.panel .kachel'],
+      ['/vertraege/kfz/bearbeiten', 'dialog input'],
+    ]) {
+      await page.goto(url);
+      await expect(page.locator(ziel).first()).toBeVisible();
+      expect(await links(page.locator(ziel)), url).toBe(16);
+    }
+  });
+
   test('Kopf durchscheinend ohne Logo, bleibt beim Scrollen oben', async ({ page }) => {
     const viele = Array.from({ length: 30 }, (_, i) => ({
       ...BEISPIEL_VERTRAEGE[0],

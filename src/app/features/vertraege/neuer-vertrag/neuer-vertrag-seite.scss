@@ -1,4 +1,5 @@
 @use '../seite';
+@use '../../../shared/layout/raender';
 
 @include seite.seite;
 
@@ -39,7 +40,7 @@ h1 {
     gap: 8px;
     min-height: 52px;
     box-sizing: border-box;
-    margin: -28px -24px 0;
+    margin: -28px (-(raender.$handy)) 0;
     padding: calc(4px + env(safe-area-inset-top)) 8px 4px;
     border-bottom: 1px solid var(--app-trenner);
     background: var(--app-flaeche);

@@ -10,6 +10,7 @@
   margin: 0 auto;
   box-sizing: border-box;
   padding: 0 24px 32px;
+  @include raender.handy;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
