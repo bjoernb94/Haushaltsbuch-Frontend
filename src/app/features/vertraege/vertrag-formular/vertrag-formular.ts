@@ -95,7 +95,7 @@ const TABS = [
   { key: 'allgemein', label: 'Allgemein' },
   { key: 'kosten', label: 'Kosten' },
   { key: 'laufzeit', label: 'Laufzeit' },
-  { key: 'preise', label: 'Preise' },
+  { key: 'preise', label: 'Preisverlauf' },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -185,7 +185,7 @@ function optionen<T extends string>(texte: Record<T, string>): { wert: T; text: 
 let letztesFormular = 0;
 
 /**
- * Felder eines Vertrags in den Tabs Allgemein, Kosten, Laufzeit und Preise; jeder Tab zählt seine Fehler, und
+ * Felder eines Vertrags in den Tabs Allgemein, Kosten, Laufzeit und Preisverlauf; jeder Tab zählt seine Fehler, und
  * Fehler beim Speichern führen zum ersten Tab mit Fehler. Prüft nur Pflichtfelder und meldet dann
  * {@link speichern}; das Speichern und die Antwort darauf liegen bei der Seite, die Fehler zurückgibt
  * über {@link fehlerAntwort}. Mit {@link vertrag} bearbeitet es diesen Vertrag, sonst legt es einen
@@ -231,7 +231,7 @@ export class VertragFormular implements OnInit {
   readonly knoepfe = input<'immer' | 'ab-901' | 'nie'>('immer');
   /** Rechts daneben eine Zusammenfassung der Eingaben (ab 901 px), für „Neuer Vertrag“. */
   readonly zusammenfassung = input(false);
-  /** Beim Öffnen im Tab Preise mit einer leeren Zeile („Preis hinzufügen“ in den Details). */
+  /** Beim Öffnen im Tab Preisverlauf mit einer leeren Zeile („Preis hinzufügen“ in den Details). */
   readonly neuerPreis = input(false);
 
   readonly speichern = output<Required<VertragEingabe>>();

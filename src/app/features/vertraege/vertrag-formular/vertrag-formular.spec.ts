@@ -512,9 +512,9 @@ describe('VertragFormular', () => {
       !el.querySelector(`[formcontrolname="${name}"]`)!.closest('[hidden]');
     const text = (e: Element) => e.textContent?.replace(/\s+/g, ' ').trim();
 
-    it('zeigt Allgemein, Kosten, Laufzeit und Preise, je Tab nur seine Felder', async () => {
+    it('zeigt Allgemein, Kosten, Laufzeit und Preisverlauf, je Tab nur seine Felder', async () => {
       const { el, fixture } = await erstellen();
-      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preise']);
+      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
       expect(tabs(el)[0].getAttribute('aria-selected')).toBe('true');
       expect(sichtbar(el, 'anbieter')).toBe(true);
       expect(sichtbar(el, 'notiz')).toBe(true);
@@ -545,7 +545,12 @@ describe('VertragFormular', () => {
       await fixture.whenStable();
       await absenden();
 
-      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten 3, 3 Fehler', 'Laufzeit', 'Preise']);
+      expect(tabs(el).map(text)).toEqual([
+        'Allgemein',
+        'Kosten 3, 3 Fehler',
+        'Laufzeit',
+        'Preisverlauf',
+      ]);
       expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
       expect(document.activeElement).toBe(el.querySelector('[formcontrolname="betrag"]'));
 
@@ -810,7 +815,7 @@ describe('VertragFormular', () => {
       const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
         t.textContent?.replace(/\s+/g, ' ').trim(),
       );
-      expect(tabs).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preise 2, 2 Fehler']);
+      expect(tabs).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf 2, 2 Fehler']);
       expect(zeilenFehler(0)).toBe('Bitte gib an, ab wann dieser Preis gilt.');
       const datum = zeile(0).querySelector('input[type="date"]')!;
       expect(datum.getAttribute('aria-invalid')).toBe('true');
@@ -917,7 +922,7 @@ describe('VertragFormular', () => {
       expect(label()).toBe('Erhöhung in € *');
     });
 
-    it('verlangt Wert und Datum, zählt sie im Tab Preise und schickt die Regel', async () => {
+    it('verlangt Wert und Datum, zählt sie im Tab Preisverlauf und schickt die Regel', async () => {
       const { el, host, setzen, einschalten, absenden, pflichtfelderFuellen, fehlerText } =
         await imTabPreise();
       pflichtfelderFuellen();
@@ -927,7 +932,7 @@ describe('VertragFormular', () => {
       const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
         t.textContent?.replace(/\s+/g, ' ').trim(),
       );
-      expect(tabs.at(-1)).toBe('Preise 2, 2 Fehler');
+      expect(tabs.at(-1)).toBe('Preisverlauf 2, 2 Fehler');
       expect(fehlerText('steigerungswert')).toBe('Bitte gib an, um wie viel der Preis steigt.');
 
       setzen('steigerungswert', '2,5');
@@ -1104,7 +1109,7 @@ describe('VertragFormular', () => {
       const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
         t.textContent?.replace(/\s+/g, ' ').trim(),
       );
-      expect(tabs).toEqual(['Allgemein', 'Kosten 3, 3 Fehler', 'Laufzeit', 'Preise']);
+      expect(tabs).toEqual(['Allgemein', 'Kosten 3, 3 Fehler', 'Laufzeit', 'Preisverlauf']);
       expect(zeilenFehler(0)).toBe('Bitte gib an, wofür die Kosten anfallen.');
       expect(eingabe(0, 'betrag').getAttribute('aria-invalid')).toBe('true');
       expect(document.activeElement).toBe(eingabe(0, 'bezeichnung'));
@@ -1423,11 +1428,11 @@ describe('VertragFormular', () => {
         ]);
       });
 
-      it('„Preis hinzufügen“ der Details: Tab Preise, leere Zeile mit Fokus, nicht ungespeichert', async () => {
+      it('„Preis hinzufügen“ der Details: Tab Preisverlauf, leere Zeile mit Fokus, nicht ungespeichert', async () => {
         const { el, fixture } = await offen(VERTRAG, true);
         await fixture.whenStable();
         const aktiv = el.querySelector('[role="tab"][aria-selected="true"]');
-        expect(aktiv?.textContent?.trim()).toBe('Preise');
+        expect(aktiv?.textContent?.trim()).toBe('Preisverlauf');
         expect(zeilen(el)).toEqual([['', '']]);
         expect(document.activeElement).toBe(el.querySelector('.preis input[type="date"]'));
         expect(TestBed.inject(UngespeicherteEingaben).vorhanden()).toBe(false);

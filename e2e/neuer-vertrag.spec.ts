@@ -1,8 +1,8 @@
 import { expect, Page, test } from '@playwright/test';
-import { abmelden, backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
+import { abmelden, backendSimulieren, BEISPIEL_VERTRAEGE, tabsEinzeilig } from './backend-mock';
 
 /** Der Name des Tabs kann einen Fehlerzähler tragen, z. B. „Kosten 3, 3 Fehler“. */
-async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit' | 'Preise') {
+async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit' | 'Preisverlauf') {
   await page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
 }
 
@@ -533,7 +533,7 @@ test.describe('Neuer Vertrag', () => {
     await backendSimulieren(page, { angemeldet: true });
     await page.goto('/vertraege/neu');
     await pflichtfelderFuellen(page);
-    await tab(page, 'Preise');
+    await tab(page, 'Preisverlauf');
     await page.getByRole('button', { name: 'Preis hinzufügen' }).click();
     const zeile = page.locator('.preis');
     await zeile.getByLabel('Gilt ab *').fill('2027-06-01');
@@ -576,7 +576,7 @@ test.describe('Neuer Vertrag', () => {
         page.getByText('Pflichtfelder (*) findest du unter „Allgemein“ und „Kosten“.'),
       ).toBeVisible();
       const tabs = page.getByRole('tablist', { name: 'Bereiche des Vertrags' }).getByRole('tab');
-      await expect(tabs).toHaveText(['Allgemein', 'Kosten', 'Laufzeit', 'Preise']);
+      await expect(tabs).toHaveText(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
       await expect(page.getByLabel('Betrag in € *')).toBeHidden();
 
       await tabs.first().focus();
@@ -635,7 +635,7 @@ test.describe('Neuer Vertrag', () => {
       await page.getByLabel('Betrag in € *').nth(1).fill('49,90');
       await page.getByLabel('Fällig am *').fill('2027-01-15');
       await expect(zusammenfassung).toContainText('Einmalkosten49,90 €');
-      await tab(page, 'Preise');
+      await tab(page, 'Preisverlauf');
       await page.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
       await page.getByLabel('Erhöhung in % *').fill('10');
       await page.getByLabel('Nächste Erhöhung am *').fill('2027-06-01');
@@ -645,6 +645,32 @@ test.describe('Neuer Vertrag', () => {
 
       const formular = (await page.locator('form').boundingBox())!;
       expect((await zusammenfassung.boundingBox())!.x).toBeGreaterThan(formular.x + formular.width);
+    });
+
+    test('auf dem Handy (390 px) gleich breite Segmente in einer Zeile, auch mit Fehlern', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      const tabs = page.getByRole('tablist', { name: 'Bereiche des Vertrags' });
+      await expect(tabs.getByRole('tab')).toHaveText([
+        'Allgemein',
+        'Kosten',
+        'Laufzeit',
+        'Preisverlauf',
+      ]);
+      await tabsEinzeilig(tabs);
+      const breiten = await tabs
+        .getByRole('tab')
+        .evaluateAll((t) => t.map((e) => Math.round(e.getBoundingClientRect().width)));
+      expect(new Set(breiten).size).toBe(1);
+
+      // Fehler zeigen einen Punkt statt der Zahl; die Anzahl steht im Namen.
+      await tab(page, 'Preisverlauf');
+      await page.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
+      await page.getByRole('button', { name: 'Sichern' }).click();
+      await expect(tabs.getByRole('tab', { name: /^Preisverlauf.*2 Fehler$/ })).toBeVisible();
+      await expect(tabs.getByRole('tab', { name: /^Kosten.*3 Fehler$/ })).toBeVisible();
+      await tabsEinzeilig(tabs);
     });
 
     test('bis 900 px ohne Zusammenfassung', async ({ page }) => {

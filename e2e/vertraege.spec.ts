@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
+import { backendSimulieren, BEISPIEL_VERTRAEGE, tabsEinzeilig } from './backend-mock';
 
 const KFZ = 'Kfz-Versicherung';
 const LETZTE = 'Mobilfunk GmbH';
@@ -58,7 +58,7 @@ test.describe('Seite Verträge', () => {
     await expect(page.getByRole('link', { name: 'Zur Übersicht' })).toHaveCount(0);
   });
 
-  test('zeigt die nächste Preisänderung in Zeile und Details, alle Preise im Tab Preise', async ({
+  test('zeigt die nächste Preisänderung in Zeile und Details, alle Preise im Tab Preisverlauf', async ({
     page,
   }) => {
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
@@ -113,7 +113,9 @@ test.describe('Seite Verträge', () => {
     await expect(page.getByText('Keine Einmalkosten hinterlegt.')).toBeVisible();
   });
 
-  test('Preissteigerung: Chip mit Prognose, Diagramm und Regel im Tab Preise', async ({ page }) => {
+  test('Preissteigerung: Chip mit Prognose, Diagramm und Regel im Tab Preisverlauf', async ({
+    page,
+  }) => {
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
     await page.goto('/vertraege');
     const app = page.locator('app-vertrag-zeile').filter({ hasText: 'Software GmbH' });
@@ -246,6 +248,20 @@ test.describe('Seite Verträge', () => {
   });
 
   test.describe('Details', () => {
+    test('auf dem Handy (390 px) stehen alle Tabs in einer Zeile', async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+      await page.goto('/vertraege/kfz?tab=preise');
+      const tabs = page.getByRole('tablist', { name: 'Bereiche der Details' });
+      await expect(tabs.getByRole('tab')).toHaveText([
+        'Allgemein',
+        'Kosten',
+        'Laufzeit',
+        'Preisverlauf',
+      ]);
+      await tabsEinzeilig(tabs);
+    });
+
     test.beforeEach(async ({ page }) => {
       await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
       await page.goto('/vertraege');

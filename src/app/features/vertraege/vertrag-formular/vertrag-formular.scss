@@ -145,6 +145,14 @@ legend {
   .knoepfe-ab-901 .aktionen {
     display: none;
   }
+
+  // Ohne Karte: Felder und Tabs nutzen die Ränder der Seite bzw. des Sheets, wie unter iOS.
+  .formular {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
 }
 
 .knopf {

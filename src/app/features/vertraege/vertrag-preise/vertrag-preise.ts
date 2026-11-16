@@ -13,7 +13,7 @@ import { VertragPreisverlauf } from '../vertrag-preisverlauf/vertrag-preisverlau
 import { preisText, prognoseText } from '../vertrag-texte';
 
 /**
- * Tab Preise der Details: Diagramm des Preisverlaufs (ab zwei Punkten), alle Preise und die
+ * Tab Preisverlauf der Details: Diagramm des Preisverlaufs (ab zwei Punkten), alle Preise und die
  * Prognose, sobald es mehr als den einen Preis gibt; sonst ein Hinweis mit „Preis hinzufügen“. Was
  * aktuell, angekündigt oder nach dem Vertragsende ist, sagt das Backend.
  */

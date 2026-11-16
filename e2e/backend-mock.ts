@@ -1,11 +1,27 @@
 import { readFileSync } from 'node:fs';
-import { Page, Route } from '@playwright/test';
+import { expect, Locator, Page, Route } from '@playwright/test';
 import { VertragAntwort } from '../src/app/core/api/api';
 import { vertraegeSimulieren } from './vertraege-mock';
 
 export { BEISPIEL_VERTRAEGE, KATEGORIEN } from './vertraege-mock';
 
 export const MAX = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
+
+/** Alle Tabs in einer Zeile, ohne dass die Leiste waagerecht scrollt oder ein Text übersteht. */
+export async function tabsEinzeilig(liste: Locator) {
+  const { breite, sichtbar, oben, ueberstehend } = await liste.evaluate((e) => {
+    const tabs = [...e.querySelectorAll<HTMLElement>('[role="tab"]')];
+    return {
+      breite: e.scrollWidth,
+      sichtbar: e.clientWidth,
+      oben: tabs.map((t) => Math.round(t.getBoundingClientRect().top)),
+      ueberstehend: tabs.filter((t) => t.scrollWidth > t.clientWidth).map((t) => t.textContent),
+    };
+  });
+  expect(breite).toBeLessThanOrEqual(sichtbar);
+  expect(new Set(oben).size).toBe(1);
+  expect(ueberstehend).toEqual([]);
+}
 
 /** Knopf des Nutzermenüs; zeigt zugleich, dass der Nutzer angemeldet ist. */
 export function nutzerKnopf(page: Page) {

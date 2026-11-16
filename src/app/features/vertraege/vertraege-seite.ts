@@ -52,7 +52,7 @@ interface Ansicht {
  */
 const INTERN = 'intern';
 
-/** Bearbeiten öffnet im Tab Preise mit einer leeren Zeile („Preis hinzufügen“ in den Details). */
+/** Bearbeiten öffnet im Tab Preisverlauf mit einer leeren Zeile („Preis hinzufügen“ in den Details). */
 const NEUER_PREIS = 'neuerPreis';
 
 const NEU = '/vertraege/neu';

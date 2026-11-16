@@ -515,7 +515,7 @@ describe('VertraegeSeite', () => {
       expect(document.activeElement).toBe(tippen);
     });
 
-    it('zeigt Kacheln und die Tabs Allgemein, Kosten, Laufzeit und Preise', async () => {
+    it('zeigt Kacheln und die Tabs Allgemein, Kosten, Laufzeit und Preisverlauf', async () => {
       const { element, stabil, url } = await seite('/vertraege/kfz');
       expect([...element.querySelectorAll('.kachel')].map(text)).toEqual([
         'Pro Monat48,90 €',
@@ -527,7 +527,7 @@ describe('VertraegeSeite', () => {
         RUNDUNG_TEXT,
       );
       const tabs = [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-      expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preise']);
+      expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
       expect(element.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
         tabs[0].id,
@@ -577,7 +577,7 @@ describe('VertraegeSeite', () => {
       expect(tabs().map((t) => t.tabIndex)).toEqual([-1, -1, -1, 0]);
     });
 
-    it('Tab Preise: alle Preise mit Art und Prognose, Kachel und Chip zur nächsten Änderung', async () => {
+    it('Tab Preisverlauf: alle Preise mit Art und Prognose, Kachel und Chip zur nächsten Änderung', async () => {
       auflisten.mockReturnValue(of([MIT_PREISEN, BEENDET]));
       const { element } = await seite('/vertraege/strom?tab=preise');
       expect([...element.querySelectorAll('app-vertrag-preise li')].map(text)).toEqual([
@@ -597,7 +597,7 @@ describe('VertraegeSeite', () => {
       );
     });
 
-    it('Tab Preise: Diagramm ab zwei Punkten, darunter Garantie, Regel und Erinnerung', async () => {
+    it('Tab Preisverlauf: Diagramm ab zwei Punkten, darunter Garantie, Regel und Erinnerung', async () => {
       auflisten.mockReturnValue(
         of([
           {
@@ -637,7 +637,7 @@ describe('VertraegeSeite', () => {
       expect(eintraege(element)['Kosten 2026']).toBe('586,80 € inkl. Prognose');
     });
 
-    it('Tab Preise ohne Regel und Änderungen: Hinweis statt Diagramm, Erinnerung fehlt', async () => {
+    it('Tab Preisverlauf ohne Regel und Änderungen: Hinweis statt Diagramm, Erinnerung fehlt', async () => {
       const { element } = await seite('/vertraege/kfz?tab=preise');
       expect(element.querySelector('app-vertrag-preisverlauf')).toBeNull();
       expect(element.querySelector('.keine-preise')).not.toBeNull();
@@ -721,7 +721,7 @@ describe('VertraegeSeite', () => {
       ]);
     });
 
-    it('Tab Preise ohne Änderungen: „Preis hinzufügen“ öffnet Bearbeiten im Tab Preise', async () => {
+    it('Tab Preisverlauf ohne Änderungen: „Preis hinzufügen“ öffnet Bearbeiten im Tab Preisverlauf', async () => {
       const { element, stabil, url } = await seite('/vertraege/kfz?tab=preise');
       expect(element.querySelector('app-vertrag-preise li')).toBeNull();
       expect(element.querySelector('app-vertrag-preise app-rundungshinweis')).toBeNull();
@@ -732,7 +732,9 @@ describe('VertraegeSeite', () => {
       await stabil();
       expect(url()).toBe('/vertraege/kfz/bearbeiten');
       const formular = element.querySelector('app-vertrag-bearbeiten')!;
-      expect(text(formular.querySelector('[role="tab"][aria-selected="true"]'))).toBe('Preise');
+      expect(text(formular.querySelector('[role="tab"][aria-selected="true"]'))).toBe(
+        'Preisverlauf',
+      );
       expect(formular.querySelectorAll('.preis')).toHaveLength(1);
     });
 
