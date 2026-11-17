@@ -44,7 +44,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 12px 14px;
-  border: 1px solid var(--app-trenner);
+  border: 1px solid var(--app-trenner-innen);
   border-radius: 10px;
   background: var(--app-details-grund);
   font-size: 14px;
@@ -95,7 +95,7 @@
 // Unter der Preisliste, abgesetzt wie im Design.
 :host {
   padding-top: 16px;
-  border-top: 1px solid var(--app-trenner);
+  border-top: 1px solid var(--app-trenner-innen);
 }
 
 .prognose + app-rundungshinweis {

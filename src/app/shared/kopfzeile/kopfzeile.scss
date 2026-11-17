@@ -118,7 +118,7 @@
   .kopfzeile {
     position: relative;
     isolation: isolate;
-    border-bottom: 1px solid rgba(23, 32, 27, 0.12);
+    border-bottom: 1px solid var(--app-glas-rand);
     background: none;
     color: var(--app-text);
 
@@ -128,7 +128,7 @@
       position: absolute;
       inset: 0;
       z-index: -1;
-      background: rgba(243, 245, 242, 0.72);
+      background: var(--app-glas);
       backdrop-filter: saturate(180%) blur(20px);
     }
   }

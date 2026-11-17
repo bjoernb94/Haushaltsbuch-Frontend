@@ -287,6 +287,7 @@ im Backend.
   `shared/formular/_formular.scss`.
 - **Design zuerst** (ADR 0020): Seiten und Verhalten entstehen im
   [Canvas „Haushaltsbuch“](https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx), der Code folgt daraus.
-  Die Farb-Tokens `--app-*` in `src/styles.scss` folgen dem Design System des Canvas mit denselben
+  Die Farb-Tokens `--app-*` in `src/styles.scss` sind genau die Farben des
+  [Design Systems „Haushaltsbuch“](https://claude.ai/artifact/1mDWVeKNzU1Mp3Co6TFD7H), mit denselben
   Namen; eine neue Farbe oder ein neuer Baustein kommt zuerst dorthin. Weicht der Code bewusst ab, wird
   erst das Artboard angepasst oder die Abweichung am Issue festgehalten.

@@ -92,7 +92,7 @@
 
   .knopf-primaer {
     background: var(--app-gruen);
-    color: #fff;
+    color: var(--app-flaeche);
 
     &:hover:not(:disabled) {
       background: var(--app-gruen-dunkel);

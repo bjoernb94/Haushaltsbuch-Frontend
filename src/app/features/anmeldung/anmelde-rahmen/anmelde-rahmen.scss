@@ -15,7 +15,7 @@
   box-sizing: border-box;
   padding: 56px 56px 16px;
   background: var(--app-gruen);
-  color: #f3f5f2;
+  color: var(--app-grund);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -54,7 +54,7 @@
     margin: 0;
     font-size: 17px;
     line-height: 1.6;
-    color: #cfe0d7;
+    color: var(--app-kopfzeile-rand);
   }
 }
 
@@ -62,7 +62,7 @@
   margin: 0;
   font-size: 12px;
   line-height: 16px;
-  color: #b9d0c3;
+  color: var(--app-kopfzeile-text-gedaempft);
   text-align: center;
 }
 

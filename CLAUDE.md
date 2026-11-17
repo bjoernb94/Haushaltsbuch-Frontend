@@ -98,8 +98,10 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - The design in the Claude Design canvas "Haushaltsbuch" (https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx;
   artboards Login, Registrierung, Startseite, Einstellungen, Impressum, Datenschutz, Verträge, Neuer Vertrag and
   App-Icon) is authoritative (ADR 0020): pages and behaviour are designed there first, the code follows. A deliberate
-  deviation goes into the artboard first or is noted on the issue. Colour tokens `--app-*` follow the canvas's design
-  system with the same names; a new colour or building block goes there first.
+  deviation goes into the artboard first or is noted on the issue. Colour tokens `--app-*` are exactly the colours
+  of the design system "Haushaltsbuch" (https://claude.ai/artifact/1mDWVeKNzU1Mp3Co6TFD7H) with the same names; a
+  new colour or building block goes there first. `--app-trenner` frames an area, `--app-trenner-innen` separates
+  inside it.
 
 ## Conventions
 

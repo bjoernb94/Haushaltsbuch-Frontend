@@ -4,7 +4,7 @@
   display: block;
 
   &:not(:first-child) .zeile {
-    border-top: 1px solid var(--app-trenner);
+    border-top: 1px solid var(--app-trenner-innen);
   }
 
   // Das offene Menü liegt über den folgenden Zeilen.
@@ -31,7 +31,7 @@
     scroll-margin-top: 84px;
 
     &:hover {
-      background-color: rgba(23, 32, 27, 0.03);
+      background-color: var(--app-zeile-hover);
     }
 
     &.offen {
@@ -137,7 +137,7 @@
   border: 1px solid var(--app-trenner);
   border-radius: 10px;
   background: var(--app-flaeche);
-  box-shadow: 0 12px 32px rgba(23, 32, 27, 0.18);
+  box-shadow: 0 12px 32px var(--app-schatten-menue);
 }
 
 .eintrag {
@@ -174,7 +174,7 @@
 .menue .trenner {
   height: 1px;
   margin: 5px 6px;
-  background: var(--app-trenner);
+  background: var(--app-trenner-innen);
 }
 
 .angaben {
@@ -295,13 +295,13 @@
   &.abgesetzt:not(.unten) {
     margin-bottom: 4px;
     padding-bottom: 16px;
-    border-bottom: 1px solid var(--app-trenner);
+    border-bottom: 1px solid var(--app-trenner-innen);
   }
 
   &.abgesetzt.unten {
     margin-top: 4px;
     padding-top: 16px;
-    border-top: 1px solid var(--app-trenner);
+    border-top: 1px solid var(--app-trenner-innen);
   }
 
   &:focus {

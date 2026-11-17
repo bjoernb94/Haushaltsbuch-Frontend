@@ -4,7 +4,7 @@ html {
   // Seite. Nicht scrollbar-gutter: Damit rechnet Chromium headless mit ausgeblendeter Scrollleiste falsch.
   overflow-y: scroll;
 
-  // Farben des Designs.
+  // Farben des Designs, wie im Design System „Haushaltsbuch“ (ADR 0020).
   --app-gruen: #1f5c45;
   --app-gruen-dunkel: #163f30;
   --app-gruen-fokus: rgba(31, 92, 69, 0.18);
@@ -14,14 +14,27 @@ html {
   --app-grund: #f3f5f2;
   --app-text: #17201b;
   --app-text-gedaempft: #4e5a53;
-  --app-platzhalter: #7a857e;
-  --app-rand: #c9d1cc;
+  --app-platzhalter: #6a746e;
+  --app-rand: #7f9286;
   --app-trenner: #dce3de;
+  --app-trenner-innen: #e6ebe8;
   --app-kopfzeile-rand: #cfe0d7;
+  --app-kopfzeile-text-gedaempft: #b9d0c3;
+  --app-kopfzeile-hover: rgba(255, 255, 255, 0.1);
   --app-flaeche: #fff;
   --app-seitenleiste: #ecefec;
   --app-seitenleiste-aktiv: rgba(31, 92, 69, 0.14);
   --app-seitenleiste-hover: rgba(23, 32, 27, 0.06);
+  --app-zeile-hover: rgba(23, 32, 27, 0.03);
+  --app-glas: rgba(243, 245, 242, 0.72);
+  --app-glas-dicht: rgba(243, 245, 242, 0.88);
+  --app-glas-rand: rgba(23, 32, 27, 0.12);
+  --app-tableiste-grund: rgba(255, 255, 255, 0.94);
+  --app-abdunkeln: rgba(23, 32, 27, 0.45);
+  --app-schatten-schalter: rgba(23, 32, 27, 0.3);
+  --app-schatten-menue: rgba(23, 32, 27, 0.18);
+  --app-schatten-blatt: rgba(23, 32, 27, 0.22);
+  --app-schatten-sheet: rgba(23, 32, 27, 0.35);
   --app-erfolg: #1f7a4d;
   --app-hinweis-grund: #fff4db;
   --app-hinweis-text: #7a4b00;

@@ -29,7 +29,7 @@ $handy: 640px;
   cursor: pointer;
 
   &:hover {
-    background: var(--knopf-hover, rgba(255, 255, 255, 0.1));
+    background: var(--knopf-hover, var(--app-kopfzeile-hover));
   }
 
   // Auf dem Grün der Kopfzeile wäre der grüne Fokusrand der Formulare nicht zu sehen.
@@ -98,7 +98,7 @@ $handy: 640px;
   border: 1px solid var(--app-trenner);
   border-radius: 14px;
   background: var(--app-flaeche);
-  box-shadow: 0 12px 32px rgba(23, 32, 27, 0.18);
+  box-shadow: 0 12px 32px var(--app-schatten-menue);
   color: var(--app-text);
 
   &:focus {
@@ -141,7 +141,7 @@ $handy: 640px;
 
 .trenner {
   height: 1px;
-  background: var(--app-trenner);
+  background: var(--app-trenner-innen);
 }
 
 .einstellungen,
@@ -222,7 +222,7 @@ $handy: 640px;
   }
 
   .hintergrund {
-    background: rgba(23, 32, 27, 0.45);
+    background: var(--app-abdunkeln);
   }
 
   .panel {
@@ -235,7 +235,7 @@ $handy: 640px;
     padding: 12px 24px calc(24px + env(safe-area-inset-bottom));
     border: 0;
     border-radius: 20px 20px 0 0;
-    box-shadow: 0 -8px 32px rgba(23, 32, 27, 0.22);
+    box-shadow: 0 -8px 32px var(--app-schatten-blatt);
   }
 
   .griff {
