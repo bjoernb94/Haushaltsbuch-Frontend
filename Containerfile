@@ -1,4 +1,4 @@
-# Build-Stufe: Angular-Produktions-Build
+# Build-Stufe: Angular-Produktions-Build; Node-Version wie in .nvmrc
 FROM docker.io/library/node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./

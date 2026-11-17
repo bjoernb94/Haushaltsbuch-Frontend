@@ -6,7 +6,8 @@ Keycloak) läuft. Die Seiten folgen dem Design-Canvas „Haushaltsbuch“.
 
 ## Voraussetzungen
 
-- Node.js 26 und npm (Version siehe `packageManager` in `package.json`)
+- Node.js in der Version aus `.nvmrc` (z.&nbsp;B. `nvm use`) und npm (Version siehe `packageManager` in
+  `package.json`)
 - Für den echten Betrieb: das Backend auf `localhost:8080`, mit Keycloak
 
 ```bash
@@ -19,9 +20,10 @@ npm ci
 npm start
 ```
 
-Die App läuft unter http://localhost:4200. Der Dev-Server leitet `/api` und `/actuator` an
-`http://localhost:8080` weiter (`proxy.conf.json`); so laufen Session- und CSRF-Cookie über
-denselben Origin.
+Die App läuft unter http://localhost:4200. Der Dev-Server leitet `/api`, `/actuator/health/systemstatus`
+und `/actuator/info` an `http://localhost:8080` weiter (`proxy.conf.json`); so laufen Session- und
+CSRF-Cookie über denselben Origin. Es sind dieselben Pfade wie bei nginx im Image (siehe
+[Container](#container)), damit lokal nichts funktioniert, was im Image scheitert.
 
 Für Login und Registrierung müssen Backend und Keycloak laufen: `./mvnw spring-boot:run` und
 Keycloak z.&nbsp;B. per `docker compose up -d keycloak` (Einrichtung siehe README des Backends).
@@ -84,6 +86,36 @@ Die Registrierung prüft die Passwort-Richtlinie des Keycloak-Realms schon im Fo
 (`features/anmeldung/registrierung/passwort-regeln.ts`). Entscheidend bleibt Keycloak: Wird die
 Richtlinie dort geändert, muss die Datei angepasst werden.
 
+## Oberfläche
+
+Das Design im Canvas „Haushaltsbuch“ ist maßgeblich (ADR 0020, siehe [Konventionen](#konventionen)).
+
+### Layout
+
+- **Ab 901 px:** Die angemeldeten Bereiche haben eine mitlaufende Seitenleiste mit Logo
+  (`shell/hauptmenue`). Die Kopfzeile klappt dort ein, nur das Nutzermenü wandert ans untere Ende der
+  Seitenleiste. Die Startseite kommt ohne Navigation aus (Route-Data `ohneNavigation`), ihre Kacheln
+  navigieren, und sie behält die grüne Kopfzeile.
+- **Bis 900 px:** Jede Seite hat eine mitlaufende, durchscheinende Kopfzeile ohne Logo. Die Shell ergänzt
+  die Tab-Leiste (auch auf der Startseite) und blendet ihre Fußzeile aus.
+- **Seitenaktionen:** „Zurück“ und „+“ stehen bis 900 px in der Kopfzeile. Seiten melden sie mit
+  `seitenaktionenMelden()` (`shared/seitenaktionen`), ihr eigenes „Zurück“ ist dort ausgeblendet. Meldet
+  eine Seite `eigeneLeiste` (Neuer Vertrag: Abbrechen | Sichern), bekommt sie weder Kopfzeile noch
+  Tab-Leiste.
+
+### Verträge
+
+Details (`/vertraege/:id`, Tab in `?tab=`) und Bearbeiten (`/vertraege/:id/bearbeiten`) sind Kind-Routen
+der Liste. Die Liste lädt die Daten und gibt sie weiter; `GET /api/vertraege/{id}` nutzt die SPA deshalb
+bewusst nicht. Neuer Vertrag (`/vertraege/neu`) ist eine eigene Seite.
+
+- Auf dem Desktop stehen die Details in einem Panel neben der Liste, Bearbeiten öffnet ein modales Sheet
+  (natives `dialog`). Bis 900 px nehmen beide den ganzen Bildschirm ein.
+- Schließen geht im Verlauf zurück, wenn die Seite den Eintrag selbst geöffnet hat (Navigation-State
+  `intern`), sonst ersetzt es ihn. So schließt der Zurück-Button, und geteilte Links funktionieren.
+- Esc, ein Klick daneben und der Zurück-Button schließen alle über die Route, damit
+  `ungespeichertGuard` nachfragt. Navigationen innerhalb der Seite übergeben `scroll: 'manual'`.
+
 ## Build und Tests
 
 ```bash
@@ -140,7 +172,7 @@ npm run image
 
 Das Image (`Containerfile`) baut die App und liefert sie mit nginx ohne Root-Rechte auf Port 8080
 aus. nginx leitet `/api`, `/actuator/health/systemstatus` und `/actuator/info` an `BACKEND_URL` weiter
-(Standard `http://backend:8080`), damit die Cookies beim selben Origin bleiben. `npm run image` gibt
+(Standard `http://backend:8080`), damit die Cookies beim selben Origin bleiben (ADR 0019). `npm run image` gibt
 Commit und Build-Zeit als `--build-arg` (`COMMIT`, `BUILD_ZEIT`) mit; sie stehen später im
 Impressum. Ohne diese Angaben fehlen sie dort, die Version aus der `package.json` steht immer.
 
@@ -218,7 +250,7 @@ src/app/
     vertraege/   je ein Backend-Modul; weitere kommen mit ihren Seiten dazu
   shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, fusszeile/,
                herkunft/, hinweis-box/, in-den-blick/, kopfzeile/, layout/, logo/, nutzermenue/,
-               rechtliche-links/, seitenaktionen/, systemstatus-leiste/, tabliste/,
+               rechtliche-links/, rundungshinweis/, seitenaktionen/, systemstatus-leiste/, tabliste/,
                version-anzeige/, verwerfen-dialog/, zustaende/
   shell/       Rahmen der angemeldeten Bereiche (hauptmenue/ als Seitenleiste, bis 900 px als Tab-Leiste,
                Fußzeile); die Startseite kommt ab 901 px ohne Navigation aus (Route-Data ohneNavigation)
@@ -234,8 +266,8 @@ im Backend.
 - **Keine fachlichen Berechnungen in der SPA** (ADR 0010): Die SPA formatiert nur. Status, Kosten,
   Termine und Sortierung kommen vom Backend. Prüfungen im Formular dienen nur der Bedienung,
   maßgeblich sind die Feldfehler des Backends.
-- **Fehlertexte nach `code`** (ADR 0007): `core/fehler` liest `code` und `felder` aus der
-  Fehlerantwort, die Texte stehen in der SPA. `detail` ist nur für Entwickler und wird nie
+- **Fehlertexte nach `code`** (ADR 0007): `core/fehler` liest nur `code` und `felder` aus der
+  Fehlerantwort, die Texte stehen in der Seite, die den Fehler zeigt. `detail` ist nur für Entwickler und wird nie
   angezeigt. Ohne bekannten `code` erscheint ein allgemeiner Text.
 - **Geld:** Immer `Betrag` mit seiner Währung, nie EUR annehmen, Listen je Währung vollständig
   anzeigen. Einzige Ausnahme: Eine leere Liste zeigt `0,00 €`.
@@ -243,8 +275,18 @@ im Backend.
   Ausnahme ist reine Anzeige ohne fachliche Bedeutung, z.&nbsp;B. der Monat in der Begrüßung: Sie
   darf aus dem Browser kommen.
 - **Aufbau eines Fachbereichs:** ein Ordner je Backend-Modul unter `features/` mit Service und
-  Seiten. Services halten keine Fachdaten: Die Daten liegen in der Seite und werden beim Öffnen
+  Seiten. Services halten keine Fachdaten (ADR 0018): Die Daten liegen in der Seite und werden beim Öffnen
   geladen, nach einer Änderung neu. So bleibt nach dem Abmelden nichts für den nächsten Nutzer im
   Speicher. Ausgenommen sind Sitzungsdaten im `AuthService` und der Systemstatus.
 - **Zustände einer Seite:** Jede Seite mit Daten hat einen Lade- und einen Fehlerzustand mit
   „Erneut versuchen“ sowie einen Leerzustand.
+- **Angular:** Standalone-Komponenten, Signals, `OnPush` und zoneless (ADR 0017); `strict` und
+  `strictTemplates` sind an.
+- **Oberfläche ohne UI-Bibliothek** (ADR 0016): Markup nach Design, Icons als Inline-SVG, die Schrift
+  Manrope lokal aus `@fontsource-variable/manrope`, Formularfelder und Buttons als Mixins in
+  `shared/formular/_formular.scss`.
+- **Design zuerst** (ADR 0020): Seiten und Verhalten entstehen im
+  [Canvas „Haushaltsbuch“](https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx), der Code folgt daraus.
+  Die Farb-Tokens `--app-*` in `src/styles.scss` folgen dem Design System des Canvas mit denselben
+  Namen; eine neue Farbe oder ein neuer Baustein kommt zuerst dorthin. Weicht der Code bewusst ab, wird
+  erst das Artboard angepasst oder die Abweichung am Issue festgehalten.
