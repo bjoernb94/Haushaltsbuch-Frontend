@@ -14,17 +14,19 @@ export interface Chip {
     <span class="chip" [class]="chip.art">{{ chip.text }}</span>
   }`,
   styles: `
+    @use 'masse' as *;
+
     :host {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      padding-top: 2px;
+      gap: $abstand-2;
+      padding-top: $abstand-halb;
     }
 
     .chip {
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 12px;
+      padding: $abstand-halb $abstand-2;
+      border-radius: $radius-pille;
+      font-size: $schrift-klein;
       font-weight: 700;
     }
 

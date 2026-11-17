@@ -1,13 +1,15 @@
+@use 'masse' as *;
+
 // Formularbausteine gemäß Design: Felder, Aktionen und Knöpfe.
 
 @mixin felder($hoehe: 48px) {
   .feld {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: $abstand-2;
 
     label {
-      font-size: 14px;
+      font-size: $schrift-beschriftung;
       font-weight: 700;
     }
 
@@ -16,12 +18,12 @@
     textarea {
       height: $hoehe;
       box-sizing: border-box;
-      padding: 0 14px;
-      border-radius: 10px;
+      padding: 0 $abstand-4;
+      border-radius: $radius-feld;
       border: 1.5px solid var(--app-rand);
       background: var(--app-flaeche);
       font: inherit;
-      font-size: 16px;
+      font-size: $schrift-eingabe;
       color: var(--app-text);
 
       &::placeholder {
@@ -40,13 +42,13 @@
     }
 
     select {
-      padding: 0 12px;
+      padding: 0 $abstand-3;
     }
 
     textarea {
       height: auto;
       min-height: 96px;
-      padding: 12px 14px;
+      padding: $abstand-3 $abstand-4;
       line-height: 1.45;
       resize: vertical;
     }
@@ -57,7 +59,7 @@
   .aktionen {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: $abstand-3;
   }
 
   .knopf {
@@ -67,10 +69,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
+    border-radius: $radius-feld;
     border: 1.5px solid var(--app-gruen);
     font: inherit;
-    font-size: 16px;
+    font-size: $schrift-eingabe;
     font-weight: 700;
     text-decoration: none;
     cursor: pointer;

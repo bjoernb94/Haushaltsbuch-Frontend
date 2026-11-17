@@ -1,9 +1,11 @@
+@use 'masse' as *;
+
 nav {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 4px 14px;
-  font-size: 12px;
+  gap: $abstand-1 $abstand-4;
+  font-size: $schrift-klein;
   line-height: 16px;
 }
 

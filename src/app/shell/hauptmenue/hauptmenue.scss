@@ -1,3 +1,5 @@
+@use 'masse' as *;
+
 :host {
   display: flex;
   flex: 0 0 232px;
@@ -16,7 +18,8 @@
   height: calc(100vh - var(--app-streifen-hoehe, 0px));
   overflow-y: auto;
   box-sizing: border-box;
-  padding: 16px 10px 84px;
+  // Unten Platz für das Nutzermenü, das am unteren Rand der Leiste steht (Layoutmaß, keine Skala).
+  padding: $abstand-4 $abstand-3 84px;
   display: flex;
   flex-direction: column;
 }
@@ -24,9 +27,9 @@
 .marke {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 10px 18px;
-  font-size: 17px;
+  gap: $abstand-3;
+  padding: $abstand-1 $abstand-3 $abstand-5;
+  font-size: $schrift-abschnitt;
   font-weight: 800;
   letter-spacing: -0.01em;
 
@@ -40,12 +43,12 @@
 .navliste {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: $abstand-halb;
 }
 
 .abschnitt {
-  padding: 14px 10px 4px;
-  font-size: 11px;
+  padding: $abstand-4 $abstand-3 $abstand-1;
+  font-size: $schrift-klein;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -55,12 +58,12 @@
 .naveintrag {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: $abstand-3;
   min-height: 34px;
-  padding: 0 10px;
-  border-radius: 8px;
+  padding: 0 $abstand-3;
+  border-radius: $radius-mittel;
   color: var(--app-text);
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   font-weight: 600;
   text-decoration: none;
 
@@ -103,7 +106,7 @@
 }
 
 .demnaechst {
-  padding-block: 6px;
+  padding-block: $abstand-2;
   color: var(--app-text-gedaempft);
 
   svg {
@@ -113,7 +116,7 @@
 
 .demnaechst-text {
   display: block;
-  font-size: 11px;
+  font-size: $schrift-klein;
   line-height: 16px;
   font-weight: 500;
 }
@@ -135,7 +138,7 @@
     width: auto;
     height: auto;
     overflow-y: visible;
-    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    padding: $abstand-2 $abstand-1 calc(#{$abstand-2} + env(safe-area-inset-bottom));
     border-top: 1px solid var(--app-trenner);
     background: var(--app-tableiste-grund);
     backdrop-filter: blur(14px);
@@ -157,10 +160,10 @@
     min-width: 0;
     flex-direction: column;
     justify-content: center;
-    gap: 3px;
+    gap: $abstand-1;
     min-height: 52px;
-    padding: 4px 2px;
-    font-size: 11px;
+    padding: $abstand-1 $abstand-halb;
+    font-size: $schrift-klein;
     text-align: center;
 
     svg {

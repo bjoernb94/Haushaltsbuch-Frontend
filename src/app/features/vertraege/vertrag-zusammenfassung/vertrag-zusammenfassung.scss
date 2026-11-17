@@ -1,18 +1,20 @@
+@use 'masse' as *;
+
 :host {
   flex: 1 1 260px;
   min-width: 0;
   box-sizing: border-box;
-  padding: 20px;
+  padding: $abstand-5;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: $abstand-4;
   border: 1px solid var(--app-trenner);
-  border-radius: 16px;
+  border-radius: $radius-gross;
   background: var(--app-flaeche);
 
   h2 {
     margin: 0;
-    font-size: 13px;
+    font-size: $schrift-hinweis;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -23,26 +25,26 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: $abstand-3;
   }
 
   dl > div {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding-top: 12px;
+    gap: $abstand-halb;
+    padding-top: $abstand-3;
     border-top: 1px solid var(--app-trenner-innen);
   }
 
   dt {
-    font-size: 13px;
+    font-size: $schrift-hinweis;
     font-weight: 600;
     color: var(--app-text-gedaempft);
   }
 
   dd {
     margin: 0;
-    font-size: 15px;
+    font-size: $schrift-text;
     font-weight: 700;
     line-height: 1.4;
   }
@@ -59,17 +61,17 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: $abstand-halb;
 
   .name {
-    font-size: 18px;
+    font-size: $schrift-abschnitt;
     font-weight: 800;
     line-height: 1.3;
     overflow-wrap: anywhere;
   }
 
   .unter {
-    font-size: 14px;
+    font-size: $schrift-beschriftung;
     color: var(--app-text-gedaempft);
   }
 }

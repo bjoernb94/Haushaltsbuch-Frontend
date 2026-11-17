@@ -1,16 +1,18 @@
+@use 'masse' as *;
+
 .leiste {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 4px 14px;
+  gap: $abstand-1 $abstand-4;
   line-height: 16px;
 }
 
 .dienst {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12px;
+  gap: $abstand-1;
+  font-size: $schrift-klein;
   font-weight: 600;
   color: var(--app-text-gedaempft);
 

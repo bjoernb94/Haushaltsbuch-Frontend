@@ -1,26 +1,28 @@
+@use 'masse' as *;
+
 // Kennzahl in einer Kachel der Startseite, gemäß Design.
 
 @mixin kennzahl {
   .kennzahl {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 14px;
-    border-radius: 12px;
+    gap: $abstand-1;
+    padding: $abstand-4;
+    border-radius: $radius-karte;
     background: var(--app-grund);
 
     span {
-      font-size: 13px;
+      font-size: $schrift-hinweis;
       font-weight: 700;
     }
 
     b {
-      font-size: 20px;
+      font-size: $schrift-titel;
       font-weight: 800;
     }
 
     small {
-      font-size: 12px;
+      font-size: $schrift-klein;
       color: var(--app-text-gedaempft);
     }
   }

@@ -1,14 +1,16 @@
+@use 'masse' as *;
+
 :host {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: $abstand-4;
+  padding-top: $abstand-4;
   border-top: 1px solid var(--app-trenner-innen);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: $abstand-2;
 
   h3 {
     margin: 0;
-    font-size: 15px;
+    font-size: $schrift-text;
     font-weight: 800;
   }
 
@@ -21,10 +23,10 @@
   li {
     display: flex;
     justify-content: space-between;
-    gap: 12px;
-    padding: 8px 0;
+    gap: $abstand-3;
+    padding: $abstand-2 0;
     border-bottom: 1px solid var(--app-trenner-innen);
-    font-size: 15px;
+    font-size: $schrift-text;
     overflow-wrap: anywhere;
 
     b {
@@ -37,13 +39,13 @@
   }
 
   .gesamt {
-    font-size: 15px;
+    font-size: $schrift-text;
     font-weight: 800;
     text-align: right;
   }
 
   .keine {
-    font-size: 14px;
+    font-size: $schrift-beschriftung;
     color: var(--app-text-gedaempft);
   }
 }

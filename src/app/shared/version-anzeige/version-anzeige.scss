@@ -1,10 +1,11 @@
 @use 'stage';
+@use 'masse' as *;
 
 :host {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: $abstand-2;
+  font-size: $schrift-klein;
   line-height: 16px;
   color: var(--app-text-gedaempft);
 }

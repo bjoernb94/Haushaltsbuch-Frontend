@@ -94,7 +94,10 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   (Unicode letter/digit classes like Keycloak). Keep them in sync when the policy changes.
 - Styling: design colours as CSS custom properties `--app-*` in `src/styles.scss`; no UI library (ADR 0016), custom
   markup per design, icons as inline SVG, font Manrope from `@fontsource-variable/manrope` (no requests to third
-  parties). Form fields and buttons as mixins in `shared/formular/_formular.scss`.
+  parties). Form fields and buttons as mixins in `shared/formular/_formular.scss`. Font sizes, radii and spacing
+  (gap, padding, margin) only via the SCSS variables in `src/styles/_masse.scss` (`@use 'masse' as *;`, include path
+  `src/styles`), named like the design system (`$abstand-4`, `$radius-feld`, `$schrift-text`); exceptions (1px, line
+  heights, layout sizes) stay fixed values with a comment.
 - The design in the Claude Design canvas "Haushaltsbuch" (https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx; pages
   Anmeldung, Allgemein, Verträge with desktop and 390 px artboards, Grundlagen with the shared building blocks) is
   authoritative (ADR 0020): pages and behaviour are designed there first, the code follows. A deliberate

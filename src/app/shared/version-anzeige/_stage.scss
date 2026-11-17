@@ -1,10 +1,12 @@
+@use 'masse' as *;
+
 // Badge mit der Umgebung (Fußzeile, Einstellungen); PROD dezent, alle anderen auffällig.
 @mixin badge {
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: $abstand-halb $abstand-2;
+  border-radius: $radius-pille;
   background: var(--app-umgebung-grund);
   color: var(--app-umgebung-text);
-  font-size: 11px;
+  font-size: $schrift-klein;
   font-weight: 800;
   letter-spacing: 0.06em;
 

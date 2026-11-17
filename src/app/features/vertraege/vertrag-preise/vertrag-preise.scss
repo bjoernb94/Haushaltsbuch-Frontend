@@ -1,18 +1,20 @@
+@use 'masse' as *;
+
 :host {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: $abstand-4;
+  margin-bottom: $abstand-4;
 }
 
 .preise {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: $abstand-2;
 
   h3 {
     margin: 0;
-    font-size: 15px;
+    font-size: $schrift-text;
     font-weight: 800;
   }
 
@@ -22,8 +24,8 @@
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    font-size: 15px;
+    gap: $abstand-1;
+    font-size: $schrift-text;
     line-height: 1.45;
   }
 
@@ -46,12 +48,12 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 16px;
+  gap: $abstand-3;
+  padding: $abstand-4;
   border: 1.5px dashed var(--app-rand);
-  border-radius: 12px;
+  border-radius: $radius-karte;
   background: var(--app-flaeche);
-  font-size: 15px;
+  font-size: $schrift-text;
   color: var(--app-text-gedaempft);
 }
 
@@ -59,14 +61,14 @@
   min-height: 44px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 16px;
+  gap: $abstand-2;
+  padding: 0 $abstand-4;
   border: 1.5px solid var(--app-gruen);
-  border-radius: 10px;
+  border-radius: $radius-feld;
   background: var(--app-flaeche);
   color: var(--app-gruen);
   font: inherit;
-  font-size: 15px;
+  font-size: $schrift-text;
   font-weight: 700;
   cursor: pointer;
 

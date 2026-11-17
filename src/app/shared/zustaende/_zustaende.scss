@@ -1,9 +1,11 @@
+@use 'masse' as *;
+
 // Lade- und Fehlerzustand einer Seite oder eines Bereichs mit Daten.
 
 @mixin laedt {
   .laedt {
     margin: 0;
-    font-size: 15px;
+    font-size: $schrift-text;
     color: var(--app-text-gedaempft);
   }
 }
@@ -13,11 +15,11 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 12px 16px;
+    gap: $abstand-3 $abstand-4;
 
     .knopf {
       flex: none;
-      padding: 0 18px;
+      padding: 0 $abstand-5;
     }
   }
 }
