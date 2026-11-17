@@ -10,5 +10,7 @@ changelog:
       labels: [bug]
     - title: Dokumentation
       labels: [documentation]
+    - title: Technisch
+      labels: [technisch]
     - title: Sonstiges
       labels: ['*']
