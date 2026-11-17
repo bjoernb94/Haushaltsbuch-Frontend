@@ -10,7 +10,7 @@ figure {
   position: relative;
   height: 196px;
   box-sizing: border-box;
-  border: 1px solid var(--app-trenner);
+  border: 1px solid var(--app-trenner-innen);
   border-radius: 12px;
   background: var(--app-flaeche);
   overflow: hidden;
@@ -34,7 +34,7 @@ path {
 }
 
 .gitter {
-  stroke: var(--app-trenner);
+  stroke: var(--app-trenner-innen);
   stroke-width: 1;
 }
 

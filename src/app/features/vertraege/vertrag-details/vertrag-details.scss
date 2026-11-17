@@ -119,16 +119,20 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px 14px;
-  border: 1px solid var(--app-trenner);
+  border: 1px solid var(--app-trenner-innen);
   border-radius: 12px;
   background: var(--app-flaeche);
   overflow-wrap: anywhere;
 }
 
-.kachel-titel {
+.kachel-titel,
+.kachel-zusatz {
   font-size: 12px;
-  font-weight: 700;
   color: var(--app-text-gedaempft);
+}
+
+.kachel-titel {
+  font-weight: 700;
 }
 
 .kachel-wert {
@@ -149,9 +153,7 @@
 }
 
 .kachel-zusatz {
-  font-size: 12px;
   line-height: 1.4;
-  color: var(--app-text-gedaempft);
 }
 
 [role='tabpanel']:focus-visible {

@@ -137,7 +137,7 @@
     overflow-y: visible;
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--app-trenner);
-    background: rgba(255, 255, 255, 0.94);
+    background: var(--app-tableiste-grund);
     backdrop-filter: blur(14px);
   }
 

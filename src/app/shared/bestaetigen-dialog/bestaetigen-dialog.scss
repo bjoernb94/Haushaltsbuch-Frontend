@@ -12,7 +12,7 @@ dialog {
   color: var(--app-text);
 
   &::backdrop {
-    background: rgba(23, 32, 27, 0.45);
+    background: var(--app-abdunkeln);
   }
 }
 
@@ -32,7 +32,7 @@ p {
 .knopf-gefahr {
   border-color: var(--app-fehler);
   background: var(--app-fehler);
-  color: #fff;
+  color: var(--app-flaeche);
 
   &:hover {
     border-color: var(--app-fehler-text);

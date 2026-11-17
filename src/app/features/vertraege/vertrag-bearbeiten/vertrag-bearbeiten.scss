@@ -27,7 +27,7 @@
   }
 
   &::backdrop {
-    background: rgba(23, 32, 27, 0.4);
+    background: var(--app-abdunkeln);
   }
 }
 
@@ -125,7 +125,7 @@
     height: 92vh;
     overflow: hidden;
     border-radius: 14px;
-    box-shadow: 0 24px 64px rgba(23, 32, 27, 0.35);
+    box-shadow: 0 24px 64px var(--app-schatten-sheet);
     animation: einblenden 0.22s ease-out;
   }
 

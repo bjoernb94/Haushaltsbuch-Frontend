@@ -38,7 +38,7 @@ fieldset {
 
   & + fieldset {
     padding-top: 20px;
-    border-top: 1px solid var(--app-trenner);
+    border-top: 1px solid var(--app-trenner-innen);
   }
 }
 
@@ -94,7 +94,7 @@ legend {
   align-items: baseline;
   gap: 4px 8px;
   padding: 12px 14px;
-  border: 1px solid var(--app-trenner);
+  border: 1px solid var(--app-trenner-innen);
   border-radius: 10px;
   background: var(--app-details-grund);
   font-size: 14px;
