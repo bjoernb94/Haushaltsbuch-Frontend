@@ -31,7 +31,8 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 - PR descriptions follow `.github/pull_request_template.md`.
 - Releases come only from a tag `v<version>` on `main` that matches `package.json` (`.github/workflows/release.yml`,
   README section "Veröffentlichen"); it requires an open milestone named exactly like the tag without open issues
-  and closes it at the end. Release notes are grouped by PR labels, so label PRs.
+  and closes it at the end. Release notes are grouped by PR labels, so label PRs by branch prefix: `feature/` →
+  `enhancement`, `fix/` → `bug`, `docs/` → `documentation`, `chore/` → `technisch`.
 
 ## Architecture
 
