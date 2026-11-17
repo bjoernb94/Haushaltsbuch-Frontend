@@ -6,7 +6,7 @@ import { preisFeld, PreisWerte, VertragFeld } from '../vertrag-formular/vertrag-
 export type PreisZeile = FormGroup<{ [F in keyof PreisWerte]: FormControl<string> }>;
 
 /**
- * Liste „Frühere und angekündigte Preise“ im Tab Preise des Vertragsformulars, darunter der
+ * Liste „Frühere und angekündigte Preise“ im Tab Preisverlauf des Vertragsformulars, darunter der
  * Preisverlauf aus der Vorschau. Zeilen und Fehler gehören dem Formular, das auch hinzufügt und
  * entfernt; IDs: {@code <idPrefix>-preise-<i>-<feld>}.
  */

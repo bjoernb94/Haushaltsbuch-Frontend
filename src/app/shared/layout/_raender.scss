@@ -1,3 +1,13 @@
+// Bis 900 px derselbe Seitenrand wie unter iOS auf allen Seiten, in den Details und im Sheet.
+$handy: 16px;
+
+@mixin handy {
+  @media (max-width: 900px) {
+    padding-left: $handy;
+    padding-right: $handy;
+  }
+}
+
 // Mit Seitenleiste (232 px) sollen Inhalt und Fußzeile dieselben Ränder haben wie ohne: 1152 px
 // breit und mittig im Fenster, solange das neben die Leiste passt. Prozent beziehen sich auf die
 // Spalte neben der Leiste; 50 % davon sind die halbe Fensterbreite minus 116 px.

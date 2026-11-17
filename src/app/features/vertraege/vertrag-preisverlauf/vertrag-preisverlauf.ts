@@ -51,7 +51,7 @@ interface Zeichnung {
 }
 
 /**
- * Preisverlauf als Treppe (Details, Tab Preise): bis heute durchgezogen, danach angekündigt und
+ * Preisverlauf als Treppe (Details, Tab Preisverlauf): bis heute durchgezogen, danach angekündigt und
  * Prognose gestrichelt. Die Punkte und ihre Art kommen vom Backend (ADR 0010), hier wird nur
  * gezeichnet. Die Linie „heute“ steht nach dem Datum des Browsers, liegt aber nie vor dem letzten
  * gezahlten oder hinter dem ersten künftigen Punkt.

@@ -1,4 +1,5 @@
 @use '../../../shared/zustaende/zustaende';
+@use '../../../shared/layout/raender';
 
 @include zustaende.laedt;
 @include zustaende.fehler;
@@ -289,7 +290,7 @@ dd {
   }
 
   .inhalt {
-    padding: 16px 16px calc(100px + env(safe-area-inset-bottom));
+    padding: 16px raender.$handy calc(100px + env(safe-area-inset-bottom));
   }
 }
 

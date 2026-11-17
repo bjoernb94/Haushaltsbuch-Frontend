@@ -30,6 +30,7 @@ main {
   margin: 0 auto;
   box-sizing: border-box;
   padding: 40px 24px 48px;
+  @include raender.handy;
 
   .mit-navigation & {
     max-width: none;

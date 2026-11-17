@@ -1,4 +1,4 @@
-// Scrollt seitlich, wenn die Tabs nicht in die Breite passen.
+// Am Desktop Reiter mit Unterstrich; scrollt seitlich, wenn die Tabs nicht in die Breite passen.
 :host {
   display: flex;
   gap: 4px;
@@ -50,4 +50,45 @@
   color: var(--app-flaeche);
   font-size: 12px;
   font-weight: 800;
+}
+
+// Bis 900 px ein Segmented Control: gleich breite Segmente über die volle Breite, gestaltet wie ein
+// Eingabefeld (weiß, Rahmen, 52 px hoch), das aktive grün hinterlegt wie in der Seitenleiste; statt
+// der Zahl ein Punkt in der Ecke (die Anzahl steht im Namen des Tabs).
+@media (max-width: 900px) {
+  :host {
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--app-trenner);
+    border-radius: 10px;
+    background: var(--app-flaeche);
+    box-shadow: none;
+  }
+
+  .tab {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0 2px;
+    border-bottom: 0;
+    border-radius: 7px;
+    font-size: 12.5px;
+
+    &[aria-selected='true'] {
+      background: var(--app-gruen-hell);
+    }
+  }
+
+  .zaehler {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    min-width: 0;
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    font-size: 0;
+  }
 }

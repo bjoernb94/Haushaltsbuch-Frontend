@@ -69,7 +69,7 @@ const TABS = [
   { key: 'allgemein', label: 'Allgemein' },
   { key: 'kosten', label: 'Kosten' },
   { key: 'laufzeit', label: 'Laufzeit' },
-  { key: 'preise', label: 'Preise' },
+  { key: 'preise', label: 'Preisverlauf' },
 ] as const;
 
 type Tab = (typeof TABS)[number]['key'];

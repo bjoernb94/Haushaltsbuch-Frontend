@@ -18,7 +18,7 @@ const RHYTHMEN = (Object.keys(RHYTHMUS_TEXT) as Erhoehungsrhythmus[]).map((wert)
 
 /**
  * Preisgarantie, regelmäßige Erhöhung mit Prognose und Erinnerung ans Sonderkündigungsrecht im Tab
- * Preise des Vertragsformulars. Die Felder gehören zum Formular ({@code formControlName} im
+ * Preisverlauf des Vertragsformulars. Die Felder gehören zum Formular ({@code formControlName} im
  * umgebenden {@code formGroup}); Fehler, Prognose und ob die Erinnerung erscheint, kommen von dort.
  */
 @Component({
