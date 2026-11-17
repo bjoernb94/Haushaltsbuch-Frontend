@@ -1,13 +1,15 @@
+@use 'masse' as *;
+
 .box {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 10px;
+  gap: $abstand-3;
+  padding: $abstand-4 $abstand-4;
+  border-radius: $radius-feld;
   background: var(--app-fehler-grund);
   border: 1px solid var(--app-fehler-rand);
   color: var(--app-fehler-text);
-  font-size: 15px;
+  font-size: $schrift-text;
   line-height: 1.45;
   font-weight: 600;
 

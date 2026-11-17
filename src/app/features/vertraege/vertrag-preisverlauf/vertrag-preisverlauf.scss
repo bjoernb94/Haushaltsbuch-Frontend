@@ -1,8 +1,10 @@
+@use 'masse' as *;
+
 figure {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: $abstand-2;
   min-width: 0;
 }
 
@@ -11,7 +13,7 @@ figure {
   height: 196px;
   box-sizing: border-box;
   border: 1px solid var(--app-trenner-innen);
-  border-radius: 12px;
+  border-radius: $radius-karte;
   background: var(--app-flaeche);
   overflow: hidden;
 }
@@ -59,7 +61,7 @@ figcaption path {
   position: absolute;
   width: 10px;
   height: 10px;
-  margin: -5px 0 0 -5px;
+  margin: -#{$abstand-1} 0 0 -#{$abstand-1};
   box-sizing: border-box;
   border: 2px solid var(--app-gruen);
   border-radius: 50%;
@@ -74,7 +76,7 @@ figcaption path {
 .jahr,
 .heute-text {
   position: absolute;
-  font-size: 12px;
+  font-size: $schrift-klein;
   color: var(--app-text-gedaempft);
   white-space: nowrap;
 }
@@ -94,20 +96,20 @@ figcaption path {
 .heute-text {
   top: -16px;
   transform: translateX(-50%);
-  font-size: 11px;
+  font-size: $schrift-klein;
   font-weight: 700;
 }
 
 figcaption {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
-  font-size: 13px;
+  gap: $abstand-2 $abstand-5;
+  font-size: $schrift-hinweis;
   color: var(--app-text-gedaempft);
 
   span {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: $abstand-2;
   }
 }

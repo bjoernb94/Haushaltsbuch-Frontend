@@ -1,4 +1,5 @@
 @use '../../../shared/layout/raender';
+@use 'masse' as *;
 
 .seite {
   min-height: calc(100vh - var(--app-streifen-hoehe, 0px));
@@ -14,11 +15,11 @@
   max-width: 1200px;
   margin: 0 auto;
   box-sizing: border-box;
-  padding: 40px 24px 48px;
+  padding: $abstand-10 $abstand-6 $abstand-12;
   @include raender.handy;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: $abstand-8;
 }
 
 // Fließtext: schmaler und mittig, lange Zeilen wären schlecht zu lesen. „Zurück“ bleibt am Rand.
@@ -28,7 +29,7 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: $abstand-8;
 }
 
 .zurueck {
@@ -36,8 +37,8 @@
   min-height: 44px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 15px;
+  gap: $abstand-2;
+  font-size: $schrift-text;
   font-weight: 700;
   text-decoration: none;
 

@@ -1,23 +1,24 @@
 @use 'seite';
+@use 'masse' as *;
 
 @include seite.seite;
 
 :host {
-  gap: 24px;
+  gap: $abstand-6;
 }
 
 h1 {
-  font-size: 34px;
+  font-size: $schrift-seitentitel;
 }
 
 .titel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: $abstand-2;
 
   p {
     margin: 0;
-    font-size: 16px;
+    font-size: $schrift-eingabe;
     color: var(--app-text-gedaempft);
   }
 }
@@ -31,12 +32,12 @@ h1 {
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  gap: $abstand-4;
 
   .knopf {
     flex: none;
-    gap: 8px;
-    padding: 0 20px;
+    gap: $abstand-2;
+    padding: 0 $abstand-5;
   }
 }
 
@@ -54,31 +55,31 @@ h1 {
     top: 0;
     z-index: 10;
     align-items: center;
-    padding: 12px 0;
+    padding: $abstand-3 0;
     border-bottom: 1px solid var(--app-glas-rand);
     background: var(--app-glas-dicht);
     backdrop-filter: saturate(180%) blur(20px);
 
     h1 {
-      font-size: 26px;
+      font-size: $schrift-titel-gross;
     }
 
     p {
-      font-size: 14px;
+      font-size: $schrift-beschriftung;
     }
 
     .knopf {
       height: 36px;
-      padding: 0 14px;
-      border-radius: 8px;
-      font-size: 14px;
+      padding: 0 $abstand-4;
+      border-radius: $radius-mittel;
+      font-size: $schrift-beschriftung;
     }
   }
 
   .liste-und-details {
     display: flex;
     align-items: flex-start;
-    gap: 20px;
+    gap: $abstand-5;
   }
 
   .liste {
@@ -90,36 +91,36 @@ h1 {
 .kennzahlen {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  gap: $abstand-4;
 }
 
 // Gehört zu den Kennzahlen darüber, näher als der Abstand der Seite.
 .kennzahlen + app-rundungshinweis {
-  margin-top: -16px;
+  margin-top: -#{$abstand-4};
 }
 
 .kennzahl {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 18px 20px;
+  gap: $abstand-2;
+  padding: $abstand-5 $abstand-5;
   border: 1px solid var(--app-trenner);
-  border-radius: 14px;
+  border-radius: $radius-karte;
   background: var(--app-flaeche);
 
   span {
-    font-size: 13px;
+    font-size: $schrift-hinweis;
     font-weight: 700;
     color: var(--app-text-gedaempft);
   }
 
   b {
-    font-size: 24px;
+    font-size: $schrift-titel-gross;
     font-weight: 800;
   }
 
   small {
-    font-size: 12px;
+    font-size: $schrift-klein;
     color: var(--app-text-gedaempft);
   }
 }
@@ -127,35 +128,35 @@ h1 {
 .liste {
   display: flex;
   flex-direction: column;
-  padding: 8px 24px;
+  padding: $abstand-2 $abstand-6;
   border: 1px solid var(--app-trenner);
-  border-radius: 16px;
+  border-radius: $radius-gross;
   background: var(--app-flaeche);
 }
 
 .leer {
-  padding: 40px 0;
+  padding: $abstand-10 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: $abstand-2;
   text-align: center;
 
   b {
-    font-size: 16px;
+    font-size: $schrift-eingabe;
     font-weight: 700;
   }
 
   span {
-    font-size: 15px;
+    font-size: $schrift-text;
     line-height: 1.45;
     color: var(--app-text-gedaempft);
   }
 
   .knopf {
     flex: none;
-    margin-top: 10px;
-    gap: 8px;
-    padding: 0 22px;
+    margin-top: $abstand-3;
+    gap: $abstand-2;
+    padding: 0 $abstand-6;
   }
 }

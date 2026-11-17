@@ -1,5 +1,6 @@
 @use '../../../shared/zustaende/zustaende';
 @use '../../../shared/layout/raender';
+@use 'masse' as *;
 
 @include zustaende.laedt;
 @include zustaende.fehler;
@@ -26,8 +27,8 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 10px 10px 18px;
+  gap: $abstand-2;
+  padding: $abstand-3 $abstand-3 $abstand-3 $abstand-5;
   border-bottom: 1px solid var(--app-trenner);
   background: var(--app-flaeche);
 
@@ -36,7 +37,7 @@
     min-width: 0;
     margin: 0;
     overflow: hidden;
-    font-size: 17px;
+    font-size: $schrift-abschnitt;
     font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -58,12 +59,12 @@
   font: inherit;
   cursor: pointer;
   min-height: 32px;
-  padding: 0 12px;
+  padding: 0 $abstand-3;
   border: 1.5px solid var(--app-rand);
-  border-radius: 8px;
+  border-radius: $radius-mittel;
   background: var(--app-flaeche);
   color: var(--app-text);
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   font-weight: 700;
 }
 
@@ -75,7 +76,7 @@
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: $radius-mittel;
   background: transparent;
   color: var(--app-text-gedaempft);
 
@@ -93,10 +94,10 @@
   min-width: 0;
   overflow-y: auto;
   box-sizing: border-box;
-  padding: 16px 18px 20px;
+  padding: $abstand-4 $abstand-5 $abstand-5;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: $abstand-4;
 
   > * {
     flex-shrink: 0;
@@ -110,24 +111,24 @@
 .kacheln {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
-  gap: 12px;
+  gap: $abstand-3;
 }
 
 .kachel {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
+  gap: $abstand-1;
+  padding: $abstand-3 $abstand-4;
   border: 1px solid var(--app-trenner-innen);
-  border-radius: 12px;
+  border-radius: $radius-karte;
   background: var(--app-flaeche);
   overflow-wrap: anywhere;
 }
 
 .kachel-titel,
 .kachel-zusatz {
-  font-size: 12px;
+  font-size: $schrift-klein;
   color: var(--app-text-gedaempft);
 }
 
@@ -136,7 +137,7 @@
 }
 
 .kachel-wert {
-  font-size: 18px;
+  font-size: $schrift-abschnitt;
   font-weight: 800;
 }
 
@@ -165,13 +166,13 @@ dl {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px 24px;
+  gap: $abstand-4 $abstand-6;
 
   div {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: $abstand-1;
     overflow-wrap: anywhere;
   }
 
@@ -185,31 +186,31 @@ dl {
 }
 
 dt {
-  font-size: 13px;
+  font-size: $schrift-hinweis;
   font-weight: 600;
   color: var(--app-text-gedaempft);
 }
 
 dd {
   margin: 0;
-  font-size: 15px;
+  font-size: $schrift-text;
   font-weight: 700;
 }
 
 .loeschen {
-  margin-top: 8px;
+  margin-top: $abstand-2;
   min-height: 48px;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: $abstand-2;
   border: 1.5px solid var(--app-fehler-rand);
-  border-radius: 10px;
+  border-radius: $radius-feld;
   background: var(--app-flaeche);
   color: var(--app-fehler);
   font: inherit;
-  font-size: 16px;
+  font-size: $schrift-eingabe;
   font-weight: 700;
   cursor: pointer;
 
@@ -237,7 +238,7 @@ dd {
     max-height: calc(100vh - 104px);
     overflow: hidden;
     border: 1px solid var(--app-trenner);
-    border-radius: 14px;
+    border-radius: $radius-karte;
   }
 }
 
@@ -253,10 +254,12 @@ dd {
 
   .kopf {
     display: grid;
+    // Titel in 18 px zwischen den Knöpfen passt bei 390 px nur mit engen Knöpfen und Lücke (wie im Canvas).
     grid-template-columns: 1fr auto 1fr;
+    gap: $abstand-1;
     min-height: 52px;
     box-sizing: border-box;
-    padding: calc(4px + env(safe-area-inset-top)) 8px 4px;
+    padding: calc(#{$abstand-1} + env(safe-area-inset-top)) $abstand-2 $abstand-1;
 
     h2 {
       max-width: 52vw;
@@ -267,18 +270,18 @@ dd {
   .zur-liste,
   .bearbeiten {
     min-height: 44px;
-    padding: 0 10px;
+    padding: 0 $abstand-2;
     display: inline-flex;
     align-items: center;
     border: 0;
     background: transparent;
     color: var(--app-gruen);
-    font-size: 16px;
+    font-size: $schrift-eingabe;
   }
 
   .zur-liste {
     justify-self: start;
-    gap: 2px;
+    gap: $abstand-halb;
     font-weight: 600;
   }
 
@@ -292,7 +295,8 @@ dd {
   }
 
   .inhalt {
-    padding: 16px raender.$handy calc(100px + env(safe-area-inset-bottom));
+    // Unten Platz für die Tab-Leiste und etwas Luft darüber (Layoutmaß, keine Skala).
+    padding: $abstand-4 raender.$handy calc(100px + env(safe-area-inset-bottom));
   }
 }
 

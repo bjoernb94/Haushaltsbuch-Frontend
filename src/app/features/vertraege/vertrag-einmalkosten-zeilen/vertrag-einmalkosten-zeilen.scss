@@ -1,4 +1,5 @@
 @use '../vertrag-formular/zeilen';
+@use 'masse' as *;
 
 @include zeilen.grundlage;
 
@@ -12,6 +13,6 @@
 
 .summe {
   margin: 0;
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   font-weight: 700;
 }

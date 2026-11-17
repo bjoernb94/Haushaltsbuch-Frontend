@@ -1,5 +1,7 @@
+@use 'masse' as *;
+
 // Bis 900 px derselbe Seitenrand wie unter iOS auf allen Seiten, in den Details und im Sheet.
-$handy: 16px;
+$handy: $abstand-4;
 
 @mixin handy {
   @media (max-width: 900px) {
@@ -13,7 +15,7 @@ $handy: 16px;
 // Spalte neben der Leiste; 50 % davon sind die halbe Fensterbreite minus 116 px.
 @mixin wie-ohne-navigation {
   @media (min-width: 901px) {
-    padding-left: max(24px, calc(50% - 692px));
-    padding-right: max(24px, calc(50% - 460px));
+    padding-left: max(#{$abstand-6}, calc(50% - 692px));
+    padding-right: max(#{$abstand-6}, calc(50% - 460px));
   }
 }
