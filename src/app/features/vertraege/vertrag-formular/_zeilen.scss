@@ -1,5 +1,6 @@
 // Zeilen mit Feldern und „Entfernen“, dazu „… hinzufügen“: Preisliste und Einmalkosten im Formular.
 @use '../../../shared/formular/formular';
+@use 'masse' as *;
 
 // Felder mit Bezeichnung, Hinweis und Fehler; auch für Teile des Formulars außerhalb der Zeilen.
 @mixin feldtexte {
@@ -8,7 +9,7 @@
   :host {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: $abstand-4;
   }
 
   .feld {
@@ -28,7 +29,7 @@
   .feldfehler,
   .feldhinweis {
     margin: 0;
-    font-size: 14px;
+    font-size: $schrift-beschriftung;
     line-height: 1.4;
   }
 
@@ -50,8 +51,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    border-radius: 10px;
+    gap: $abstand-2;
+    border-radius: $radius-feld;
     background: var(--app-flaeche);
     font: inherit;
     font-weight: 700;
@@ -65,27 +66,27 @@
 
   .entfernen {
     min-height: 52px;
-    padding: 0 14px;
+    padding: 0 $abstand-4;
     border: 1.5px solid var(--app-fehler-rand);
     color: var(--app-fehler);
-    font-size: 14px;
+    font-size: $schrift-beschriftung;
   }
 
   .hinzufuegen {
     align-self: flex-start;
-    gap: 8px;
+    gap: $abstand-2;
     min-height: 44px;
-    padding: 0 16px;
+    padding: 0 $abstand-4;
     border: 1.5px dashed var(--app-gruen);
     color: var(--app-gruen);
-    font-size: 15px;
+    font-size: $schrift-text;
   }
 }
 
 @mixin liste {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: $abstand-4;
 
   &:empty {
     display: none;
@@ -96,10 +97,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   align-items: end;
-  gap: 12px;
-  padding: 12px;
+  gap: $abstand-3;
+  padding: $abstand-3;
   border: 1px solid var(--app-trenner-innen);
-  border-radius: 12px;
+  border-radius: $radius-karte;
   background: var(--app-details-grund);
 
   .feldfehler {

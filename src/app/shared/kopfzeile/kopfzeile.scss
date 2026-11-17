@@ -1,3 +1,5 @@
+@use 'masse' as *;
+
 // Nutzer-Button auf hellem Grund: neben der Seitenleiste und bis 900 px.
 @mixin hell {
   --knopf-rand: var(--app-rand);
@@ -21,19 +23,19 @@
   max-width: 1200px;
   margin: 0 auto;
   box-sizing: border-box;
-  padding: 16px 24px;
+  padding: $abstand-4 $abstand-6;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: $abstand-4;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 20px;
+  gap: $abstand-3;
+  font-size: $schrift-titel;
   font-weight: 800;
 
   app-logo {
@@ -47,7 +49,7 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: $abstand-1;
 }
 
 // Nur bis 900 px; darüber stehen „Zurück“ und „Neuer Vertrag“ im Inhalt.
@@ -65,16 +67,16 @@
 }
 
 .zurueck {
-  padding: 0 8px 0 2px;
-  gap: 2px;
-  font-size: 16px;
+  padding: 0 $abstand-2 0 $abstand-halb;
+  gap: $abstand-halb;
+  font-size: $schrift-eingabe;
   font-weight: 600;
 }
 
 .neu {
   width: 44px;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: $radius-pille;
 
   &:hover {
     background: var(--app-seitenleiste-hover);
@@ -135,9 +137,9 @@
 
   .kopfzeile-innen {
     min-height: 52px;
-    padding: calc(6px + env(safe-area-inset-top)) 12px 6px;
+    padding: calc(#{$abstand-2} + env(safe-area-inset-top)) $abstand-3 $abstand-2;
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: $abstand-2;
   }
 
   .logo {

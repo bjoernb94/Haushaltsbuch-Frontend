@@ -1,4 +1,5 @@
 @use '../formular/formular';
+@use 'masse' as *;
 
 @include formular.knoepfe;
 
@@ -15,16 +16,16 @@ $handy: 640px;
   min-height: 44px;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0 14px 0 4px;
+  padding: 0 $abstand-4 0 $abstand-1;
   display: flex;
   align-items: center;
-  gap: 10px;
-  border-radius: 999px;
+  gap: $abstand-3;
+  border-radius: $radius-pille;
   border: 1.5px solid var(--knopf-rand, var(--app-kopfzeile-rand));
   background: transparent;
   color: var(--knopf-text, var(--app-flaeche));
   font: inherit;
-  font-size: 15px;
+  font-size: $schrift-text;
   font-weight: 700;
   cursor: pointer;
 
@@ -46,10 +47,10 @@ $handy: 640px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: $radius-pille;
   background: var(--initialen-grund, var(--app-grund));
   color: var(--initialen-text, var(--app-gruen));
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   font-weight: 800;
 }
 
@@ -58,7 +59,7 @@ $handy: 640px;
   height: 48px;
   background: var(--app-gruen);
   color: var(--app-flaeche);
-  font-size: 17px;
+  font-size: $schrift-abschnitt;
 }
 
 .vorname {
@@ -91,12 +92,12 @@ $handy: 640px;
   z-index: 31;
   width: 300px;
   box-sizing: border-box;
-  padding: 20px;
+  padding: $abstand-5;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: $abstand-4;
   border: 1px solid var(--app-trenner);
-  border-radius: 14px;
+  border-radius: $radius-karte;
   background: var(--app-flaeche);
   box-shadow: 0 12px 32px var(--app-schatten-menue);
   color: var(--app-text);
@@ -114,25 +115,25 @@ $handy: 640px;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: $abstand-4;
 }
 
 .angaben {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: $abstand-halb;
 }
 
 .name {
-  font-size: 17px;
+  font-size: $schrift-abschnitt;
   font-weight: 800;
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
 .email {
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   font-weight: 500;
   line-height: 1.4;
   color: var(--app-text-gedaempft);
@@ -147,7 +148,7 @@ $handy: 640px;
 .einstellungen,
 .abmelden {
   flex: none;
-  gap: 8px;
+  gap: $abstand-2;
 }
 
 .einstellungen {
@@ -173,16 +174,16 @@ $handy: 640px;
 
     .nutzer-knopf {
       width: 100%;
-      padding: 6px 10px 6px 6px;
+      padding: $abstand-2 $abstand-3 $abstand-2 $abstand-2;
       border: 0;
-      border-radius: 10px;
-      font-size: 14px;
+      border-radius: $radius-feld;
+      font-size: $schrift-beschriftung;
     }
 
     .nutzer-knopf .initialen {
       width: 30px;
       height: 30px;
-      font-size: 12px;
+      font-size: $schrift-klein;
     }
 
     .pfeil {
@@ -212,7 +213,7 @@ $handy: 640px;
 @media (max-width: $handy) {
   .nutzer-knopf {
     min-width: 44px;
-    padding: 3px;
+    padding: $abstand-1;
     justify-content: center;
   }
 
@@ -232,9 +233,9 @@ $handy: 640px;
     bottom: 0;
     left: 0;
     width: auto;
-    padding: 12px 24px calc(24px + env(safe-area-inset-bottom));
+    padding: $abstand-3 $abstand-6 calc(#{$abstand-6} + env(safe-area-inset-bottom));
     border: 0;
-    border-radius: 20px 20px 0 0;
+    border-radius: $radius-gross $radius-gross 0 0;
     box-shadow: 0 -8px 32px var(--app-schatten-blatt);
   }
 
@@ -243,7 +244,7 @@ $handy: 640px;
     align-self: center;
     width: 40px;
     height: 4px;
-    border-radius: 2px;
+    border-radius: $radius-klein;
     background: var(--app-rand);
   }
 }

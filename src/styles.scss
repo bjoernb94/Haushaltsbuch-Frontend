@@ -55,6 +55,18 @@ html {
   --app-umgebung-prod-text: #3a443e;
 }
 
+// Solange das Bearbeiten-Sheet oder bis 900 px die Details im Vollbild offen sind, scrollt nur deren Inhalt, nicht
+// die Seite dahinter (sonst zwei Scrollleisten). Wie im Canvas.
+html:has(app-vertrag-bearbeiten dialog[open]) {
+  overflow-y: hidden;
+}
+
+@media (max-width: 900px) {
+  html:has(app-vertrag-details) {
+    overflow-y: hidden;
+  }
+}
+
 body {
   color-scheme: light;
   background-color: var(--app-grund);

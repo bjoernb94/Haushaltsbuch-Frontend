@@ -1,13 +1,14 @@
 @use '../formular/formular';
+@use 'masse' as *;
 
 @include formular.knoepfe;
 
 dialog {
   box-sizing: border-box;
   width: min(420px, calc(100vw - 32px));
-  padding: 24px;
+  padding: $abstand-6;
   border: 1px solid var(--app-trenner);
-  border-radius: 16px;
+  border-radius: $radius-gross;
   background: var(--app-flaeche);
   color: var(--app-text);
 
@@ -17,14 +18,14 @@ dialog {
 }
 
 h2 {
-  margin: 0 0 8px;
-  font-size: 20px;
+  margin: 0 0 $abstand-2;
+  font-size: $schrift-titel;
   font-weight: 800;
 }
 
 p {
-  margin: 0 0 20px;
-  font-size: 15px;
+  margin: 0 0 $abstand-5;
+  font-size: $schrift-text;
   line-height: 1.45;
   color: var(--app-text-gedaempft);
 }

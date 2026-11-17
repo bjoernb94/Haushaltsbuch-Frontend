@@ -1,24 +1,25 @@
 @use '../vertrag-formular/zeilen';
+@use 'masse' as *;
 
 @include zeilen.feldtexte;
 
 .raster {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
-  gap: 16px;
+  gap: $abstand-4;
 }
 
 // Schalter wie im Design: Ankreuzfeld mit role="switch".
 .ankreuzen {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: $abstand-3;
 
   input {
     flex: none;
     width: 22px;
     height: 22px;
-    margin: 11px 0 0;
+    margin: $abstand-3 0 0;
     accent-color: var(--app-gruen);
     cursor: pointer;
   }
@@ -26,14 +27,14 @@
   > div {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: $abstand-halb;
   }
 
   label {
     min-height: 44px;
     display: flex;
     align-items: center;
-    font-size: 15px;
+    font-size: $schrift-text;
     font-weight: 700;
     cursor: pointer;
   }
@@ -42,12 +43,12 @@
 .prognose {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
+  gap: $abstand-2;
+  padding: $abstand-3 $abstand-4;
   border: 1px solid var(--app-trenner-innen);
-  border-radius: 10px;
+  border-radius: $radius-feld;
   background: var(--app-details-grund);
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   line-height: 1.45;
 
   .leer {
@@ -58,12 +59,12 @@
 .erinnerung {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 10px;
+  gap: $abstand-3;
+  padding: $abstand-3 $abstand-4;
+  border-radius: $radius-feld;
   background: var(--app-info-grund);
   color: var(--app-info-text);
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   line-height: 1.45;
 
   svg {
@@ -75,11 +76,11 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: $abstand-2;
   }
 
   .ankreuzen {
-    gap: 10px;
+    gap: $abstand-3;
 
     input {
       margin: 1px 0 0;
@@ -94,10 +95,10 @@
 
 // Unter der Preisliste, abgesetzt wie im Design.
 :host {
-  padding-top: 16px;
+  padding-top: $abstand-4;
   border-top: 1px solid var(--app-trenner-innen);
 }
 
 .prognose + app-rundungshinweis {
-  margin-top: 6px;
+  margin-top: $abstand-2;
 }

@@ -1,4 +1,5 @@
 @use '../../../shared/layout/raender';
+@use 'masse' as *;
 
 .rahmen {
   min-height: calc(100vh - var(--app-streifen-hoehe, 0px));
@@ -13,20 +14,20 @@
   flex: 1 1 420px;
   min-width: 0;
   box-sizing: border-box;
-  padding: 56px 56px 16px;
+  padding: $abstand-12 $abstand-12 $abstand-4;
   background: var(--app-gruen);
   color: var(--app-grund);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 48px;
+  gap: $abstand-12;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 22px;
+  gap: $abstand-3;
+  font-size: $schrift-titel;
   font-weight: 800;
   letter-spacing: -0.01em;
 
@@ -39,12 +40,12 @@
 .botschaft {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: $abstand-4;
   max-width: 440px;
 
   h2 {
     margin: 0;
-    font-size: 44px;
+    font-size: $schrift-anzeige;
     line-height: 1.1;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -52,7 +53,7 @@
 
   p {
     margin: 0;
-    font-size: 17px;
+    font-size: $schrift-abschnitt;
     line-height: 1.6;
     color: var(--app-kopfzeile-rand);
   }
@@ -60,7 +61,7 @@
 
 .copyright {
   margin: 0;
-  font-size: 12px;
+  font-size: $schrift-klein;
   line-height: 16px;
   color: var(--app-kopfzeile-text-gedaempft);
   text-align: center;
@@ -70,28 +71,28 @@
   flex: 999 1 520px;
   min-width: 0;
   box-sizing: border-box;
-  padding: 56px 24px 16px;
+  padding: $abstand-12 $abstand-6 $abstand-4;
   @include raender.handy;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  gap: $abstand-8;
 }
 
 // Wie im Design dicht unter dem Systemstatus.
 .fuss {
-  margin-top: -16px;
+  margin-top: -#{$abstand-4};
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: $abstand-2;
 }
 
 // Auf schmalen Bildschirmen unter dem Systemstatus statt in der Markenfläche.
 .copyright-mobil {
   display: none;
-  margin: -20px 0 0;
-  font-size: 12px;
+  margin: -#{$abstand-5} 0 0;
+  font-size: $schrift-klein;
   color: var(--app-text-gedaempft);
 }
 
@@ -106,7 +107,7 @@
 
   .marke {
     flex: none;
-    padding-bottom: 56px;
+    padding-bottom: $abstand-12;
   }
 
   .inhalt {
@@ -131,19 +132,19 @@
 @media (max-width: 640px) {
   .rahmen {
     .marke {
-      padding: 16px raender.$handy;
+      padding: $abstand-4 raender.$handy;
       gap: 0;
       justify-content: center;
     }
 
     .inhalt {
-      padding-top: 32px;
-      gap: 24px;
+      padding-top: $abstand-8;
+      gap: $abstand-6;
     }
   }
 
   .logo {
-    font-size: 18px;
+    font-size: $schrift-abschnitt;
 
     app-logo {
       width: 26px;

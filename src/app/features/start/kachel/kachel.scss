@@ -1,3 +1,5 @@
+@use 'masse' as *;
+
 :host {
   display: block;
   min-width: 0;
@@ -8,10 +10,10 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px;
+  gap: $abstand-5;
+  padding: $abstand-6;
   border: 1px solid var(--app-trenner);
-  border-radius: 16px;
+  border-radius: $radius-gross;
   background: var(--app-flaeche);
 }
 
@@ -20,13 +22,13 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: $abstand-3;
 }
 
 .titel {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: $abstand-3;
 }
 
 .icon {
@@ -36,14 +38,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: $radius-feld;
   background: var(--app-gruen-hell);
   color: var(--app-gruen);
 }
 
 h2 {
   margin: 0;
-  font-size: 19px;
+  font-size: $schrift-abschnitt;
   font-weight: 800;
 }
 
@@ -51,7 +53,7 @@ h2 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: $abstand-5;
 }
 
 .demnaechst {
@@ -72,22 +74,22 @@ h2 {
 
 .beispiel {
   align-self: flex-start;
-  margin: -6px 0;
-  padding: 4px 10px;
-  border-radius: 999px;
+  margin: -#{$abstand-2} 0;
+  padding: $abstand-1 $abstand-3;
+  border-radius: $radius-pille;
   background: var(--app-hinweis-grund);
   color: var(--app-hinweis-text);
-  font-size: 13px;
+  font-size: $schrift-hinweis;
   font-weight: 700;
 }
 
 .hinweis {
   margin: 0;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: $abstand-1 $abstand-3;
+  border-radius: $radius-pille;
   background: var(--app-grund);
   color: var(--app-text-gedaempft);
-  font-size: 13px;
+  font-size: $schrift-hinweis;
   font-weight: 700;
   white-space: nowrap;
 }

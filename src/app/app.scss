@@ -1,3 +1,5 @@
+@use 'masse' as *;
+
 :host {
   display: block;
 }
@@ -7,11 +9,11 @@
   height: 24px;
   box-sizing: border-box;
   margin: 0;
-  padding: 4px 16px;
+  padding: $abstand-1 $abstand-4;
   overflow: hidden;
   background: var(--app-umgebung-streifen);
   color: var(--app-text);
-  font-size: 12px;
+  font-size: $schrift-klein;
   font-weight: 700;
   line-height: 16px;
   letter-spacing: 0.04em;

@@ -1,4 +1,5 @@
 @use '../../../shared/formular/formular';
+@use 'masse' as *;
 
 @include formular.felder($hoehe: 52px);
 @include formular.knoepfe;
@@ -8,7 +9,7 @@
 :host {
   display: flex;
   align-items: flex-start;
-  gap: 20px;
+  gap: $abstand-5;
 }
 
 .formular {
@@ -16,10 +17,10 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px 20px;
+  gap: $abstand-5;
+  padding: $abstand-6 $abstand-5;
   border: 1px solid var(--app-trenner);
-  border-radius: 16px;
+  border-radius: $radius-gross;
   background: var(--app-flaeche);
 }
 
@@ -34,10 +35,10 @@ fieldset {
   border: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: $abstand-4;
 
   & + fieldset {
-    padding-top: 20px;
+    padding-top: $abstand-5;
     border-top: 1px solid var(--app-trenner-innen);
   }
 }
@@ -45,16 +46,16 @@ fieldset {
 legend {
   float: left;
   width: 100%;
-  margin-bottom: 4px;
+  margin-bottom: $abstand-1;
   padding: 0;
-  font-size: 17px;
+  font-size: $schrift-abschnitt;
   font-weight: 800;
 }
 
 .raster {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
-  gap: 16px;
+  gap: $abstand-4;
 }
 
 .feld {
@@ -75,7 +76,7 @@ legend {
 .feldfehler,
 .feldhinweis {
   margin: 0;
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   line-height: 1.4;
 }
 
@@ -92,12 +93,12 @@ legend {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 4px 8px;
-  padding: 12px 14px;
+  gap: $abstand-1 $abstand-2;
+  padding: $abstand-3 $abstand-4;
   border: 1px solid var(--app-trenner-innen);
-  border-radius: 10px;
+  border-radius: $radius-feld;
   background: var(--app-details-grund);
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   line-height: 1.45;
 }
 
@@ -105,13 +106,13 @@ legend {
   min-width: 0;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: $abstand-3;
 
   input {
     flex: none;
     width: 22px;
     height: 22px;
-    margin: 11px 0 0;
+    margin: $abstand-3 0 0;
     accent-color: var(--app-gruen);
     cursor: pointer;
   }
@@ -119,14 +120,14 @@ legend {
   > div {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: $abstand-halb;
   }
 
   label {
     min-height: 44px;
     display: flex;
     align-items: center;
-    font-size: 15px;
+    font-size: $schrift-text;
     font-weight: 700;
     cursor: pointer;
   }
@@ -134,7 +135,7 @@ legend {
 
 .aktionen {
   flex-wrap: wrap-reverse;
-  padding-top: 4px;
+  padding-top: $abstand-1;
 }
 
 .ohne-knoepfe .aktionen {
@@ -177,7 +178,7 @@ legend {
 .tabinhalt {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: $abstand-6;
 
   &[hidden] {
     display: none;

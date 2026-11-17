@@ -2,6 +2,7 @@
 @use '../../../shared/format/kuerzen';
 @use '../../../shared/formular/formular';
 @use '../../../shared/zustaende/zustaende';
+@use 'masse' as *;
 
 @include kennzahl.kennzahl;
 @include formular.knoepfe;
@@ -13,18 +14,18 @@
 
 a[kachelLink] {
   white-space: nowrap;
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   font-weight: 700;
 }
 
 .kennzahlen {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
+  gap: $abstand-3;
 }
 
 app-rundungshinweis {
-  margin-top: 8px;
+  margin-top: $abstand-2;
 }
 
 .kennzahl span {
@@ -37,8 +38,8 @@ app-rundungshinweis {
 }
 
 .ueberschrift {
-  padding-bottom: 6px;
-  font-size: 13px;
+  padding-bottom: $abstand-2;
+  font-size: $schrift-hinweis;
   font-weight: 700;
   color: var(--app-text-gedaempft);
 }
@@ -47,10 +48,10 @@ app-rundungshinweis {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px 12px;
-  padding: 10px 0;
+  gap: $abstand-2 $abstand-3;
+  padding: $abstand-3 0;
   border-top: 1px solid var(--app-trenner-innen);
-  font-size: 15px;
+  font-size: $schrift-text;
 }
 
 .vertrag {
@@ -58,7 +59,7 @@ app-rundungshinweis {
   flex-direction: column;
   min-width: 0;
   // Erste Zeile mittig zum höheren Badge.
-  padding-top: 3px;
+  padding-top: $abstand-1;
   overflow-wrap: anywhere;
   color: var(--app-text-gedaempft);
 
@@ -71,11 +72,11 @@ app-rundungshinweis {
 
 .termin {
   flex: none;
-  padding: 3px 10px;
-  border-radius: 999px;
+  padding: $abstand-1 $abstand-3;
+  border-radius: $radius-pille;
   background: var(--app-grund);
   color: var(--app-text-gedaempft);
-  font-size: 13px;
+  font-size: $schrift-hinweis;
   font-weight: 700;
   white-space: nowrap;
 
@@ -87,9 +88,9 @@ app-rundungshinweis {
 
 .keine {
   margin: 0;
-  padding: 10px 0;
+  padding: $abstand-3 0;
   border-top: 1px solid var(--app-trenner-innen);
-  font-size: 15px;
+  font-size: $schrift-text;
   color: var(--app-text-gedaempft);
 }
 
@@ -98,5 +99,5 @@ app-rundungshinweis {
 .knopf {
   flex: none;
   align-self: flex-start;
-  padding: 0 18px;
+  padding: 0 $abstand-5;
 }

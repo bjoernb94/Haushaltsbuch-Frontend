@@ -1,4 +1,5 @@
 @use 'text';
+@use 'masse' as *;
 
 @include text.text;
 
@@ -6,8 +7,8 @@ dl {
   margin: 0;
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 8px 24px;
-  font-size: 15px;
+  gap: $abstand-2 $abstand-6;
+  font-size: $schrift-text;
   line-height: 1.6;
 }
 
@@ -33,10 +34,10 @@ dd {
 @media (max-width: 640px) {
   dl {
     grid-template-columns: 1fr;
-    gap: 2px;
+    gap: $abstand-halb;
   }
 
   dd + dt {
-    margin-top: 8px;
+    margin-top: $abstand-2;
   }
 }

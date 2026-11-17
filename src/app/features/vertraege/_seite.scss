@@ -2,6 +2,7 @@
 
 @use '../../shared/formular/formular';
 @use '../../shared/zustaende/zustaende';
+@use 'masse' as *;
 
 @mixin seite {
   @include formular.knoepfe;
@@ -16,8 +17,8 @@
     min-height: 44px;
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 15px;
+    gap: $abstand-2;
+    font-size: $schrift-text;
     font-weight: 700;
     text-decoration: none;
 

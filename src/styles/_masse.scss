@@ -1,0 +1,35 @@
+// Abstände, Radien und Schriftgrößen aus dem Design System „Haushaltsbuch“ (#124), mit denselben Namen.
+// Andere Werte gibt es nicht; Ausnahmen (1-px-Linien, Zeilenhöhen, Layoutmaße) stehen als feste Werte mit Kommentar.
+// SCSS statt CSS-Variablen: Die Werte ändern sich zur Laufzeit nicht, und var(--…) kostet Platz im Budget.
+
+// Abstände im 4-px-Raster (Zahl × 4 px), dazu 2 px für enge Lücken.
+$abstand-halb: 2px;
+$abstand-1: 4px;
+$abstand-2: 8px;
+$abstand-3: 12px;
+$abstand-4: 16px;
+$abstand-5: 20px;
+$abstand-6: 24px;
+$abstand-8: 32px;
+$abstand-10: 40px;
+$abstand-12: 48px;
+
+// Radien
+$radius-klein: 4px;
+$radius-mittel: 8px;
+$radius-feld: 10px;
+$radius-karte: 12px;
+$radius-gross: 16px;
+$radius-pille: 999px;
+
+// Schriftgrößen
+$schrift-klein: 12px;
+$schrift-hinweis: 13px;
+$schrift-beschriftung: 14px;
+$schrift-text: 15px;
+$schrift-eingabe: 16px;
+$schrift-abschnitt: 18px;
+$schrift-titel: 20px;
+$schrift-titel-gross: 24px;
+$schrift-seitentitel: 32px;
+$schrift-anzeige: 44px;

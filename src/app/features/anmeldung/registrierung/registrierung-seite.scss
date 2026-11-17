@@ -1,10 +1,11 @@
 @use '../anmelde-rahmen/formular';
+@use 'masse' as *;
 
 @include formular.formular;
 
 .formular {
   max-width: 520px;
-  gap: 22px;
+  gap: $abstand-6;
 }
 
 .knopf {
@@ -14,7 +15,7 @@
 .zeile {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: $abstand-4;
 
   .feld {
     flex: 1 1 200px;
@@ -23,19 +24,19 @@
 }
 
 .regeln {
-  margin: 2px 0 0;
+  margin: $abstand-halb 0 0;
   padding: 0;
   list-style: none;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 4px 16px;
-  font-size: 13px;
+  gap: $abstand-1 $abstand-4;
+  font-size: $schrift-hinweis;
   font-weight: 600;
 
   li {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: $abstand-2;
     color: var(--app-text-gedaempft);
 
     svg {
@@ -64,18 +65,18 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: $abstand-3;
 
   legend {
     padding: 0;
-    margin-bottom: 4px;
-    font-size: 14px;
+    margin-bottom: $abstand-1;
+    font-size: $schrift-beschriftung;
     font-weight: 700;
   }
 
   > p {
     margin: 0;
-    font-size: 14px;
+    font-size: $schrift-beschriftung;
     color: var(--app-text-gedaempft);
   }
 }
@@ -83,15 +84,15 @@
 .karten {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  gap: $abstand-3;
 }
 
 .karte {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 12px;
+  gap: $abstand-3;
+  padding: $abstand-4 $abstand-4;
+  border-radius: $radius-karte;
   cursor: pointer;
   background: var(--app-flaeche);
   border: 1.5px solid var(--app-rand);
@@ -109,7 +110,7 @@
     flex: none;
     width: 20px;
     height: 20px;
-    margin: 2px 0 0;
+    margin: $abstand-halb 0 0;
     accent-color: var(--app-gruen);
     cursor: pointer;
 
@@ -123,23 +124,23 @@
 .karte-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: $abstand-1;
 }
 
 .karte-titel {
-  font-size: 15px;
+  font-size: $schrift-text;
   font-weight: 700;
 }
 
 .karte-beschreibung {
-  font-size: 13px;
+  font-size: $schrift-hinweis;
   line-height: 1.45;
   color: var(--app-text-gedaempft);
 }
 
 .zum-login {
   margin: 0;
-  font-size: 15px;
+  font-size: $schrift-text;
   color: var(--app-text-gedaempft);
   text-align: center;
 

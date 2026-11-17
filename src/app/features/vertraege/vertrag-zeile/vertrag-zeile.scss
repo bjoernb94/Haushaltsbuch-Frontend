@@ -1,4 +1,5 @@
 @use '../../../shared/format/kuerzen';
+@use 'masse' as *;
 
 :host {
   display: block;
@@ -20,11 +21,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 20px;
-  margin: 0 -12px;
-  padding: 16px 12px;
-  border-radius: 10px;
-  scroll-margin: 16px 0;
+  gap: $abstand-3 $abstand-5;
+  margin: 0 -#{$abstand-3};
+  padding: $abstand-4 $abstand-3;
+  border-radius: $radius-feld;
+  scroll-margin: $abstand-4 0;
 
   // Oben die Werkzeugleiste, unten bis 900 px die Tab-Leiste.
   @media (min-width: 901px) {
@@ -40,7 +41,7 @@
   }
 
   @media (max-width: 900px) {
-    padding-right: 40px;
+    padding-right: $abstand-10;
     scroll-margin-bottom: 84px;
   }
 }
@@ -93,7 +94,7 @@
   align-items: center;
   justify-content: center;
   border: 1.5px solid var(--app-rand);
-  border-radius: 8px;
+  border-radius: $radius-mittel;
   background: var(--app-flaeche);
   color: var(--app-text);
   cursor: pointer;
@@ -131,24 +132,24 @@
   z-index: 31;
   min-width: 220px;
   box-sizing: border-box;
-  padding: 6px;
+  padding: $abstand-2;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--app-trenner);
-  border-radius: 10px;
+  border-radius: $radius-feld;
   background: var(--app-flaeche);
   box-shadow: 0 12px 32px var(--app-schatten-menue);
 }
 
 .eintrag {
   min-height: 32px;
-  padding: 0 12px;
+  padding: 0 $abstand-3;
   border: 0;
-  border-radius: 6px;
+  border-radius: $radius-mittel;
   background: transparent;
   color: var(--app-text);
   font: inherit;
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -173,7 +174,7 @@
 
 .menue .trenner {
   height: 1px;
-  margin: 5px 6px;
+  margin: $abstand-1 $abstand-2;
   background: var(--app-trenner-innen);
 }
 
@@ -182,13 +183,13 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: $abstand-1;
   overflow-wrap: anywhere;
 }
 
 .name,
 .betrag {
-  font-size: 16px;
+  font-size: $schrift-eingabe;
   font-weight: 800;
 }
 
@@ -218,11 +219,11 @@
 }
 
 .meta {
-  font-size: 14px;
+  font-size: $schrift-beschriftung;
 }
 
 .notiz {
-  font-size: 13px;
+  font-size: $schrift-hinweis;
   font-style: italic;
 }
 
@@ -230,11 +231,11 @@
   flex: 0 0 180px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: $abstand-halb;
 }
 
 .klein {
-  font-size: 13px;
+  font-size: $schrift-hinweis;
 }
 
 .kuendigung {
@@ -242,18 +243,18 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: $abstand-1;
 }
 
 .kuendigung-titel {
-  font-size: 12px;
+  font-size: $schrift-klein;
   color: var(--app-text-gedaempft);
 }
 
 .badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 13px;
+  padding: $abstand-1 $abstand-3;
+  border-radius: $radius-pille;
+  font-size: $schrift-hinweis;
   font-weight: 700;
 }
 
@@ -278,7 +279,7 @@
 }
 
 .zusatz {
-  font-size: 13px;
+  font-size: $schrift-hinweis;
   line-height: 1.4;
 }
 
@@ -293,14 +294,14 @@
 
   // Zusammen mit dem Abstand der Zeile (12px) wie der Trenner zwischen zwei Verträgen.
   &.abgesetzt:not(.unten) {
-    margin-bottom: 4px;
-    padding-bottom: 16px;
+    margin-bottom: $abstand-1;
+    padding-bottom: $abstand-4;
     border-bottom: 1px solid var(--app-trenner-innen);
   }
 
   &.abgesetzt.unten {
-    margin-top: 4px;
-    padding-top: 16px;
+    margin-top: $abstand-1;
+    padding-top: $abstand-4;
     border-top: 1px solid var(--app-trenner-innen);
   }
 
