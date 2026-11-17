@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
- * Logo der App: Buch und Münze als flache Glyphe in der Textfarbe, gemäß Design (Artboard „App-Icon“).
+ * Logo der App: Buch und Münze als flache Glyphe in der Textfarbe, wie im Design System („Logos“).
  * Die Größe setzt die umgebende Seite. Ein einziger Pfad statt Masken und mit dem € als Kontur, damit
  * nichts von IDs oder einer geladenen Schrift abhängt.
  */
