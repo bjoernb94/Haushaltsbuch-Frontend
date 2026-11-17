@@ -1,4 +1,5 @@
 {
   "/api": { "target": "http://localhost:8080", "secure": false },
-  "/actuator": { "target": "http://localhost:8080", "secure": false }
+  "/actuator/health/systemstatus": { "target": "http://localhost:8080", "secure": false },
+  "/actuator/info": { "target": "http://localhost:8080", "secure": false }
 }

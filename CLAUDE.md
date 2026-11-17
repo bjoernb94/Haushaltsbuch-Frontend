@@ -8,7 +8,7 @@ Keycloak, has its own CLAUDE.md). UI text, identifiers, comments and the README 
 ## Commands
 
 ```bash
-npm start              # dev server on :4200, proxies /api and /actuator to :8080
+npm start              # dev server on :4200, proxies the same paths as nginx to :8080 (proxy.conf.json)
 npm run build          # production build (budgets: initial 500 kB warning)
 npm run lint           # ESLint incl. angular-eslint template + accessibility rules
 npm run format:check   # Prettier; npm run format to fix (ng add/generate may reformat angular.json)
@@ -36,7 +36,7 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 
 ## Architecture
 
-- Standalone components, signals, `OnPush`, zoneless; `strict` and `strictTemplates` are on.
+- Standalone components, signals, `OnPush`, zoneless (ADR 0017); `strict` and `strictTemplates` are on.
 - `core/` services without UI, `features/` lazy-loaded pages (one folder per backend module, plus
   `anmeldung/` for login/registration, `start/` and `einstellungen/`), `shared/` components used by several areas,
   `shell/` layout of the logged-in area (lazy, so login and registration do not load it), header and footer in
@@ -92,11 +92,14 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   `ungespeichertGuard` asks.
 - Password rules in `features/anmeldung/registrierung/passwort-regeln.ts` mirror the Keycloak realm policy
   (Unicode letter/digit classes like Keycloak). Keep them in sync when the policy changes.
-- Styling: design colours as CSS custom properties `--app-*` in `src/styles.scss`; no UI library, custom markup per
-  design, icons as inline SVG, font Manrope from `@fontsource-variable/manrope` (no requests to third parties).
-  Form fields and buttons as mixins in `shared/formular/_formular.scss`.
-- The design lives in the Claude Design canvas "Haushaltsbuch" (artboards Login, Registrierung, Startseite,
-  Verträge, Neuer Vertrag). Changes to page behaviour should be reflected in the artboards as well.
+- Styling: design colours as CSS custom properties `--app-*` in `src/styles.scss`; no UI library (ADR 0016), custom
+  markup per design, icons as inline SVG, font Manrope from `@fontsource-variable/manrope` (no requests to third
+  parties). Form fields and buttons as mixins in `shared/formular/_formular.scss`.
+- The design in the Claude Design canvas "Haushaltsbuch" (https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx;
+  artboards Login, Registrierung, Startseite, Einstellungen, Impressum, Datenschutz, Verträge, Neuer Vertrag and
+  App-Icon) is authoritative (ADR 0020): pages and behaviour are designed there first, the code follows. A deliberate
+  deviation goes into the artboard first or is noted on the issue. Colour tokens `--app-*` follow the canvas's design
+  system with the same names; a new colour or building block goes there first.
 
 ## Conventions
 
@@ -104,15 +107,16 @@ Details in the README, section "Konventionen". ADRs are in the backend under `do
 
 - No business calculations in the SPA (ADR 0010): only format; status, costs, dates and sorting come from the
   backend. Form checks are for usability only; the backend's field errors decide.
-- Error texts by `code` via `core/fehler` (ADR 0007), never show `detail`.
+- Error texts by `code` (ADR 0007), never show `detail`: `core/fehler` only reads `code` and `felder` from the
+  problem response, the texts live in the page that shows the error.
 - Money: always `Betrag` with its currency, never assume EUR, show lists per currency in full. Only exception:
   an empty list shows `0,00 €`.
 - Format money and dates via `shared/format` (browser `Intl`), not Angular's `CurrencyPipe`, `DatePipe` or
   `formatCurrency`: Those keep about 19 kB in the initial bundle and need `registerLocaleData`, which is not set up.
 - Business dates are ISO without time and the backend decides what "today" is. Only exception: display without
   business meaning, e.g. the month in the greeting, may come from the browser.
-- A feature is one folder per backend module with service and pages. Services hold no business data: pages
-  load it when opened and reload after changes, so nothing is left for the next user after logout. Exempt:
+- A feature is one folder per backend module with service and pages. Services hold no business data (ADR 0018):
+  pages load it when opened and reload after changes, so nothing is left for the next user after logout. Exempt:
   session data in `AuthService` and the system status.
 - Every page with data has loading, error (with "Erneut versuchen") and empty states.
 
@@ -120,7 +124,7 @@ Details in the README, section "Konventionen". ADRs are in the backend under `do
 
 - Unit tests mock `AuthService`/`SystemstatusService` via `useValue`; HTTP via `provideHttpClientTesting`.
 - E2E: extend `backendSimulieren()` for new endpoints instead of needing a running backend.
-- CSP and nginx rules only apply in the image; `e2e-image/` covers them. Check there when changing
+- CSP and nginx rules (ADR 0019) only apply in the image; `e2e-image/` covers them. Check there when changing
   `docker/nginx` or anything the CSP could block.
 - In Playwright, `getByLabel('Passwort')` also matches the rules list ("Anforderungen an das Passwort"); use
   `{ exact: true }`.
