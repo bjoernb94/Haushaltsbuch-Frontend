@@ -1,0 +1,133 @@
+<fieldset>
+  <legend>Kosten</legend>
+  <div class="raster">
+    <div class="feld">
+      <label [for]="id('betrag')">Betrag in {{ waehrung() }} *</label>
+      <input
+        [id]="id('betrag')"
+        type="text"
+        inputmode="decimal"
+        placeholder="0,00"
+        formControlName="betrag"
+        [attr.aria-invalid]="!!fehlerText('betrag')"
+        [attr.aria-describedby]="beschreibung('betrag')"
+      />
+      @if (fehlerText('betrag'); as text) {
+        <p class="feldfehler" [id]="id('betrag') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+    <div class="feld">
+      <label [for]="id('zahlweise')">Zahlweise *</label>
+      <select
+        [id]="id('zahlweise')"
+        formControlName="zahlweise"
+        [attr.aria-invalid]="!!fehlerText('zahlweise')"
+        [attr.aria-describedby]="beschreibung('zahlweise')"
+      >
+        <option value="">Bitte wählen</option>
+        @for (option of zahlweisen; track option.wert) {
+          <option [value]="option.wert">{{ option.text }}</option>
+        }
+      </select>
+      @if (fehlerText('zahlweise'); as text) {
+        <p class="feldfehler" [id]="id('zahlweise') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+    <div class="feld">
+      <label [for]="id('beginn')">Vertragsbeginn *</label>
+      <input
+        [id]="id('beginn')"
+        type="date"
+        formControlName="beginn"
+        [attr.aria-invalid]="!!fehlerText('beginn')"
+        [attr.aria-describedby]="beschreibung('beginn')"
+      />
+      @if (fehlerText('beginn'); as text) {
+        <p class="feldfehler" [id]="id('beginn') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+    <div class="feld">
+      <label [for]="id('zahlungsweg')">Zahlungsweg <span class="optional">(optional)</span></label>
+      <select
+        [id]="id('zahlungsweg')"
+        formControlName="zahlungsweg"
+        [attr.aria-invalid]="!!fehlerText('zahlungsweg')"
+        [attr.aria-describedby]="beschreibung('zahlungsweg')"
+      >
+        <option value="">Bitte wählen</option>
+        @for (option of zahlungswege; track option.wert) {
+          <option [value]="option.wert">{{ option.text }}</option>
+        }
+      </select>
+      @if (fehlerText('zahlungsweg'); as text) {
+        <p class="feldfehler" [id]="id('zahlungsweg') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+    <div class="feld">
+      <label [for]="id('gueltigSeit')"
+        >Betrag gilt seit <span class="optional">(optional)</span></label
+      >
+      <input
+        [id]="id('gueltigSeit')"
+        type="date"
+        formControlName="gueltigSeit"
+        [attr.aria-invalid]="!!fehlerText('gueltigSeit')"
+        [attr.aria-describedby]="beschreibung('gueltigSeit', id('gueltigSeit') + '-hinweis')"
+      />
+      <span class="feldhinweis" [id]="id('gueltigSeit') + '-hinweis'"
+        >Leer = ab Vertragsbeginn.</span
+      >
+      @if (fehlerText('gueltigSeit'); as text) {
+        <p class="feldfehler" [id]="id('gueltigSeit') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+    <div class="feld">
+      <label [for]="id('anteilProzent')"
+        >Mein Anteil in % <span class="optional">(optional)</span></label
+      >
+      <input
+        [id]="id('anteilProzent')"
+        type="text"
+        inputmode="decimal"
+        placeholder="100"
+        formControlName="anteilProzent"
+        [attr.aria-invalid]="!!fehlerText('anteilProzent')"
+        [attr.aria-describedby]="beschreibung('anteilProzent', id('anteilProzent') + '-hinweis')"
+      />
+      @if (fehlerText('anteilProzent'); as text) {
+        <p class="feldfehler" [id]="id('anteilProzent') + '-fehler'">{{ text }}</p>
+      }
+      <span class="feldhinweis" [id]="id('anteilProzent') + '-hinweis'"
+        >Bei geteilten Verträgen, z. B. 50 oder 33,3. Übersichten zählen dann nur deinen
+        Anteil.</span
+      >
+      <!-- Die Live-Region steht immer da, sonst sagen Screenreader die erste Zeile nicht an. -->
+      <div role="status">
+        @if (anteilText(); as text) {
+          <div class="vorschau">
+            <b>Dein Anteil:</b>
+            <span>{{ text }}</span>
+          </div>
+        }
+      </div>
+      <!-- Außerhalb der Live-Region, sonst wird er bei jeder Eingabe vorgelesen. -->
+      @if (anteilText()) {
+        <app-rundungshinweis />
+      }
+    </div>
+  </div>
+</fieldset>
+
+<fieldset>
+  <legend>Einmalkosten <span class="optional">(optional)</span></legend>
+  <app-vertrag-einmalkosten-zeilen
+    [zeilen]="einmalkosten()"
+    [waehrung]="waehrung()"
+    [summe]="summe()"
+    [fehler]="fehler()"
+    [idPrefix]="idPrefix()"
+    (hinzufuegen)="hinzufuegen.emit()"
+    (entfernen)="entfernen.emit($event)"
+    (geaendert)="geaendert.emit($event)"
+  />
+</fieldset>

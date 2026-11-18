@@ -121,9 +121,10 @@ Details in the README, section "Konventionen". ADRs are in the backend under `do
   `formatCurrency`: Those keep about 19 kB in the initial bundle and need `registerLocaleData`, which is not set up.
 - Business dates are ISO without time and the backend decides what "today" is. Only exception: display without
   business meaning, e.g. the month in the greeting, may come from the browser.
-- A feature is one folder per backend module with service and pages. Services hold no business data (ADR 0018):
-  pages load it when opened and reload after changes, so nothing is left for the next user after logout. Exempt:
-  session data in `AuthService` and the system status.
+- A feature is one folder per backend module with service and pages, inside grouped by UI area (`liste/`,
+  `details/`, `formular/`), no file over 400 lines; checklist in README "Fachbereich anlegen". Services hold
+  no business data (ADR 0018): pages load it when opened and reload after changes, so nothing is left for the
+  next user after logout. Exempt: session data in `AuthService` and the system status.
 - Every page with data has loading, error (with "Erneut versuchen") and empty states.
 
 ## Tests

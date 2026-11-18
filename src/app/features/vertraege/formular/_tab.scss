@@ -1,0 +1,91 @@
+// Ein Tab des Vertragsformulars: Abschnitte mit Feldern, Ankreuzfeldern und Vorschau-Zeilen.
+@use 'zeilen';
+@use 'masse' as *;
+
+@include zeilen.feldtexte;
+
+:host {
+  gap: $abstand-6;
+}
+
+:host([hidden]) {
+  display: none;
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-4;
+
+  & + fieldset {
+    padding-top: $abstand-5;
+    border-top: 1px solid var(--app-trenner-innen);
+  }
+}
+
+legend {
+  float: left;
+  width: 100%;
+  margin-bottom: $abstand-1;
+  padding: 0;
+  font-size: $schrift-abschnitt;
+  font-weight: 800;
+}
+
+.raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  gap: $abstand-4;
+}
+
+.feld textarea {
+  width: 100%;
+}
+
+.vorschau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: $abstand-1 $abstand-2;
+  padding: $abstand-3 $abstand-4;
+  border: 1px solid var(--app-trenner-innen);
+  border-radius: $radius-feld;
+  background: var(--app-details-grund);
+  font-size: $schrift-beschriftung;
+  line-height: 1.45;
+}
+
+.ankreuzen {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: $abstand-3;
+
+  input {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin: $abstand-3 0 0;
+    accent-color: var(--app-gruen);
+    cursor: pointer;
+  }
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: $abstand-halb;
+  }
+
+  label {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: $schrift-text;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}
