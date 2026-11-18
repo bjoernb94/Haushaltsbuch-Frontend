@@ -112,8 +112,8 @@ Playwright-Berichte lädt die CI nur bei Fehlern hoch.
 Die Typen der API stehen in `src/app/core/api/api.generated.ts`. `npm run api:typen` erzeugt die
 Datei aus `../Haushaltsbuch-Backend/docs/openapi.json`, das Backend muss also daneben ausgecheckt
 sein. Nach einer API-Änderung im Backend das Skript ausführen und das Ergebnis mit einchecken. Die
-CI kann das private Backend-Repo nicht abrufen und prüft nur, dass der eingecheckte Stand
-kompiliert. Sprechende Namen für die Typen stehen in `core/api/api.ts`.
+CI prüft nur, dass der eingecheckte Stand kompiliert, nicht, ob er zur Beschreibung im Backend
+passt. Sprechende Namen für die Typen stehen in `core/api/api.ts`.
 
 ## Arbeitsweise mit Git
 

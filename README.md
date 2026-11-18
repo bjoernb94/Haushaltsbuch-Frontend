@@ -66,8 +66,8 @@ und nennt die offenen Issues. Nach einem erfolgreichen Release schließt er ihn.
 
 Frontend und Backend zählen gleich hoch; das Backend wird zuerst veröffentlicht. Solange die Hauptversion 0
 ist, ist jedes Release eine Vorabversion (Pre-release) und das Image bekommt nur die Tags `0.2.0` und `0.2`;
-ab 1.0 kommt `latest` dazu. Das Image ist privat wie das Repo: Zum Herunterladen vorher
-`podman login ghcr.io` mit einem Token mit `read:packages`. Es gibt nur ein Image für amd64.
+ab 1.0 kommt `latest` dazu. Das Image ist öffentlich und lässt sich ohne Anmeldung herunterladen
+(`podman pull ghcr.io/bjoernb94/haushaltsbuch-frontend:0.2`). Es gibt nur ein Image für amd64.
 
 ## Dokumentation
 
