@@ -26,7 +26,7 @@ export type Instanzstand =
   | { zustand: 'fehler' }
   | { zustand: 'da'; angaben: Instanzangaben; quellcode: Quellcode };
 
-/** Hängt der Betreiber ins Image ein (siehe README); nginx liefert ohne Datei 404. */
+/** Hängt der Betreiber ins Image ein (siehe docs/betrieb.md); nginx liefert ohne Datei 404. */
 export const INSTANZ_URL = '/instanz.json';
 
 const ANTWORT_TIMEOUT_MS = 5_000;
