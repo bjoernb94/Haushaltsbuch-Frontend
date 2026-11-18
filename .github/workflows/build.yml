@@ -48,9 +48,16 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # Der Download der Systempakete hängt manchmal; dann lieber schnell neu starten.
-      - run: npx playwright install --with-deps chromium firefox
-        timeout-minutes: 5
+      # Podman im Container wäre aufwendig, deshalb hier auf dem Runner. Die Systempakete per apt hängen
+      # manchmal; dann abbrechen und erneut versuchen, statt das Zeitlimit des Jobs abzuwarten.
+      - name: Playwright-Browser installieren
+        timeout-minutes: 10
+        run: |
+          for versuch in 1 2 3; do
+            timeout --kill-after=10s 3m npx playwright install --with-deps chromium firefox && exit 0
+            echo "::warning::Installation der Browser fehlgeschlagen (Versuch $versuch von 3)"
+          done
+          exit 1
       # Podman, denn nur Podman liest .containerignore.
       - run: npm run image
       # CSP und nginx-Regeln greifen nur im Image, deshalb starten und prüfen.
@@ -123,9 +130,29 @@ jobs:
           path: coverage/
           retention-days: 14
 
+  # Die Version des Playwright-Images muss genau zu Playwright im Lockfile passen, sonst fehlen ihm die
+  # Browser. Sie kommt deshalb von dort, so zieht ein Update durch Dependabot das Image mit.
+  playwright:
+    name: Playwright-Version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: package-lock.json
+          sparse-checkout-cone-mode: false
+      - id: version
+        run: echo "version=$(jq -er '.packages["node_modules/playwright-core"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+
   e2e:
     name: E2E-Tests (${{ matrix.browser }} ${{ matrix.teil }}/${{ matrix.teile }})
+    needs: playwright
     runs-on: ubuntu-latest
+    # Browser und Systempakete sind im Image schon installiert.
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright.outputs.version }}-noble
     permissions:
       contents: read
       checks: write
@@ -145,10 +172,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # Der Download der Systempakete hängt manchmal; dann lieber schnell neu starten.
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
-        timeout-minutes: 5
       - run: npm run e2e -- --project=${{ matrix.browser }} --shard=${{ matrix.teil }}/${{ matrix.teile }}
+        env:
+          # Der Runner setzt HOME auf ein Verzeichnis, das nicht root gehört; damit startet Firefox nicht.
+          HOME: /root
       # Je Teil ein eigener Check; Wiederholungen, die bestehen, zählen nicht als Fehlschlag.
       - uses: mikepenz/action-junit-report@v6
         if: ${{ !cancelled() }}
