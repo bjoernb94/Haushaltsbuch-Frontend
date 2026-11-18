@@ -1,8 +1,17 @@
 # Haushaltsbuch-Frontend
 
-Frontend der Haushaltsbuch-Anwendung: eine Angular-SPA, die über das
-[Haushaltsbuch-Backend](https://github.com/bjoernb94/Haushaltsbuch-Backend) (Spring Boot,
-Keycloak) läuft. Die Seiten folgen dem Design-Canvas „Haushaltsbuch“.
+Haushaltsbuch ist eine selbst gehostete Webanwendung, in der ein Haushalt seine Finanzen gemeinsam verwaltet:
+Ein- und Ausgaben, Verträge, Strom, Gas und Wasser sowie Geldanlagen. Fertig ist bisher der Bereich
+Verträge; die anderen Bereiche sind geplant. Gedacht ist sie vorerst für das Heimnetz, der Betrieb im
+Internet folgt mit v1.0.0.
+
+Dieses Repo enthält die Oberfläche: eine Angular-SPA ohne UI-Bibliothek, ausgeliefert als Container-Image
+mit nginx. Sie spricht nur mit dem
+[Haushaltsbuch-Backend](https://github.com/bjoernb94/Haushaltsbuch-Backend) (Spring Boot, PostgreSQL,
+Keycloak), das auch die Anmeldung übernimmt und alles Fachliche berechnet; die SPA formatiert nur. Die
+Seiten folgen dem Design-Canvas „Haushaltsbuch“. Wer die Anwendung betreiben möchte, findet im Backend unter
+[Betrieb per Compose](https://github.com/bjoernb94/Haushaltsbuch-Backend/blob/main/docs/betrieb.md#betrieb-per-compose),
+wie sie mit allen Diensten aus den veröffentlichten Images startet.
 
 ## Voraussetzungen
 
@@ -77,6 +86,10 @@ ab 1.0 kommt `latest` dazu. Das Image ist öffentlich und lässt sich ohne Anmel
 | [`docs/betrieb.md`](docs/betrieb.md)                                                               | Container-Image, `instanz.json`, Sicherheits-Header                                    |
 | [Entscheidungen](https://github.com/bjoernb94/Haushaltsbuch-Backend/tree/main/docs/entscheidungen) | Architekturentscheidungen (ADRs) für Backend und Frontend, im Backend                  |
 | [`docs/api.md`](https://github.com/bjoernb94/Haushaltsbuch-Backend/blob/main/docs/api.md)          | API, Fehlercodes und Datenformate, im Backend                                          |
+
+Die Dokumentation liegt nur in den Repos, ein Wiki gibt es nicht: So wird sie im selben Pull Request wie der
+Code geändert und geprüft und passt zu jedem Release-Tag
+([ADR 0021](https://github.com/bjoernb94/Haushaltsbuch-Backend/blob/main/docs/entscheidungen/0021-doku-im-repo.md)).
 
 ## Projektstruktur
 
