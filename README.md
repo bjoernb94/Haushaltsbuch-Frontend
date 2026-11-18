@@ -138,8 +138,9 @@ Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-B
 auf drei Jobs: Chromium und Firefox in zwei Teilen. Diese laufen im offiziellen Playwright-Image, in
 dem Browser und Systempakete schon installiert sind. Seine Version liest die CI aus
 `package-lock.json`, sie folgt also jedem Update von Playwright. Außerdem baut sie das Container-Image,
-startet es und prüft es. Dieser Job läuft wegen Podman direkt auf dem Runner und installiert die
-Browser selbst, mit Zeitlimit und bis zu drei Versuchen.
+startet es und prüft es. Dieser Job läuft wegen Podman direkt auf dem Runner, die Prüfung startet
+Playwright aber im selben Image (`PLAYWRIGHT_IMAGE` für `npm run image:pruefen`). Lokal nutzt sie
+ohne diese Variable die installierten Browser.
 
 Die Testergebnisse stehen im PR als eigene Checks („Ergebnisse Unit-Tests“, „Ergebnisse E2E …“ je
 Teil, „Ergebnisse Container-Image“) und im Summary des jeweiligen Jobs, auch bei grünem Build. Die

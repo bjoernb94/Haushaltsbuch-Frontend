@@ -36,6 +36,7 @@ jobs:
   image:
     name: Container-Image
     if: ${{ !inputs.ohne_image }}
+    needs: playwright
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,20 +49,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # Podman im Container wäre aufwendig, deshalb hier auf dem Runner. Die Systempakete per apt hängen
-      # manchmal; dann abbrechen und erneut versuchen, statt das Zeitlimit des Jobs abzuwarten.
-      - name: Playwright-Browser installieren
-        timeout-minutes: 10
-        run: |
-          for versuch in 1 2 3; do
-            timeout --kill-after=10s 3m npx playwright install --with-deps chromium firefox && exit 0
-            echo "::warning::Installation der Browser fehlgeschlagen (Versuch $versuch von 3)"
-          done
-          exit 1
       # Podman, denn nur Podman liest .containerignore.
       - run: npm run image
-      # CSP und nginx-Regeln greifen nur im Image, deshalb starten und prüfen.
+      # CSP und nginx-Regeln greifen nur im Image, deshalb starten und prüfen. Der Job braucht Podman und
+      # läuft deshalb auf dem Runner; die Tests selbst laufen im Playwright-Image wie die E2E-Tests, so
+      # installiert auch er keine Systempakete per apt (die hängen manchmal).
       - run: npm run image:pruefen
+        env:
+          PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v${{ needs.playwright.outputs.version }}-noble
       - uses: mikepenz/action-junit-report@v6
         if: ${{ !cancelled() }}
         with:
