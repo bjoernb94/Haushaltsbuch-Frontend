@@ -123,7 +123,7 @@ npm run build          # Production-Build nach dist/
 npm run lint           # ESLint inkl. Template-Regeln
 npm run format:check   # Prettier (npm run format formatiert)
 npm test               # Unit-Tests (Vitest), im Watch-Modus
-npm run test:ci        # Unit-Tests einmalig
+npm run test:ci        # Unit-Tests einmalig, mit Abdeckung (coverage/) und JUnit (junit/)
 npm run e2e            # E2E-Tests (Playwright) in Chromium und Firefox
 npm run image:pruefen  # gebautes Container-Image starten und prüfen (Podman)
 npm run api:typen      # API-Typen aus der OpenAPI-Beschreibung des Backends erzeugen
@@ -137,6 +137,12 @@ Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-B
 `npm audit` für die Laufzeit-Abhängigkeiten, Unit- und E2E-Tests aus. Die E2E-Tests verteilt sie
 auf drei Jobs: Chromium und Firefox in zwei Teilen. Außerdem baut sie das Container-Image, startet
 es und prüft es.
+
+Die Testergebnisse stehen im PR als eigene Checks („Ergebnisse Unit-Tests“, „Ergebnisse E2E …“ je
+Teil, „Ergebnisse Container-Image“) und im Summary des jeweiligen Jobs, auch bei grünem Build. Die
+Abdeckung der Unit-Tests steht im Check und im Job-Summary, ohne Mindestwert; den HTML-Bericht lädt
+die CI immer als Artefakt `abdeckung` hoch. Alle Tests schreiben JUnit nach `junit/`. Die
+Playwright-Berichte lädt die CI nur bei Fehlern hoch.
 
 ### API-Typen
 

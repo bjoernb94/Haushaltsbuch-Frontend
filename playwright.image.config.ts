@@ -5,7 +5,11 @@ export default defineConfig({
   testDir: './e2e-image',
   outputDir: './test-results/image',
   forbidOnly: !!process.env['CI'],
-  reporter: [['list'], ['html', { outputFolder: 'playwright-report/image', open: 'never' }]],
+  reporter: [
+    ['list'],
+    ['html', { outputFolder: 'playwright-report/image', open: 'never' }],
+    ['junit', { outputFile: 'junit/image.xml' }],
+  ],
   use: {
     baseURL: 'http://127.0.0.1:18080',
     trace: 'retain-on-failure',

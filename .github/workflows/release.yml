@@ -59,6 +59,10 @@ jobs:
   tests:
     name: Tests
     needs: version
+    # Die Testergebnisse legt build.yml als Checks an.
+    permissions:
+      contents: read
+      checks: write
     uses: ./.github/workflows/build.yml
     with:
       ohne_image: true
