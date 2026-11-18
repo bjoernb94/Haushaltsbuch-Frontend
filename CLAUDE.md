@@ -78,8 +78,10 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   (`shared/rechtliche-links`) pass the current page as `herkunft` in the navigation state (`shared/herkunft`),
   kept when switching between the two. The settings link in the user menu does the same. Operator details come
   from `instanz.json`, mounted into the image (`core/instanz`), never from code; missing or incomplete → a hint
-  instead of the details. Placeholder data in `beispiel/instanz.json` is served
-  by the dev server only (development build assets) and used by the E2E mock, the image check and the README.
+  instead of the details. License (fixed) and source links are shown regardless: they point to the two repos
+  (`/tree/<commit>` when the commit is known), `quellcode` in `instanz.json` replaces them. Placeholder data
+  in `beispiel/instanz.json` is served by the dev server only (development build assets) and used by the E2E
+  mock, the image check and the README.
 - Unsaved input: a form reports changes to `core/ungespeichert`. Leaving asks via the dialog in the shell:
   `ungespeichertGuard` (`canDeactivate`) on routes with a form, `bestaetigen()` for anything else that leaves or
   closes one (logout must ask before the session ends). Redirects that must happen (401, 403) and a successful save

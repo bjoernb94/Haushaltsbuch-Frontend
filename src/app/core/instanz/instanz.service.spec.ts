@@ -38,24 +38,38 @@ describe('InstanzService', () => {
   it('liest die Angaben und lädt danach nicht erneut', () => {
     expect(laden((a) => a.flush(ANGABEN))).toEqual({
       zustand: 'da',
-      angaben: { ...ANGABEN, lizenz: undefined, quellcode: undefined },
+      angaben: ANGABEN,
+      quellcode: { frontend: undefined, backend: undefined },
     });
     service.laden();
     http.expectNone(INSTANZ_URL);
   });
 
-  it('übernimmt Lizenz und einen http(s)-Link zum Quellcode', () => {
+  it('übernimmt eigene http(s)-Links zum Quellcode, auch einzeln', () => {
     const stand = laden((a) =>
-      a.flush({ ...ANGABEN, lizenz: 'MIT', quellcode: 'https://example.org/repo' }),
+      a.flush({ ...ANGABEN, quellcode: { backend: 'https://example.org/backend' } }),
     );
     expect(stand).toMatchObject({
-      angaben: { lizenz: 'MIT', quellcode: 'https://example.org/repo' },
+      quellcode: { frontend: undefined, backend: 'https://example.org/backend' },
     });
   });
 
-  it('verwirft einen Quellcode-Link, der nicht mit http(s) beginnt', () => {
-    const stand = laden((a) => a.flush({ ...ANGABEN, quellcode: 'javascript:alert(1)' }));
-    expect(stand).toMatchObject({ angaben: { quellcode: undefined } });
+  it.each([
+    ['ohne http(s)', { frontend: 'javascript:alert(1)', backend: 'example.org/backend' }],
+    ['als einzelner Text', 'https://example.org/repo'],
+  ])('verwirft Links zum Quellcode %s', (_fall, quellcode) => {
+    const stand = laden((a) => a.flush({ ...ANGABEN, quellcode }));
+    expect(stand).toMatchObject({ quellcode: { frontend: undefined, backend: undefined } });
+  });
+
+  it('liest den Quellcode auch ohne vollständige Betreiberangaben', () => {
+    const stand = laden((a) =>
+      a.flush({ quellcode: { frontend: 'https://example.org/frontend' } }),
+    );
+    expect(stand).toEqual({
+      zustand: 'fehlt',
+      quellcode: { frontend: 'https://example.org/frontend', backend: undefined },
+    });
   });
 
   it.each([
@@ -65,12 +79,13 @@ describe('InstanzService', () => {
     ['mit Stand ohne ISO-Datum', { ...ANGABEN, stand: '08.11.2026' }],
     ['als Liste', []],
   ])('gilt %s als nicht hinterlegt', (_fall, antwort) => {
-    expect(laden((a) => a.flush(antwort))).toEqual({ zustand: 'fehlt' });
+    expect(laden((a) => a.flush(antwort))).toMatchObject({ zustand: 'fehlt' });
   });
 
   it('404 heißt: nichts hinterlegt', () => {
     expect(laden((a) => a.flush('', { status: 404, statusText: 'Not Found' }))).toEqual({
       zustand: 'fehlt',
+      quellcode: {},
     });
   });
 

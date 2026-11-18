@@ -10,17 +10,21 @@ export interface Instanzangaben {
   logAufbewahrungTage: number;
   /** ISO-Datum. */
   stand: string;
-  lizenz?: string;
-  /** Link zum Quellcode, nur http(s). */
-  quellcode?: string;
 }
 
+/** Eigene Links zum Quellcode, z. B. für einen Fork, nur http(s); ohne Angabe gilt der Standard. */
+export interface Quellcode {
+  frontend?: string;
+  backend?: string;
+}
+
+/** Den Quellcode liest auch eine Datei ohne vollständige Betreiberangaben. */
 export type Instanzstand =
   | { zustand: 'laedt' }
   /** Keine oder unvollständige Datei: Der Betreiber hat nichts hinterlegt. */
-  | { zustand: 'fehlt' }
+  | { zustand: 'fehlt'; quellcode: Quellcode }
   | { zustand: 'fehler' }
-  | { zustand: 'da'; angaben: Instanzangaben };
+  | { zustand: 'da'; angaben: Instanzangaben; quellcode: Quellcode };
 
 /** Hängt der Betreiber ins Image ein (siehe README); nginx liefert ohne Datei 404. */
 export const INSTANZ_URL = '/instanz.json';
@@ -53,7 +57,7 @@ export class InstanzService {
         error: (error: unknown) =>
           this.fertig(
             error instanceof HttpErrorResponse && (error.status === 404 || error.status === 200)
-              ? { zustand: 'fehlt' }
+              ? { zustand: 'fehlt', quellcode: {} }
               : { zustand: 'fehler' },
           ),
       });
@@ -68,11 +72,15 @@ export class InstanzService {
 
 const text = (wert: unknown): wert is string => typeof wert === 'string' && wert.trim() !== '';
 
+const link = (wert: unknown) => (text(wert) && /^https?:\/\//.test(wert) ? wert : undefined);
+
 function pruefen(antwort: unknown): Instanzstand {
   const a = (antwort ?? {}) as Record<string, unknown>;
   const b = (a['betreiber'] ?? {}) as Record<string, unknown>;
   const anschrift = b['anschrift'];
   const tage = a['logAufbewahrungTage'];
+  const q = (a['quellcode'] ?? {}) as Record<string, unknown>;
+  const quellcode: Quellcode = { frontend: link(q['frontend']), backend: link(q['backend']) };
   const vollstaendig =
     text(b['name']) &&
     Array.isArray(anschrift) &&
@@ -87,10 +95,8 @@ function pruefen(antwort: unknown): Instanzstand {
     typeof a['stand'] === 'string' &&
     /^\d{4}-\d{2}-\d{2}$/.test(a['stand']);
   if (!vollstaendig) {
-    return { zustand: 'fehlt' };
+    return { zustand: 'fehlt', quellcode };
   }
-  const lizenz = a['lizenz'];
-  const quellcode = a['quellcode'];
   return {
     zustand: 'da',
     angaben: {
@@ -103,8 +109,7 @@ function pruefen(antwort: unknown): Instanzstand {
       speicherort: a['speicherort'] as string,
       logAufbewahrungTage: tage,
       stand: a['stand'] as string,
-      lizenz: text(lizenz) ? lizenz : undefined,
-      quellcode: text(quellcode) && /^https?:\/\//.test(quellcode) ? quellcode : undefined,
     },
+    quellcode,
   };
 }

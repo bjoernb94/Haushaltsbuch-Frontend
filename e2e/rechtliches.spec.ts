@@ -110,6 +110,36 @@ test('das Impressum nennt Frontend- und Backend-Version getrennt', async ({ page
   await expect(page.getByText('v0.1.0 · Commit 48eaea5 · Build')).toBeVisible();
 });
 
+test('Lizenz und Quellcode stehen auch ohne instanz.json im Impressum', async ({ page }) => {
+  await backendSimulieren(page, { instanz: null });
+  await page.goto('/impressum');
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'GNU Affero General Public License v3.0 oder später' }),
+  ).toHaveAttribute('href', 'https://www.gnu.org/licenses/agpl-3.0.html');
+  // Der Dev-Server kennt keinen Commit des Frontends, das Backend liefert einen.
+  await expect(
+    page.getByRole('link', { name: 'github.com/bjoernb94/Haushaltsbuch-Frontend' }),
+  ).toHaveAttribute('href', 'https://github.com/bjoernb94/Haushaltsbuch-Frontend');
+  await expect(
+    page.getByRole('link', { name: 'github.com/bjoernb94/Haushaltsbuch-Backend' }),
+  ).toHaveAttribute('href', 'https://github.com/bjoernb94/Haushaltsbuch-Backend/tree/48eaea5');
+});
+
+test('ein Fork ersetzt die Links zum Quellcode in der instanz.json', async ({ page }) => {
+  await backendSimulieren(page, {
+    instanz: { ...INSTANZ, quellcode: { backend: 'https://example.org/fork/backend' } },
+  });
+  await page.goto('/impressum');
+  await expect(page.getByRole('link', { name: 'example.org/fork/backend' })).toHaveAttribute(
+    'href',
+    'https://example.org/fork/backend',
+  );
+  await expect(
+    page.getByRole('link', { name: 'github.com/bjoernb94/Haushaltsbuch-Frontend' }),
+  ).toBeVisible();
+});
+
 test('ohne instanz.json ein Hinweis statt der Angaben', async ({ page }) => {
   await backendSimulieren(page, { instanz: null });
   await page.goto('/datenschutz');

@@ -65,6 +65,13 @@ test.describe('CSP', () => {
     await page.goto('/login');
     await page.getByRole('link', { name: 'Impressum' }).click();
     await expect(page.getByRole('heading', { name: 'Betreiber dieser Instanz' })).toBeVisible();
+    // Den Commit setzt der Image-Build per --define; der Link zeigt auf genau diesen Stand.
+    await expect(
+      page.getByRole('link', { name: 'github.com/bjoernb94/Haushaltsbuch-Frontend' }),
+    ).toHaveAttribute(
+      'href',
+      /^https:\/\/github\.com\/bjoernb94\/Haushaltsbuch-Frontend\/tree\/[0-9a-f]{7,40}$/,
+    );
     await page.getByRole('link', { name: 'Datenschutz' }).click();
     await expect(page.getByRole('heading', { name: '1. Verantwortlicher' })).toBeVisible();
     expect(fehler).toEqual([]);
