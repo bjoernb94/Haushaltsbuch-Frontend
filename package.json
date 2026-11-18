@@ -19,6 +19,7 @@
     "image:pruefen": "e2e-image/pruefen.sh"
   },
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "packageManager": "npm@11.19.1",
   "engines": {
     "node": ">=26"
