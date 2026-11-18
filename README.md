@@ -326,3 +326,10 @@ im Backend.
   `src/styles/_masse.scss` (`@use 'masse' as *;`) und heißen wie im Design System: `$abstand-1` bis
   `$abstand-12` (Zahl × 4 px) und `$abstand-halb`, `$radius-klein` bis `$radius-pille`, `$schrift-klein` bis
   `$schrift-anzeige`. Feste Werte nur für Ausnahmen mit Kommentar: 1-px-Linien, Zeilenhöhen, Layoutmaße.
+
+## Lizenz
+
+Copyright © 2026 Björn Bochmann. Veröffentlicht unter der
+[GNU Affero General Public License v3.0](LICENSE) oder einer späteren Version (`AGPL-3.0-or-later`).
+Wer das Frontend verändert und anderen über ein Netzwerk bereitstellt, muss ihnen den geänderten
+Quellcode zugänglich machen (Abschnitt 13 der Lizenz).
