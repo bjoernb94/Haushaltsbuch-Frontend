@@ -135,8 +135,11 @@ laufenden auf Port 4200. Die Browser installiert einmalig `npx playwright instal
 
 Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-Build,
 `npm audit` für die Laufzeit-Abhängigkeiten, Unit- und E2E-Tests aus. Die E2E-Tests verteilt sie
-auf drei Jobs: Chromium und Firefox in zwei Teilen. Außerdem baut sie das Container-Image, startet
-es und prüft es.
+auf drei Jobs: Chromium und Firefox in zwei Teilen. Diese laufen im offiziellen Playwright-Image, in
+dem Browser und Systempakete schon installiert sind. Seine Version liest die CI aus
+`package-lock.json`, sie folgt also jedem Update von Playwright. Außerdem baut sie das Container-Image,
+startet es und prüft es. Dieser Job läuft wegen Podman direkt auf dem Runner und installiert die
+Browser selbst, mit Zeitlimit und bis zu drei Versuchen.
 
 Die Testergebnisse stehen im PR als eigene Checks („Ergebnisse Unit-Tests“, „Ergebnisse E2E …“ je
 Teil, „Ergebnisse Container-Image“) und im Summary des jeweiligen Jobs, auch bei grünem Build. Die
