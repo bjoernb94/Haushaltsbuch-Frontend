@@ -18,7 +18,7 @@ server {
         proxy_set_header X-Forwarded-Port $server_port;
     }
 
-    # Angaben des Betreibers (README, Abschnitt Container); fehlt die Datei, 404 statt index.html.
+    # Angaben des Betreibers (docs/betrieb.md); fehlt die Datei, 404 statt index.html.
     location = /instanz.json {
         try_files $uri =404;
         include /etc/nginx/snippets/sicherheits-header.conf;

@@ -3,7 +3,9 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Angular SPA of a household-budget app ("Haushaltsbuch"). Backend: `../Haushaltsbuch-Backend` (Spring Boot,
-Keycloak, has its own CLAUDE.md). UI text, identifiers, comments and the README are in German; keep it that way.
+Keycloak, has its own CLAUDE.md). UI text, identifiers, comments, the README and `docs/` are in German; keep it
+that way. Running the image and `instanz.json`: `docs/betrieb.md`; behaviour, tests and conventions in German:
+`docs/entwicklung.md`.
 
 ## Commands
 
@@ -81,7 +83,7 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   instead of the details. License (fixed) and source links are shown regardless: they point to the two repos
   (`/tree/<commit>` when the commit is known), `quellcode` in `instanz.json` replaces them. Placeholder data
   in `beispiel/instanz.json` is served by the dev server only (development build assets) and used by the E2E
-  mock, the image check and the README.
+  mock, the image check and `docs/betrieb.md`.
 - Unsaved input: a form reports changes to `core/ungespeichert`. Leaving asks via the dialog in the shell:
   `ungespeichertGuard` (`canDeactivate`) on routes with a form, `bestaetigen()` for anything else that leaves or
   closes one (logout must ask before the session ends). Redirects that must happen (401, 403) and a successful save
@@ -111,7 +113,7 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 
 ## Conventions
 
-Details in the README, section "Konventionen". ADRs are in the backend under `docs/entscheidungen`.
+Details in `docs/entwicklung.md`, section "Konventionen". ADRs are in the backend under `docs/entscheidungen`.
 
 - No business calculations in the SPA (ADR 0010): only format; status, costs, dates and sorting come from the
   backend. Form checks are for usability only; the backend's field errors decide.
@@ -124,9 +126,9 @@ Details in the README, section "Konventionen". ADRs are in the backend under `do
 - Business dates are ISO without time and the backend decides what "today" is. Only exception: display without
   business meaning, e.g. the month in the greeting, may come from the browser.
 - A feature is one folder per backend module with service and pages, inside grouped by UI area (`liste/`,
-  `details/`, `formular/`), no file over 400 lines; checklist in README "Fachbereich anlegen". Services hold
-  no business data (ADR 0018): pages load it when opened and reload after changes, so nothing is left for the
-  next user after logout. Exempt: session data in `AuthService` and the system status.
+  `details/`, `formular/`), no file over 400 lines; checklist in `docs/entwicklung.md` "Fachbereich anlegen".
+  Services hold no business data (ADR 0018): pages load it when opened and reload after changes, so nothing is
+  left for the next user after logout. Exempt: session data in `AuthService` and the system status.
 - Every page with data has loading, error (with "Erneut versuchen") and empty states.
 
 ## Tests

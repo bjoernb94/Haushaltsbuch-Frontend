@@ -37,7 +37,7 @@ export async function abmelden(page: Page) {
     .click();
 }
 
-/** Beispielangaben des Betreibers, dieselben wie bei `npm start` und im README. */
+/** Beispielangaben des Betreibers, dieselben wie bei `npm start` und in `docs/betrieb.md`. */
 export const INSTANZ = JSON.parse(readFileSync('beispiel/instanz.json', 'utf-8')) as {
   betreiber: { name: string; anschrift: string[]; email: string };
 };

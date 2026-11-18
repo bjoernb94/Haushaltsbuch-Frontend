@@ -12,7 +12,7 @@ Closes #
 - [ ] API-Anbindung geändert? Gegen das echte Backend geprüft
 - [ ] Neue Fehlercodes mit Text versehen
 - [ ] Neue Seite? Lade-, Fehler- und Leerzustand, Seitentitel, `bereichGuard`
-- [ ] Doku angepasst, wo nötig: `README.md`, `CLAUDE.md`
+- [ ] Doku angepasst, wo nötig: `README.md`, `docs/entwicklung.md`, `docs/betrieb.md`, `CLAUDE.md`
 - [ ] Architekturentscheidung? Neuer Eintrag unter `docs/entscheidungen` im Backend
 - [ ] Seitenverhalten geändert? Artboards im Design angepasst
 - [ ] Neue Farbe oder neuer Baustein? Zuerst im Design System, dann in `styles.scss` (ADR 0020, #112)
