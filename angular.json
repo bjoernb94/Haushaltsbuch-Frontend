@@ -90,7 +90,15 @@
           }
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "configurations": {
+            "ci": {
+              "watch": false,
+              "coverage": true,
+              "coverageReporters": ["text-summary", "json-summary", "html"],
+              "reporters": ["default", ["junit", { "outputFile": "junit/unit.xml" }]]
+            }
+          }
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",

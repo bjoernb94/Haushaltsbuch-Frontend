@@ -36,9 +36,11 @@ updates:
           - '@eslint/*'
           - 'angular-eslint'
           - 'typescript-eslint'
+      # vitest und @vitest/coverage-v8 müssen dieselbe Version haben.
       test:
         patterns:
           - 'vitest'
+          - '@vitest/*'
           - 'jsdom'
           - '@playwright/test'
       # Alle übrigen kleineren Updates in einem PR statt vieler einzelner.

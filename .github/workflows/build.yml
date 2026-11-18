@@ -37,6 +37,9 @@ jobs:
     name: Container-Image
     if: ${{ !inputs.ohne_image }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -52,6 +55,12 @@ jobs:
       - run: npm run image
       # CSP und nginx-Regeln greifen nur im Image, deshalb starten und prüfen.
       - run: npm run image:pruefen
+      - uses: mikepenz/action-junit-report@v6
+        if: ${{ !cancelled() }}
+        with:
+          report_paths: junit/image.xml
+          check_name: Ergebnisse Container-Image
+          job_summary: true
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
@@ -63,6 +72,9 @@ jobs:
     name: Unit-Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -70,11 +82,53 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Mit Abdeckung (ohne Mindestwert) und JUnit, siehe Konfiguration ci in angular.json.
       - run: npm run test:ci
+      - id: abdeckung
+        name: Abdeckung zusammenfassen
+        if: ${{ !cancelled() }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const datei = "coverage/Haushaltsbuch-Frontend/coverage-summary.json";
+            let text = "Keine Abdeckung gemessen.";
+            if (fs.existsSync(datei)) {
+              const { total } = JSON.parse(fs.readFileSync(datei, "utf8"));
+              const zeile = (name, { pct, covered, total }) => `| ${name} | ${pct.toLocaleString("de-DE")} % | ${covered} / ${total} |`;
+              text = [
+                "**Abdeckung**",
+                "",
+                "| | Anteil | Abgedeckt |",
+                "|---|---:|---:|",
+                zeile("Anweisungen", total.statements),
+                zeile("Zweige", total.branches),
+                zeile("Funktionen", total.functions),
+                zeile("Zeilen", total.lines),
+              ].join("\n");
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `tabelle<<ENDE\n${text}\nENDE\n`);
+          '
+      - uses: mikepenz/action-junit-report@v6
+        if: ${{ !cancelled() }}
+        with:
+          report_paths: junit/unit.xml
+          check_name: Ergebnisse Unit-Tests
+          summary: ${{ steps.abdeckung.outputs.tabelle }}
+          job_summary: true
+          job_summary_text: ${{ steps.abdeckung.outputs.tabelle }}
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: abdeckung
+          path: coverage/
+          retention-days: 14
 
   e2e:
     name: E2E-Tests (${{ matrix.browser }} ${{ matrix.teil }}/${{ matrix.teile }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     timeout-minutes: 15
     # Jeder Job ist ein eigener Runner. Firefox ist am langsamsten, deshalb auf zwei Jobs verteilt.
     strategy:
@@ -95,6 +149,15 @@ jobs:
       - run: npx playwright install --with-deps ${{ matrix.browser }}
         timeout-minutes: 5
       - run: npm run e2e -- --project=${{ matrix.browser }} --shard=${{ matrix.teil }}/${{ matrix.teile }}
+      # Je Teil ein eigener Check; Wiederholungen, die bestehen, zählen nicht als Fehlschlag.
+      - uses: mikepenz/action-junit-report@v6
+        if: ${{ !cancelled() }}
+        with:
+          report_paths: junit/e2e.xml
+          check_name: Ergebnisse E2E ${{ matrix.browser }} ${{ matrix.teil }}/${{ matrix.teile }}
+          check_retries: true
+          flaky_summary: true
+          job_summary: true
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

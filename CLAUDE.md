@@ -12,7 +12,7 @@ npm start              # dev server on :4200, proxies the same paths as nginx to
 npm run build          # production build (budgets: initial 500 kB warning)
 npm run lint           # ESLint incl. angular-eslint template + accessibility rules
 npm run format:check   # Prettier; npm run format to fix (ng add/generate may reformat angular.json)
-npm run test:ci        # Vitest unit tests once (npm test = watch)
+npm run test:ci        # Vitest unit tests once, with coverage and JUnit as in CI (npm test = watch)
 npm run e2e            # Playwright (Chromium, Firefox), backend simulated in the browser (e2e/backend-mock.ts)
 npm run image:pruefen  # start the built image (npm run image) and check CSP, headers and nginx routes
 npm run api:typen      # regenerate core/api/api.generated.ts from ../Haushaltsbuch-Backend/docs/openapi.json
