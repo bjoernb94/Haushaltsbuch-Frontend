@@ -1,0 +1,109 @@
+<form
+  #formularElement
+  class="formular"
+  [class.knoepfe-ab-901]="knoepfe() === 'ab-901'"
+  [class.ohne-knoepfe]="knoepfe() === 'nie'"
+  [attr.id]="formularId()"
+  [attr.aria-label]="name() && name() + ' bearbeiten'"
+  [formGroup]="formular"
+  (ngSubmit)="absenden()"
+  novalidate
+>
+  <app-tabliste
+    #tabliste
+    [tabs]="tabs()"
+    [aktiv]="tab()"
+    [label]="vertrag() ? 'Bereiche des Vertrags bearbeiten' : 'Bereiche des Vertrags'"
+    [idPrefix]="id('tab')"
+    [panelId]="id('tabpanel')"
+    (waehlen)="tabWaehlen($event)"
+  />
+
+  @if (hinweis(); as text) {
+    <div class="hinweis" tabindex="-1">
+      <app-hinweis-box [text]="text" />
+    </div>
+  }
+
+  <div
+    class="tabpanel"
+    role="tabpanel"
+    tabindex="-1"
+    [id]="id('tabpanel')"
+    [attr.aria-labelledby]="tabliste.tabId(tab())"
+  >
+    <app-vertrag-tab-allgemein
+      [hidden]="tab() !== 'allgemein'"
+      [idPrefix]="idPrefix"
+      [fehler]="feldFehler()"
+      [kategorien]="kategorien()"
+    />
+    <app-vertrag-tab-kosten
+      [hidden]="tab() !== 'kosten'"
+      [idPrefix]="idPrefix"
+      [fehler]="feldFehler()"
+      [einmalkosten]="formular.controls.einmalkosten"
+      [waehrung]="waehrung()"
+      [werte]="werte()"
+      [vorschau]="vorschau()"
+      (hinzufuegen)="einmalkostenHinzufuegen()"
+      (entfernen)="einmalkostenEntfernen($event)"
+      (geaendert)="einmalkostenGeaendert($event.index, $event.feld)"
+    />
+    <app-vertrag-tab-laufzeit
+      [hidden]="tab() !== 'laufzeit'"
+      [idPrefix]="idPrefix"
+      [fehler]="feldFehler()"
+      [gespeicherteFrist]="vertrag()?.kuendigungsfristMonate"
+      [nichtKuendbar]="nichtKuendbar()"
+      [gekuendigt]="gekuendigt()"
+      [vorschau]="vorschau()"
+    />
+    <app-vertrag-tab-preise
+      [hidden]="tab() !== 'preise'"
+      [idPrefix]="idPrefix"
+      [fehler]="feldFehler()"
+      [preise]="formular.controls.preise"
+      [waehrung]="waehrung()"
+      [waehrungName]="waehrungName()"
+      [werte]="werte()"
+      [vorschau]="vorschau()"
+      (hinzufuegen)="preisHinzufuegen()"
+      (entfernen)="preisEntfernen($event)"
+      (geaendert)="preisGeaendert($event.index, $event.feld)"
+    />
+  </div>
+
+  <div class="aktionen">
+    @if (vertrag()) {
+      <ng-container [ngTemplateOutlet]="speichernKnopf" />
+      <ng-container [ngTemplateOutlet]="abbrechenKnopf" />
+    } @else {
+      <ng-container [ngTemplateOutlet]="abbrechenKnopf" />
+      <ng-container [ngTemplateOutlet]="speichernKnopf" />
+    }
+  </div>
+</form>
+
+@if (zusammenfassung()) {
+  <app-vertrag-zusammenfassung [uebersicht]="uebersicht()" />
+}
+
+<ng-template #abbrechenKnopf>
+  <button class="knopf knopf-abbrechen" type="button" (click)="abbrechen.emit()">Abbrechen</button>
+</ng-template>
+
+<ng-template #speichernKnopf>
+  <button
+    class="knopf knopf-primaer"
+    type="submit"
+    [disabled]="sendet()"
+    [attr.aria-busy]="sendet()"
+  >
+    @if (sendet()) {
+      Wird gespeichert …
+    } @else {
+      {{ vertrag() ? 'Speichern' : 'Vertrag speichern' }}
+    }
+  </button>
+</ng-template>

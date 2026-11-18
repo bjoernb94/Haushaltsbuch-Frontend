@@ -1,0 +1,165 @@
+@use '../../../../shared/zustaende/zustaende';
+@use '../../../../shared/layout/raender';
+@use 'masse' as *;
+
+@include zustaende.laedt;
+@include zustaende.fehler;
+
+// Bis 900 px Vollbild, das von unten hereinfährt.
+.sheet {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  background: var(--app-grund);
+  color: var(--app-text);
+  animation: herauf 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  &:not([open]) {
+    display: none;
+  }
+
+  &::backdrop {
+    background: var(--app-abdunkeln);
+  }
+}
+
+.leiste {
+  flex: none;
+  display: grid;
+  // Titel in 18 px zwischen den Knöpfen passt bei 390 px nur mit engen Knöpfen und Lücke (wie im Canvas).
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: $abstand-1;
+  min-height: 52px;
+  box-sizing: border-box;
+  padding: calc(#{$abstand-1} + env(safe-area-inset-top)) $abstand-2 $abstand-1;
+  border-bottom: 1px solid var(--app-trenner);
+  background: var(--app-flaeche);
+
+  h2 {
+    max-width: 52vw;
+    margin: 0;
+    overflow: hidden;
+    font-size: $schrift-abschnitt;
+    font-weight: 800;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.leiste-knopf {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 $abstand-2;
+  border: 0;
+  border-radius: $radius-feld;
+  background: transparent;
+  color: var(--app-gruen);
+  font: inherit;
+  font-size: $schrift-eingabe;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: -3px;
+  }
+
+  &:disabled {
+    color: var(--app-platzhalter);
+    cursor: default;
+  }
+}
+
+.sichern {
+  justify-self: end;
+  font-weight: 800;
+}
+
+.inhalt {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: $abstand-4 raender.$handy calc(#{$abstand-8} + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-4;
+
+  > * {
+    flex-shrink: 0;
+  }
+}
+
+.name {
+  margin: 0;
+  font-size: $schrift-text;
+  font-weight: 700;
+  color: var(--app-text-gedaempft);
+  overflow-wrap: anywhere;
+}
+
+.knopf-sekundaer {
+  min-height: 44px;
+  padding: 0 $abstand-5;
+  border: 1.5px solid var(--app-gruen);
+  border-radius: $radius-feld;
+  background: var(--app-flaeche);
+  color: var(--app-gruen);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+// Am Desktop in der Fenstermitte, die Seite dahinter abgedunkelt.
+@media (min-width: 901px) {
+  .sheet {
+    inset: 4vh max(24px, calc(50% - 400px)) auto;
+    height: 92vh;
+    overflow: hidden;
+    border-radius: $radius-karte;
+    box-shadow: 0 24px 64px var(--app-schatten-sheet);
+    animation: einblenden 0.22s ease-out;
+  }
+
+  .inhalt {
+    padding: $abstand-5 $abstand-6 $abstand-8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}
+
+@keyframes herauf {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes einblenden {
+  from {
+    transform: translateY(-24px);
+    opacity: 0;
+  }
+
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}

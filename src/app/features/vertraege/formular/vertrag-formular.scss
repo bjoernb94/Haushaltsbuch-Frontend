@@ -1,0 +1,70 @@
+@use '../../../shared/formular/formular';
+@use 'masse' as *;
+
+@include formular.knoepfe;
+
+// Formular und Zusammenfassung nebeneinander, die Zusammenfassung bricht nicht um, sondern fehlt bis
+// 900 px (wie im Design).
+:host {
+  display: flex;
+  align-items: flex-start;
+  gap: $abstand-5;
+}
+
+.formular {
+  flex: 999 1 480px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-5;
+  padding: $abstand-6 $abstand-5;
+  border: 1px solid var(--app-trenner);
+  border-radius: $radius-gross;
+  background: var(--app-flaeche);
+}
+
+.hinweis:focus {
+  outline: none;
+}
+
+.aktionen {
+  flex-wrap: wrap-reverse;
+  padding-top: $abstand-1;
+}
+
+.ohne-knoepfe .aktionen {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .knoepfe-ab-901 .aktionen {
+    display: none;
+  }
+
+  // Ohne Karte: Felder und Tabs nutzen die Ränder der Seite bzw. des Sheets, wie unter iOS.
+  .formular {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+}
+
+.knopf {
+  flex-basis: 180px;
+  height: 52px;
+}
+
+.knopf-abbrechen {
+  border-color: var(--app-rand);
+  background: var(--app-flaeche);
+  color: var(--app-text);
+
+  &:hover {
+    border-color: var(--app-text-gedaempft);
+  }
+}
+
+.tabpanel:focus {
+  outline: none;
+}

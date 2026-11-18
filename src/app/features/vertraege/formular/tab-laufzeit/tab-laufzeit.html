@@ -1,0 +1,117 @@
+<fieldset>
+  <legend>Laufzeit und Kündigung</legend>
+  <div class="ankreuzen">
+    <input
+      [id]="id('nichtKuendbar')"
+      type="checkbox"
+      formControlName="nichtKuendbar"
+      [attr.aria-describedby]="id('nichtKuendbar') + '-hinweis'"
+    />
+    <div>
+      <label [for]="id('nichtKuendbar')">Nicht kündbar</label>
+      <span class="feldhinweis" [id]="id('nichtKuendbar') + '-hinweis'"
+        >Für Pflichtbeiträge wie den Rundfunkbeitrag. Verlängerung und Kündigungsfrist werden dann
+        ausgeblendet; das Laufzeitende bleibt.</span
+      >
+    </div>
+  </div>
+  <div class="raster">
+    <div class="feld">
+      <label [for]="id('laufzeitende')"
+        >Laufzeitende <span class="optional">(optional)</span></label
+      >
+      <input
+        [id]="id('laufzeitende')"
+        type="date"
+        formControlName="laufzeitende"
+        [attr.aria-invalid]="!!fehlerText('laufzeitende')"
+        [attr.aria-describedby]="beschreibung('laufzeitende')"
+      />
+      @if (fehlerText('laufzeitende'); as text) {
+        <p class="feldfehler" [id]="id('laufzeitende') + '-fehler'">{{ text }}</p>
+      }
+    </div>
+  </div>
+  @if (!nichtKuendbar()) {
+    <div class="raster">
+      <div class="feld">
+        <label [for]="id('verlaengerung')">Verlängerung</label>
+        <select
+          [id]="id('verlaengerung')"
+          formControlName="verlaengerung"
+          [attr.aria-invalid]="!!fehlerText('verlaengerung')"
+          [attr.aria-describedby]="beschreibung('verlaengerung')"
+        >
+          <option value="">Bitte wählen</option>
+          @for (option of verlaengerungen; track option.wert) {
+            <option [value]="option.wert">{{ option.text }}</option>
+          }
+        </select>
+        @if (fehlerText('verlaengerung'); as text) {
+          <p class="feldfehler" [id]="id('verlaengerung') + '-fehler'">{{ text }}</p>
+        }
+      </div>
+      <div class="feld">
+        <label [for]="id('kuendigungsfristMonate')">Kündigungsfrist</label>
+        <select
+          [id]="id('kuendigungsfristMonate')"
+          formControlName="kuendigungsfristMonate"
+          [attr.aria-invalid]="!!fehlerText('kuendigungsfristMonate')"
+          [attr.aria-describedby]="beschreibung('kuendigungsfristMonate')"
+        >
+          <option value="">Bitte wählen</option>
+          @for (option of fristen(); track option.wert) {
+            <option [value]="option.wert">{{ option.text }}</option>
+          }
+        </select>
+        @if (fehlerText('kuendigungsfristMonate'); as text) {
+          <p class="feldfehler" [id]="id('kuendigungsfristMonate') + '-fehler'">
+            {{ text }}
+          </p>
+        }
+      </div>
+    </div>
+    <div class="vorschau" role="status">
+      <b>Nächster Kündigungstermin:</b>
+      <span>{{ vorschauText() }}</span>
+    </div>
+  }
+</fieldset>
+
+<fieldset>
+  <legend>Status</legend>
+  <div class="raster">
+    <div class="ankreuzen">
+      <input
+        [id]="id('gekuendigt')"
+        type="checkbox"
+        formControlName="gekuendigt"
+        [attr.aria-describedby]="id('gekuendigt') + '-hinweis'"
+      />
+      <div>
+        <label [for]="id('gekuendigt')">Gekündigt</label>
+        <span class="feldhinweis" [id]="id('gekuendigt') + '-hinweis'"
+          >Bis zum Kündigungsdatum gilt der Vertrag als gekündigt, danach als beendet.</span
+        >
+      </div>
+    </div>
+    @if (gekuendigt()) {
+      <div class="feld">
+        <label [for]="id('gekuendigtZum')">Gekündigt zum *</label>
+        <input
+          [id]="id('gekuendigtZum')"
+          type="date"
+          formControlName="gekuendigtZum"
+          [attr.aria-invalid]="!!fehlerText('gekuendigtZum')"
+          [attr.aria-describedby]="beschreibung('gekuendigtZum', id('gekuendigtZum') + '-hinweis')"
+        />
+        <span class="feldhinweis" [id]="id('gekuendigtZum') + '-hinweis'"
+          >Ein vergangenes Datum erfasst einen bereits beendeten Vertrag.</span
+        >
+        @if (fehlerText('gekuendigtZum'); as text) {
+          <p class="feldfehler" [id]="id('gekuendigtZum') + '-fehler'">{{ text }}</p>
+        }
+      </div>
+    }
+  </div>
+</fieldset>

@@ -1,0 +1,311 @@
+@use '../../../../shared/format/kuerzen';
+@use 'masse' as *;
+
+:host {
+  display: block;
+
+  &:not(:first-child) .zeile {
+    border-top: 1px solid var(--app-trenner-innen);
+  }
+
+  // Das offene Menü liegt über den folgenden Zeilen.
+  &:has(.menue) {
+    position: relative;
+    z-index: 3;
+  }
+}
+
+// Über die Ränder der Liste hinaus, damit die Markierung der offenen Zeile Luft hat.
+.zeile {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $abstand-3 $abstand-5;
+  margin: 0 -#{$abstand-3};
+  padding: $abstand-4 $abstand-3;
+  border-radius: $radius-feld;
+  scroll-margin: $abstand-4 0;
+
+  // Oben die Werkzeugleiste, unten bis 900 px die Tab-Leiste.
+  @media (min-width: 901px) {
+    scroll-margin-top: 84px;
+
+    &:hover {
+      background-color: var(--app-zeile-hover);
+    }
+
+    &.offen {
+      background-color: var(--app-gruen-hell);
+    }
+  }
+
+  @media (max-width: 900px) {
+    padding-right: $abstand-10;
+    scroll-margin-bottom: 84px;
+  }
+}
+
+:host(:not(:first-child)) .zeile {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+// Die ganze Zeile ist der Knopf für die Details; „…“ und Meldung liegen darüber.
+.tippen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: -3px;
+  }
+}
+
+.pfeil {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  color: var(--app-platzhalter);
+
+  @media (max-width: 900px) {
+    display: flex;
+  }
+}
+
+.mehr {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--app-rand);
+  border-radius: $radius-mittel;
+  background: var(--app-flaeche);
+  color: var(--app-text);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.6;
+  }
+
+  @media (min-width: 901px) {
+    display: inline-flex;
+  }
+}
+
+.hintergrund {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.menue {
+  position: absolute;
+  top: calc(50% + 22px);
+  right: 12px;
+  z-index: 31;
+  min-width: 220px;
+  box-sizing: border-box;
+  padding: $abstand-2;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--app-trenner);
+  border-radius: $radius-feld;
+  background: var(--app-flaeche);
+  box-shadow: 0 12px 32px var(--app-schatten-menue);
+}
+
+.eintrag {
+  min-height: 32px;
+  padding: 0 $abstand-3;
+  border: 0;
+  border-radius: $radius-mittel;
+  background: transparent;
+  color: var(--app-text);
+  font: inherit;
+  font-size: $schrift-beschriftung;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    background: var(--app-gruen);
+    color: var(--app-flaeche);
+  }
+
+  &.gefahr {
+    color: var(--app-fehler);
+
+    &:hover,
+    &:focus-visible {
+      background: var(--app-fehler);
+      color: var(--app-flaeche);
+    }
+  }
+}
+
+.menue .trenner {
+  height: 1px;
+  margin: $abstand-1 $abstand-2;
+  background: var(--app-trenner-innen);
+}
+
+.angaben {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-1;
+  overflow-wrap: anywhere;
+}
+
+.name,
+.betrag {
+  font-size: $schrift-eingabe;
+  font-weight: 800;
+}
+
+// Der volle Text steht in den Details.
+.name {
+  @include kuerzen.zeilen(2);
+}
+
+.meta,
+.notiz {
+  @include kuerzen.zeilen(1);
+}
+
+// Abgeblendet über die Farbe: Deckkraft 0,75 läge bei gedämpftem Text unter 4,5:1.
+.beendet {
+  .name,
+  .betrag {
+    color: var(--app-text-gedaempft);
+  }
+}
+
+.meta,
+.klein,
+.zusatz,
+.notiz {
+  color: var(--app-text-gedaempft);
+}
+
+.meta {
+  font-size: $schrift-beschriftung;
+}
+
+.notiz {
+  font-size: $schrift-hinweis;
+  font-style: italic;
+}
+
+.kosten {
+  flex: 0 0 180px;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-halb;
+}
+
+.klein {
+  font-size: $schrift-hinweis;
+}
+
+.kuendigung {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $abstand-1;
+}
+
+.kuendigung-titel {
+  font-size: $schrift-klein;
+  color: var(--app-text-gedaempft);
+}
+
+.badge {
+  padding: $abstand-1 $abstand-3;
+  border-radius: $radius-pille;
+  font-size: $schrift-hinweis;
+  font-weight: 700;
+}
+
+.ton-warnung {
+  background: var(--app-hinweis-grund);
+  color: var(--app-hinweis-text);
+}
+
+.ton-ok {
+  background: var(--app-gruen-hell);
+  color: var(--app-gruen-dunkel);
+}
+
+.ton-info {
+  background: var(--app-info-grund);
+  color: var(--app-info-text);
+}
+
+.ton-neutral {
+  background: var(--app-grund);
+  color: var(--app-text-gedaempft);
+}
+
+.zusatz {
+  font-size: $schrift-hinweis;
+  line-height: 1.4;
+}
+
+.meldung {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 100%;
+
+  &.unten {
+    order: 1;
+  }
+
+  // Zusammen mit dem Abstand der Zeile (12px) wie der Trenner zwischen zwei Verträgen.
+  &.abgesetzt:not(.unten) {
+    margin-bottom: $abstand-1;
+    padding-bottom: $abstand-4;
+    border-bottom: 1px solid var(--app-trenner-innen);
+  }
+
+  &.abgesetzt.unten {
+    margin-top: $abstand-1;
+    padding-top: $abstand-4;
+    border-top: 1px solid var(--app-trenner-innen);
+  }
+
+  &:focus {
+    outline: none;
+  }
+}

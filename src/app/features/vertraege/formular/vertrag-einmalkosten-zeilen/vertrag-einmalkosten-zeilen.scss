@@ -1,0 +1,18 @@
+@use '../zeilen';
+@use 'masse' as *;
+
+@include zeilen.grundlage;
+
+.zeilen {
+  @include zeilen.liste;
+}
+
+.zeile {
+  @include zeilen.zeile;
+}
+
+.summe {
+  margin: 0;
+  font-size: $schrift-beschriftung;
+  font-weight: 700;
+}

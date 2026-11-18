@@ -247,7 +247,12 @@ src/app/
     einstellungen/ Systemstatus, Version und Umgebung, rechtliche Links (über das Kontomenü)
     rechtliches/ Impressum und Datenschutz, mit und ohne Session erreichbar
     start/       Startseite nach der Anmeldung
-    vertraege/   je ein Backend-Modul; weitere kommen mit ihren Seiten dazu
+    vertraege/   je ein Backend-Modul (weitere kommen mit ihren Seiten dazu), nach Bereich gegliedert:
+      liste/       Seite mit Kennzahlen und Liste, Zeile, Chips, Navigation der Kind-Routen
+      details/     Details mit Preisen, Preisverlauf und Einmalkosten
+      formular/    Formular mit je einer Komponente pro Tab, Prüfung, Neuer Vertrag, Bearbeiten
+                   und die Bausteine der Tabs (Preisliste, Einmalkosten, Preissteigerung, Zusammenfassung)
+                   oben: Service, Routen und vertrag-texte.ts
   shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, fusszeile/,
                herkunft/, hinweis-box/, in-den-blick/, kopfzeile/, layout/, logo/, nutzermenue/,
                rechtliche-links/, rundungshinweis/, seitenaktionen/, systemstatus-leiste/, tabliste/,
@@ -257,6 +262,26 @@ src/app/
                und behält die Kopfzeile
 src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile
 ```
+
+## Fachbereich anlegen
+
+Ein neuer Bereich (z.&nbsp;B. Finanzübersicht) folgt dem Muster von `features/vertraege/`:
+
+- [ ] **Design:** Desktop- und 390-px-Artboards im [Canvas](https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx)
+      sind fertig, neue Farben oder Bausteine stehen zuerst im Design System.
+- [ ] **Ordner:** `features/<modul>/` wie das Backend-Modul, darin oben Service, Routen und Texte, darunter
+      ein Unterordner je Bereich der Oberfläche (`liste/`, `details/`, `formular/`), nicht je Schicht. Keine Datei
+      über 400 Zeilen: große Formulare je Tab aufteilen, Navigation oder Hilfsfunktionen in eigene Dateien.
+- [ ] **Service ohne Daten** (ADR 0018): nur Aufrufe mit `HttpClient`, die Seite lädt beim Öffnen und
+      nach Änderungen neu. Typen aus `core/api/api.ts`, nach einer API-Änderung `npm run api:typen`.
+- [ ] **Routen:** lazy in `app.routes.ts` mit `bereichGuard('<KOMPONENTE>')`, jede Route mit Seitentitel
+      (`'<Seite> – Haushaltsbuch'`), Formulare mit `ungespeichertGuard`. Seiten, zu denen „Zurück“ führen
+      kann, bekommen ihren Namen in `shared/herkunft`.
+- [ ] **Zustände:** Laden, Fehler mit „Erneut versuchen“ und leer; Fehlertexte nach `code`.
+- [ ] **Navigation:** `verfuegbar: true` in `core/komponenten`, Pfad und Icon in `shell/hauptmenue`,
+      Kachel auf der Startseite.
+- [ ] **Tests:** Unit-Tests je Seite, Endpunkte in `backendSimulieren()` (`e2e/backend-mock.ts`, eigene
+      Datei wie `e2e/vertraege-mock.ts`), E2E für Desktop und 390 px.
 
 ## Konventionen
 
