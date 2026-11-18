@@ -25,14 +25,14 @@ const ANGABEN: Instanzangaben = {
 
 describe('Impressum und Datenschutz', () => {
   const angemeldet = signal(false);
-  const stand = signal<Instanzstand>({ zustand: 'da', angaben: ANGABEN });
+  const stand = signal<Instanzstand>({ zustand: 'da', angaben: ANGABEN, quellcode: {} });
   const backend = signal<Stand | undefined>(undefined);
   const instanzLaden = vi.fn();
   const sitzungPruefen = vi.fn(() => of(false));
 
   beforeEach(async () => {
     angemeldet.set(false);
-    stand.set({ zustand: 'da', angaben: ANGABEN });
+    stand.set({ zustand: 'da', angaben: ANGABEN, quellcode: {} });
     backend.set(undefined);
     vi.clearAllMocks();
     await TestBed.configureTestingModule({
@@ -141,28 +141,74 @@ describe('Impressum und Datenschutz', () => {
       );
     });
 
-    it('zeigt Lizenz und Quellcode nur, wenn sie hinterlegt sind', async () => {
-      let element = await seite(ImpressumSeite);
-      expect(element.textContent).not.toContain('Lizenz');
-      expect(element.textContent).not.toContain('Quellcode');
+    const links = (element: HTMLElement) =>
+      [...element.querySelectorAll<HTMLAnchorElement>('dd a')].map((a) => [
+        a.textContent!.trim(),
+        a.getAttribute('href'),
+      ]);
 
-      stand.set({
-        zustand: 'da',
-        angaben: { ...ANGABEN, lizenz: 'MIT', quellcode: 'https://example.org/repo' },
-      });
-      element = await seite(ImpressumSeite);
-      expect(element.textContent).toContain('MIT');
-      expect(element.querySelector('a[href="https://example.org/repo"]')).not.toBeNull();
+    it('nennt die Lizenz und verlinkt den Quellcode auf den Stand des jeweiligen Commits', async () => {
+      backend.set({ commit: '48eaea5' });
+      expect(links(await seite(ImpressumSeite))).toEqual([
+        [
+          'GNU Affero General Public License v3.0 oder später',
+          'https://www.gnu.org/licenses/agpl-3.0.html',
+        ],
+        [
+          'github.com/bjoernb94/Haushaltsbuch-Frontend',
+          'https://github.com/bjoernb94/Haushaltsbuch-Frontend/tree/abc1234',
+        ],
+        [
+          'github.com/bjoernb94/Haushaltsbuch-Backend',
+          'https://github.com/bjoernb94/Haushaltsbuch-Backend/tree/48eaea5',
+        ],
+      ]);
     });
 
-    it('meldet fehlende Angaben, die Versionen bleiben', async () => {
-      stand.set({ zustand: 'fehlt' });
+    it('verlinkt ohne bekannten oder mit ungültigem Commit das Repo', async () => {
+      backend.set({ commit: '../main' });
+      expect(links(await seite(ImpressumSeite))[2]).toEqual([
+        'github.com/bjoernb94/Haushaltsbuch-Backend',
+        'https://github.com/bjoernb94/Haushaltsbuch-Backend',
+      ]);
+    });
+
+    it('nimmt eigene Links des Betreibers unverändert', async () => {
+      backend.set({ commit: '48eaea5' });
+      stand.set({
+        zustand: 'da',
+        angaben: ANGABEN,
+        quellcode: { backend: 'https://example.org/fork/backend' },
+      });
+      expect(links(await seite(ImpressumSeite)).slice(1)).toEqual([
+        [
+          'github.com/bjoernb94/Haushaltsbuch-Frontend',
+          'https://github.com/bjoernb94/Haushaltsbuch-Frontend/tree/abc1234',
+        ],
+        ['example.org/fork/backend', 'https://example.org/fork/backend'],
+      ]);
+    });
+
+    it('meldet fehlende Angaben, Versionen, Lizenz und Quellcode bleiben', async () => {
+      stand.set({ zustand: 'fehlt', quellcode: { frontend: 'https://example.org/fork' } });
       const element = await seite(ImpressumSeite);
       expect(element.querySelector('[role="alert"]')?.textContent).toContain(
         'keine Angaben zum Betreiber hinterlegt',
       );
       expect(element.querySelector('.stand')).toBeNull();
       expect(element.textContent).toContain('Version Frontend');
+      expect(links(element).map(([text]) => text)).toEqual([
+        'GNU Affero General Public License v3.0 oder später',
+        'example.org/fork',
+        'github.com/bjoernb94/Haushaltsbuch-Backend',
+      ]);
+    });
+
+    it('zeigt den Quellcode nicht, solange die Angaben laden', async () => {
+      stand.set({ zustand: 'laedt' });
+      const element = await seite(ImpressumSeite);
+      expect(element.textContent).toContain('Lizenz');
+      expect(element.textContent).not.toContain('Quellcode');
     });
 
     it('bietet nach einem Fehler einen neuen Versuch an', async () => {
@@ -198,12 +244,16 @@ describe('Impressum und Datenschutz', () => {
     });
 
     it('schreibt einen Tag im Singular', async () => {
-      stand.set({ zustand: 'da', angaben: { ...ANGABEN, logAufbewahrungTage: 1 } });
+      stand.set({
+        zustand: 'da',
+        angaben: { ...ANGABEN, logAufbewahrungTage: 1 },
+        quellcode: {},
+      });
       expect((await seite(DatenschutzSeite)).textContent).toContain('nach einem Tag');
     });
 
     it('zeigt ohne Angaben nur den Hinweis', async () => {
-      stand.set({ zustand: 'fehlt' });
+      stand.set({ zustand: 'fehlt', quellcode: {} });
       const element = await seite(DatenschutzSeite);
       expect(element.querySelectorAll('section')).toHaveLength(0);
       expect(element.querySelector('[role="alert"]')).not.toBeNull();

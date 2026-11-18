@@ -6,6 +6,25 @@ import { zeitpunktText } from '../../shared/format/zeitpunkt';
 import { HinweisBox } from '../../shared/hinweis-box/hinweis-box';
 import { RechtlicherRahmen } from './rechtlicher-rahmen/rechtlicher-rahmen';
 
+/** Repos dieser Anwendung; ein Fork ersetzt sie über `quellcode` in der instanz.json. */
+export const QUELLCODE = {
+  frontend: 'https://github.com/bjoernb94/Haushaltsbuch-Frontend',
+  backend: 'https://github.com/bjoernb94/Haushaltsbuch-Backend',
+};
+
+export const LIZENZ_URL = 'https://www.gnu.org/licenses/agpl-3.0.html';
+
+/**
+ * Link zum Quellcode: ein eigener des Betreibers unverändert, sonst das Repo, mit bekanntem Commit genau
+ * dieser Stand. Der Text nennt immer nur die Adresse ohne Schema.
+ */
+function quellcodeLink(standard: string, commit: string | undefined, eigener: string | undefined) {
+  const href =
+    eigener ??
+    (commit && /^[0-9a-f]{7,40}$/.test(commit) ? `${standard}/tree/${commit}` : standard);
+  return { href, text: (eigener ?? standard).replace(/^https?:\/\//, '') };
+}
+
 /** Version, Commit und Build-Zeit, soweit bekannt, z. B. „v0.1.0 · Commit 48eaea5 · Build …“. */
 function standText({ version, commit, buildZeit }: Stand, locale: string): string {
   return [
@@ -34,5 +53,20 @@ export class ImpressumSeite {
   protected readonly backend = computed(() => {
     const backend = this.version.backend();
     return backend ? standText(backend, this.locale) : 'nicht bekannt';
+  });
+
+  protected readonly lizenzUrl = LIZENZ_URL;
+
+  /** Fehlt nur beim Laden, damit ein Fork nicht kurz auf dieses Repo verweist. */
+  protected readonly quellcode = computed(() => {
+    const stand = this.instanz.stand();
+    if (stand.zustand === 'laedt') {
+      return undefined;
+    }
+    const eigener = stand.zustand === 'fehler' ? {} : stand.quellcode;
+    return {
+      frontend: quellcodeLink(QUELLCODE.frontend, this.version.frontend.commit, eigener.frontend),
+      backend: quellcodeLink(QUELLCODE.backend, this.version.backend()?.commit, eigener.backend),
+    };
   });
 }

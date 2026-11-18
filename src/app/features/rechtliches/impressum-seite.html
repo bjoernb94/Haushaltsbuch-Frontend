@@ -55,17 +55,19 @@
       <dd class="technisch">{{ frontend }}</dd>
       <dt>Version Backend</dt>
       <dd class="technisch">{{ backend() }}</dd>
-      @if (stand.zustand === 'da') {
-        @if (stand.angaben.lizenz; as lizenz) {
-          <dt>Lizenz</dt>
-          <dd>{{ lizenz }}</dd>
-        }
-        @if (stand.angaben.quellcode; as quellcode) {
-          <dt>Quellcode</dt>
-          <dd class="umbrechen">
-            <a [href]="quellcode">{{ quellcode }}</a>
-          </dd>
-        }
+      <dt>Lizenz</dt>
+      <dd>
+        <a [href]="lizenzUrl">GNU Affero General Public License v3.0 oder später</a>
+      </dd>
+      @if (quellcode(); as quellcode) {
+        <dt>Quellcode Frontend</dt>
+        <dd class="umbrechen">
+          <a [href]="quellcode.frontend.href">{{ quellcode.frontend.text }}</a>
+        </dd>
+        <dt>Quellcode Backend</dt>
+        <dd class="umbrechen">
+          <a [href]="quellcode.backend.href">{{ quellcode.backend.text }}</a>
+        </dd>
       }
       <dt>Urheber</dt>
       <dd>© Björn Bochmann</dd>
