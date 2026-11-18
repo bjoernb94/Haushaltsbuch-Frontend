@@ -246,7 +246,7 @@ export interface components {
             title?: string;
             type?: string;
         };
-        Profil: {
+        ProfilAntwort: {
             email: string;
             name: string;
             vorname: string;
@@ -586,7 +586,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Profil"];
+                    "application/json": components["schemas"]["ProfilAntwort"];
                 };
             };
             /** @description Nicht angemeldet (NICHT_ANGEMELDET). */

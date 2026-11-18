@@ -1,15 +1,15 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Profil } from '../../core/api/api';
+import { ProfilAntwort } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { Aktionen, Seitenaktionen } from '../seitenaktionen/seitenaktionen';
 import { Kopfzeile } from './kopfzeile';
 
-const MAX: Profil = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
+const MAX: ProfilAntwort = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
 
 describe('Kopfzeile', () => {
-  const nutzer = signal<Profil | null>(MAX);
+  const nutzer = signal<ProfilAntwort | null>(MAX);
 
   beforeEach(async () => {
     nutzer.set(MAX);

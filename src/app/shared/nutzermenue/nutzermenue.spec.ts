@@ -3,15 +3,15 @@ import { TestBed } from '@angular/core/testing';
 import { Location } from '@angular/common';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { Profil } from '../../core/api/api';
+import { ProfilAntwort } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
 import { istEinstellungen, Nutzermenue } from './nutzermenue';
 
-const MAX: Profil = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
+const MAX: ProfilAntwort = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
 
 describe('Nutzermenue', () => {
-  const nutzer = signal<Profil | null>(MAX);
+  const nutzer = signal<ProfilAntwort | null>(MAX);
   const abmelden = vi.fn(() => of<void>(undefined));
 
   beforeEach(async () => {
