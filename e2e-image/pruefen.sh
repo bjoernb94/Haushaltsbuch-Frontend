@@ -26,7 +26,15 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 
-if ! npx playwright test -c playwright.image.config.ts "$@"; then
+# Mit PLAYWRIGHT_IMAGE laufen die Tests in diesem Image (CI), dann braucht der Host weder Browser noch
+# deren Systempakete. Ohne laufen sie mit den lokal installierten Browsern.
+TESTS=(npx playwright test -c playwright.image.config.ts "$@")
+if [ -n "${PLAYWRIGHT_IMAGE:-}" ]; then
+  TESTS=(podman run --rm --network host --security-opt label=disable -v "$ORDNER/..:/w" -w /w \
+    -e CI -e HOME=/root "$PLAYWRIGHT_IMAGE" "${TESTS[@]}")
+fi
+
+if ! "${TESTS[@]}"; then
   podman logs "$POD-app" | tail -n 30
   exit 1
 fi
