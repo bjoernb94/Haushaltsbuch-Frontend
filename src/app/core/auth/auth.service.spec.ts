@@ -2,10 +2,10 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
-import { Profil } from '../api/api';
+import { ProfilAntwort } from '../api/api';
 import { AuthService, KOMPONENTEN_URL } from './auth.service';
 
-const MAX: Profil = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
+const MAX: ProfilAntwort = { vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' };
 
 describe('AuthService', () => {
   let auth: AuthService;

@@ -1,7 +1,7 @@
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
-import { Komponente, Profil, RegistrierungAnfrage } from '../api/api';
+import { Komponente, ProfilAntwort, RegistrierungAnfrage } from '../api/api';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
 
 export const KOMPONENTEN_URL = '/api/nutzer/ich/komponenten';
@@ -18,7 +18,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
 
   /** {@code undefined}, solange der Status noch nicht beim Backend abgefragt wurde. */
-  private readonly aktuellerNutzer = signal<Profil | null | undefined>(undefined);
+  private readonly aktuellerNutzer = signal<ProfilAntwort | null | undefined>(undefined);
 
   /** {@code null}, solange die gebuchten Komponenten nicht geladen werden konnten. */
   private readonly gebuchteKomponenten = signal<Komponente[] | null>(null);
@@ -87,7 +87,7 @@ export class AuthService {
   }
 
   private nutzerLaden(): Observable<boolean> {
-    return this.http.get<Profil>('/api/nutzer/ich', { context: OHNE_UMLEITUNG() }).pipe(
+    return this.http.get<ProfilAntwort>('/api/nutzer/ich', { context: OHNE_UMLEITUNG() }).pipe(
       tap((nutzer) => this.aktuellerNutzer.set(nutzer)),
       switchMap(() => this.komponentenLaden()),
       map(() => this.angemeldet()),
