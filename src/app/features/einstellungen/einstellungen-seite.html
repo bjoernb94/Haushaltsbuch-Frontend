@@ -21,6 +21,18 @@
     <p>Weitere Einstellungen folgen.</p>
   </div>
 
+  <section aria-labelledby="einstellungen-konto">
+    <h2 id="einstellungen-konto">Konto</h2>
+    <ul class="liste">
+      <li>
+        <a class="zeile link" routerLink="profil" [state]="unterseiteState">
+          Profil
+          <ng-container *ngTemplateOutlet="pfeil"></ng-container>
+        </a>
+      </li>
+    </ul>
+  </section>
+
   <section aria-labelledby="einstellungen-status">
     <h2 id="einstellungen-status">Systemstatus</h2>
     <ul class="liste">

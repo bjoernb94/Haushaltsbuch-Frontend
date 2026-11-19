@@ -1,0 +1,53 @@
+<a
+  class="zurueck"
+  [appZurueckLink]="zurueck.ziel"
+  [verlauf]="zurueck.verlauf ?? false"
+  [attr.aria-label]="zurueck.label"
+>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M15 18l-6-6 6-6"></path>
+  </svg>
+  Einstellungen
+</a>
+
+<div class="spalte">
+  <h1>Profil</h1>
+
+  @if (nutzer(); as profil) {
+    <div class="person">
+      <span class="initialen" aria-hidden="true">{{ initialen() }}</span>
+      <div class="angaben">
+        <span class="name">{{ profil.vorname }} {{ profil.name }}</span>
+        <span class="email">{{ profil.email }}</span>
+      </div>
+    </div>
+
+    <section aria-labelledby="profil-person">
+      <h2 id="profil-person">Persönliche Angaben</h2>
+      <dl class="liste">
+        <div class="feld">
+          <dt>Vorname</dt>
+          <dd>{{ profil.vorname }}</dd>
+        </div>
+        <div class="feld">
+          <dt>Name</dt>
+          <dd>{{ profil.name }}</dd>
+        </div>
+        <div class="feld">
+          <dt>E-Mail-Adresse</dt>
+          <dd>{{ profil.email }}</dd>
+        </div>
+      </dl>
+    </section>
+  }
+</div>

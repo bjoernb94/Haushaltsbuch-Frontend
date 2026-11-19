@@ -16,19 +16,12 @@ import { filter, map } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
 import { HERKUNFT, herkunftAus } from '../herkunft/herkunft';
+import { initialen } from './initialen';
 
 export const EINSTELLUNGEN = '/einstellungen';
 
 export function istEinstellungen(url: string): boolean {
   return /^\/einstellungen(?=[?#]|$)/.test(url);
-}
-
-/** Nutzt Graphem-Cluster, damit Akzente in zerlegter Form und Emojis ganz bleiben. */
-const ZEICHEN = new Intl.Segmenter('de', { granularity: 'grapheme' });
-
-function erstesZeichen(text: string): string {
-  const [erstes] = ZEICHEN.segment(text.trim());
-  return erstes?.segment ?? '';
 }
 
 /**
@@ -85,9 +78,7 @@ export class Nutzermenue {
 
   protected readonly initialen = computed(() => {
     const nutzer = this.nutzer();
-    return nutzer
-      ? (erstesZeichen(nutzer.vorname) + erstesZeichen(nutzer.name)).toLocaleUpperCase('de')
-      : '';
+    return nutzer ? initialen(nutzer.vorname, nutzer.name) : '';
   });
 
   constructor() {

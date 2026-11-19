@@ -52,9 +52,10 @@ export const routes: Routes = [
       },
       {
         path: 'einstellungen',
-        loadComponent: () =>
-          import('./features/einstellungen/einstellungen-seite').then((m) => m.EinstellungenSeite),
-        title: 'Einstellungen – Haushaltsbuch',
+        loadChildren: () =>
+          import('./features/einstellungen/einstellungen.routes').then(
+            (m) => m.EINSTELLUNGEN_ROUTES,
+          ),
       },
     ],
   },

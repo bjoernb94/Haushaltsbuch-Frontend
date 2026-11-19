@@ -24,6 +24,7 @@ describe('Nutzermenue', () => {
         provideRouter([
           { path: 'andere', children: [] },
           { path: 'einstellungen', children: [] },
+          { path: 'einstellungen/profil', children: [] },
         ]),
         { provide: AuthService, useValue: { nutzer, abmelden } },
       ],
@@ -200,6 +201,22 @@ describe('Nutzermenue', () => {
     erneut.click();
     await fixture.whenStable();
     expect(TestBed.inject(Location).getState()).toMatchObject({ herkunft: '/andere' });
+  });
+
+  it('markiert die Einstellungen auch auf ihren Unterseiten, die dort Herkunft sind', async () => {
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/einstellungen/profil');
+    const { element, fixture, oeffnen } = await menue();
+    await oeffnen();
+    const link = element.querySelector<HTMLAnchorElement>('a.einstellungen')!;
+    expect(link.getAttribute('aria-current')).toBe('page');
+
+    link.click();
+    await fixture.whenStable();
+    expect(router.url).toBe('/einstellungen');
+    expect(TestBed.inject(Location).getState()).toMatchObject({
+      herkunft: '/einstellungen/profil',
+    });
   });
 
   it('kennzeichnet die Variante in der Seitenleiste', async () => {

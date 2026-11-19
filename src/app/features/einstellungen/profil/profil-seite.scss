@@ -1,0 +1,80 @@
+@use 'masse' as *;
+@use '../seite';
+
+.person {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: $abstand-4;
+}
+
+// Wie die großen Initialen im Nutzermenü, nur größer (Layoutmaß).
+.initialen {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pille;
+  background: var(--app-gruen);
+  color: var(--app-flaeche);
+  font-size: $schrift-titel-gross;
+  font-weight: 800;
+}
+
+.angaben {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-halb;
+}
+
+.name {
+  font-size: $schrift-titel;
+  font-weight: 800;
+  // Zeilenhöhe fest wie im Design.
+  line-height: 1.3;
+}
+
+.email {
+  font-size: $schrift-text;
+  color: var(--app-text-gedaempft);
+  overflow-wrap: anywhere;
+}
+
+.feld {
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 $abstand-4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $abstand-4;
+  font-size: $schrift-eingabe;
+
+  dt {
+    margin: 0;
+  }
+
+  dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--app-text-gedaempft);
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  // Bis 640 px untereinander, sonst wird die E-Mail-Adresse zu schmal.
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: $abstand-halb;
+    padding: 10px $abstand-4; // 10 px wie im Design, liegt zwischen den Stufen der Skala
+
+    dd {
+      text-align: left;
+    }
+  }
+}

@@ -19,6 +19,7 @@ describe('EinstellungenSeite', () => {
       providers: [
         provideRouter([
           { path: 'einstellungen', component: EinstellungenSeite },
+          { path: 'einstellungen/profil', children: [] },
           { path: 'vertraege', children: [] },
           { path: 'start', children: [] },
           { path: 'impressum', children: [] },
@@ -75,6 +76,22 @@ describe('EinstellungenSeite', () => {
     app = zeilen(element, 'App');
     expect(app[1].querySelector('.stage')).toBeNull();
     expect(app[1].textContent).toContain('Unbekannt');
+  });
+
+  it('verlinkt im Abschnitt Konto das Profil, das im Verlauf hierher zurückkehrt', async () => {
+    const element = await seite({ herkunft: '/vertraege' });
+    const konto = zeilen(element, 'Konto');
+    expect([...konto].map((z) => z.textContent?.trim())).toEqual(['Profil']);
+    expect([...element.querySelectorAll('section h2')].map((h) => h.textContent)).toEqual([
+      'Konto',
+      'Systemstatus',
+      'App',
+      'Rechtliches',
+    ]);
+
+    konto[0].querySelector('a')!.click();
+    await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/einstellungen/profil'));
+    expect(TestBed.inject(Location).getState()).toMatchObject({ intern: true });
   });
 
   it('verlinkt Impressum und Datenschutz mit den Einstellungen als Herkunft', async () => {

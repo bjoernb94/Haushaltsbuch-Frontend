@@ -23,6 +23,7 @@ const SEITEN: Record<string, string> = {
   '/vertraege': 'Verträge',
   '/vertraege/neu': 'Neuer Vertrag',
   '/einstellungen': 'Einstellungen',
+  '/einstellungen/profil': 'Profil',
   '/impressum': 'Impressum',
   '/datenschutz': 'Datenschutz',
 };
