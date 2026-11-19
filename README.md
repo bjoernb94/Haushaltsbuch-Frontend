@@ -53,6 +53,7 @@ npm run test:ci        # Unit-Tests einmalig, mit Abdeckung (coverage/) und JUni
 npm run e2e            # E2E-Tests (Playwright) in Chromium und Firefox
 npm run image:pruefen  # gebautes Container-Image starten und prüfen (Podman)
 npm run api:typen      # API-Typen aus der OpenAPI-Beschreibung des Backends erzeugen
+npm run design:pruefen -- <Ordner>  # geladenen Canvas oder Design System gegen die Tokens prüfen
 ```
 
 Tests, CI und API-Typen beschreibt [`docs/entwicklung.md`](docs/entwicklung.md#tests-und-ci).

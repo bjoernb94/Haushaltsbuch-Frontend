@@ -71,7 +71,7 @@
     align-items: flex-start;
     justify-content: center;
     gap: $abstand-halb;
-    padding: 10px $abstand-4; // 10 px wie im Design, liegt zwischen den Stufen der Skala
+    padding: $abstand-3 $abstand-4;
 
     dd {
       text-align: left;

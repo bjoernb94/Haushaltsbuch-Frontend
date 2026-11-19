@@ -18,6 +18,7 @@ npm run test:ci        # Vitest unit tests once, with coverage and JUnit as in C
 npm run e2e            # Playwright (Chromium, Firefox), backend simulated in the browser (e2e/backend-mock.ts)
 npm run image:pruefen  # start the built image (npm run image) and check CSP, headers and nginx routes
 npm run api:typen      # regenerate core/api/api.generated.ts from ../Haushaltsbuch-Backend/docs/openapi.json
+npm run design:pruefen -- <dir>  # check a downloaded canvas or design system (<dir>/project/…) against the tokens
 ```
 
 Playwright reuses a dev server already running on :4200. If that server predates moved/renamed files it may
@@ -116,6 +117,11 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   of the design system "Haushaltsbuch" (https://claude.ai/artifact/1mDWVeKNzU1Mp3Co6TFD7H) with the same names; a
   new colour or building block goes there first. `--app-trenner` frames an area, `--app-trenner-innen` separates
   inside it.
+- Canvas and design system use colours only as `var(--app-…, <token value>)` (the canvas provides the design
+  system's tokens as CSS variables; the colour picker writes them so; SVG colours via `style`, not attributes) and
+  sizes only from the scales. After every change to the canvas or the design system, download the changed state
+  (Artifact `read` with `paths`/`out_dir`, keeping `project/`) and run `npm run design:pruefen -- <dir>`; it also
+  checks that `styles.scss` and `_masse.scss` match the tokens. The CI cannot load the canvas.
 
 ## Conventions
 

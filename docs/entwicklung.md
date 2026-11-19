@@ -206,6 +206,12 @@ im Backend.
   [Design Systems „Haushaltsbuch“](https://claude.ai/artifact/1mDWVeKNzU1Mp3Co6TFD7H), mit denselben
   Namen; eine neue Farbe oder ein neuer Baustein kommt zuerst dorthin. Weicht der Code bewusst ab, wird
   erst das Artboard angepasst oder die Abweichung am Issue festgehalten.
+- **Canvas und Design System prüfen:** Im Canvas stehen Farben nur als `var(--app-…, <Wert>)`: Der Canvas stellt
+  die Tokens des Design Systems als CSS-Variablen bereit, und sein Farbwähler schreibt sie so. Farben von SVGs
+  stehen dafür in `style`, nicht in Attributen wie `stroke="…"`. Abstände, Radien und Schriftgrößen kommen nur aus
+  den Skalen. Nach jeder Änderung am Canvas oder am Design System den geänderten Stand laden (Ordner mit
+  `project/`) und `npm run design:pruefen -- <Ordner>` ausführen; das Skript prüft auch, dass `styles.scss` und
+  `_masse.scss` zu den Tokens passen. In der CI läuft es nicht, weil sie den Canvas nicht laden kann.
 - **Maße nur aus den Skalen:** Schriftgrößen, Radien und Abstände (`gap`, `padding`, `margin`) kommen aus
   `src/styles/_masse.scss` (`@use 'masse' as *;`) und heißen wie im Design System: `$abstand-1` bis
   `$abstand-12` (Zahl × 4 px) und `$abstand-halb`, `$radius-klein` bis `$radius-pille`, `$schrift-klein` bis
