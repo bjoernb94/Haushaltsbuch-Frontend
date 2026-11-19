@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-/** Meldung über einem Formular: Fehler (rot) oder Info (grün). */
+/**
+ * Meldung über einem Formular: Fehler (rot), Info (grün, z. B. „gespeichert“) oder Hinweis (blau), etwa
+ * wenn sich der Stand inzwischen geändert hat und neu geladen wurde.
+ */
 @Component({
   selector: 'app-hinweis-box',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -9,5 +12,5 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 })
 export class HinweisBox {
   readonly text = input.required<string>();
-  readonly art = input<'fehler' | 'info'>('fehler');
+  readonly art = input<'fehler' | 'info' | 'hinweis'>('fehler');
 }

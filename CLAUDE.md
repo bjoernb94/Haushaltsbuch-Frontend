@@ -63,6 +63,8 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   shows booked areas only, not yet available ones (`verfuegbar` in `core/komponenten`) without a link;
   `bereichGuard` sends everything else to `/start`. A failed load keeps the user logged in, the shell then shows a
   hint with "Erneut versuchen". 403 `KEIN_ZUGRIFF` reloads them in `authInterceptor` and goes to `/start`.
+  `/einstellungen/komponenten` loads them itself with their `version` and changes them via `PUT` (409
+  `KONFLIKT`: reload, hint); after saving it calls `komponentenLaden()` so navigation and start page follow.
 - System status: `systemstatusBeobachten()` (injection context) polls `/actuator/health/systemstatus` every
   30 s. No answer within 5 s (e.g. while the DB check waits for the pool) → all three services count as
   unreachable (reveals nothing about the setup); a 503 still carries the component status. The last known
@@ -88,10 +90,10 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   `ungespeichertGuard` (`canDeactivate`) on routes with a form, `bestaetigen()` for anything else that leaves or
   closes one (logout must ask before the session ends). Redirects that must happen (401, 403) and a successful save
   call `vergessen()` first. Tab close and reload only get the browser's own dialog.
-- Settings subpages (`/einstellungen/profil`, routes in `einstellungen.routes.ts`) are not part of the settings
-  for `herkunft`: their "Zurück" always leads to `/einstellungen` via `zurueckZuEinstellungen()`, going back in
-  history (`shared/zurueck-link`) when the settings opened them (state `intern`), so the settings keep their
-  own origin.
+- Settings subpages (`/einstellungen/profil`, `/einstellungen/komponenten`, routes in `einstellungen.routes.ts`)
+  are not part of the settings for `herkunft`: their "Zurück" always leads to `/einstellungen` via
+  `zurueckZuEinstellungen()`, going back in history (`shared/zurueck-link`) when the settings opened them (state
+  `intern`), so the settings keep their own origin.
 - Contracts: details (`/vertraege/:id`, tab in `?tab=`) and editing (`/vertraege/:id/bearbeiten`) are child
   routes of the list page, which loads the data and hands it down; desktop: panel next to the list and a modal
   sheet (native `dialog`), up to 900 px full screen. Closing goes back in history when the page opened the entry

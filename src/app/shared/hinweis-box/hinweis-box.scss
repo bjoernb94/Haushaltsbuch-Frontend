@@ -28,4 +28,14 @@
       color: var(--app-erfolg);
     }
   }
+
+  &.hinweis {
+    background: var(--app-info-grund);
+    border-color: var(--app-trenner-innen);
+    color: var(--app-info-text);
+
+    svg {
+      color: var(--app-info-text);
+    }
+  }
 }

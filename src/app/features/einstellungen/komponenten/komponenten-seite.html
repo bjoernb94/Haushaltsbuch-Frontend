@@ -1,0 +1,107 @@
+<a
+  class="zurueck"
+  [appZurueckLink]="zurueck.ziel"
+  [verlauf]="zurueck.verlauf ?? false"
+  [attr.aria-label]="zurueck.label"
+>
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M15 18l-6-6 6-6"></path>
+  </svg>
+  Einstellungen
+</a>
+
+<div class="spalte">
+  @if (erfolg()) {
+    <app-hinweis-box text="Deine Komponenten wurden gespeichert." art="info" />
+  }
+
+  <div class="titel">
+    <h1>Komponenten</h1>
+    <p>
+      Wähle, welche Bereiche im Haushaltsbuch angezeigt werden. Mindestens eine Komponente muss
+      aktiv sein. Deine Daten bleiben erhalten, wenn du eine Komponente ausschaltest.
+    </p>
+  </div>
+
+  @switch (zustand()) {
+    @case ('laedt') {
+      <p class="laedt" role="status">Wird geladen …</p>
+    }
+    @case ('fehler') {
+      <div class="fehler">
+        <app-hinweis-box text="Deine Komponenten konnten nicht geladen werden." />
+        <button type="button" class="knopf knopf-sekundaer" (click)="laden()">
+          Erneut versuchen
+        </button>
+      </div>
+    }
+    @case ('da') {
+      <form novalidate (submit)="speichern($event)">
+        <fieldset>
+          <legend>{{ anzahl() }} von {{ komponenten.length }} aktiv</legend>
+
+          @if (meldungText(); as text) {
+            <app-hinweis-box
+              [text]="text"
+              [art]="meldung() === 'konflikt' ? 'hinweis' : 'fehler'"
+            />
+          }
+
+          <ul class="liste" [class.ungueltig]="meldung() === 'leer'">
+            @for (komponente of komponenten; track komponente.wert) {
+              <li>
+                <label class="zeile">
+                  <span class="angaben">
+                    <span class="titel-komponente">{{ komponente.titel }}</span>
+                    <span class="text">{{ komponente.text }}</span>
+                  </span>
+                  <input
+                    class="schalter"
+                    type="checkbox"
+                    role="switch"
+                    [checked]="auswahl().has(komponente.wert)"
+                    [attr.aria-invalid]="meldung() === 'leer'"
+                    (change)="umschalten(komponente.wert)"
+                  />
+                </label>
+              </li>
+            }
+          </ul>
+        </fieldset>
+
+        <div class="aktionen">
+          <button
+            type="button"
+            class="knopf knopf-verwerfen"
+            [disabled]="!geaendert() || sendet()"
+            (click)="verwerfen()"
+          >
+            Änderungen verwerfen
+          </button>
+          <button
+            type="submit"
+            class="knopf knopf-primaer"
+            [disabled]="!geaendert() || sendet()"
+            [attr.aria-busy]="sendet()"
+          >
+            @if (sendet()) {
+              Wird gespeichert …
+            } @else {
+              Speichern
+            }
+          </button>
+        </div>
+      </form>
+    }
+  }
+</div>
