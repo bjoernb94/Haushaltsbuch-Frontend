@@ -76,7 +76,7 @@ describe('authInterceptor', () => {
 
       expect(fehler).toBeDefined();
       expect(zurStartseite).not.toHaveBeenCalled();
-      backend.expectOne(KOMPONENTEN_URL).flush(['PORTFOLIO']);
+      backend.expectOne(KOMPONENTEN_URL).flush({ komponenten: ['PORTFOLIO'], version: 0 });
 
       expect(TestBed.inject(AuthService).komponenten()).toEqual(['PORTFOLIO']);
       expect(zurStartseite).toHaveBeenCalledWith('/start');

@@ -1,7 +1,7 @@
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
-import { Komponente, ProfilAntwort, RegistrierungAnfrage } from '../api/api';
+import { Komponente, KomponentenAntwort, ProfilAntwort, RegistrierungAnfrage } from '../api/api';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
 
 export const KOMPONENTEN_URL = '/api/nutzer/ich/komponenten';
@@ -71,8 +71,9 @@ export class AuthService {
    * {@code komponentenFehler} ist gesetzt; ein 401 behandelt der {@code authInterceptor}.
    */
   komponentenLaden(): Observable<void> {
-    return this.http.get<Komponente[]>(KOMPONENTEN_URL).pipe(
-      map((komponenten) => this.gebuchteKomponenten.set(komponenten)),
+    // Die Version braucht nur die Seite, die die Komponenten ändert; sie lädt sie selbst.
+    return this.http.get<KomponentenAntwort>(KOMPONENTEN_URL).pipe(
+      map(({ komponenten }) => this.gebuchteKomponenten.set(komponenten)),
       catchError(() => {
         this.gebuchteKomponenten.set(null);
         return of(undefined);
