@@ -32,42 +32,9 @@
 
 // Beispielwerte der noch nicht verfügbaren Bereiche.
 
-.kennzahlen {
-  display: grid;
-  gap: $abstand-3;
-
-  &.drei {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  }
-}
-
-.plus {
-  color: var(--app-gruen);
-}
-
-.minus {
-  color: var(--app-ausgabe);
-}
-
 .liste {
   display: flex;
   flex-direction: column;
-}
-
-// Füllt die Kachel, wenn die Kachel daneben höher ist.
-.fuellend {
-  flex: 1;
-
-  .zeile {
-    flex: 1;
-    align-items: center;
-  }
-}
-
-.ueberschrift {
-  padding-bottom: $abstand-2;
-  font-size: $schrift-hinweis;
-  font-weight: 700;
 }
 
 .zeile {

@@ -43,6 +43,43 @@ test('ohne geladene Komponenten bleibt nur der Hinweis', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 2 })).toHaveCount(0);
 });
 
+test.describe('Finanzübersicht', () => {
+  const finanzen = (page: Page) => page.getByRole('region', { name: 'Finanzübersicht' });
+
+  test('füllt neben der Vertragskachel den Platz, ohne gestreckte Zeilen', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/start');
+    await expect(page.getByRole('region', { name: 'Vertragsübersicht' })).toContainText(
+      'bis 30.11.2026',
+    );
+
+    const zeilen = finanzen(page).locator('.zeile');
+    await expect.poll(() => zeilen.count()).toBeGreaterThanOrEqual(3);
+    for (const hoehe of await zeilen.evaluateAll((e) => e.map((z) => z.offsetHeight))) {
+      expect(hoehe).toBe(45);
+    }
+    const [finanz, vertrag] = await page
+      .locator('app-finanz-kachel section, app-vertrag-kachel section')
+      .evaluateAll((e) => e.map((k) => k.getBoundingClientRect().bottom));
+    expect(finanz).toBe(vertrag);
+    // Keine angeschnittene Zeile (Bruchteile eines Pixels sind Rundung).
+    const { platz, letzte } = await finanzen(page).evaluate((e) => ({
+      platz: e.querySelector('.platz')!.getBoundingClientRect().bottom,
+      letzte: [...e.querySelectorAll('.zeile')].at(-1)!.getBoundingClientRect().bottom,
+    }));
+    expect(letzte).toBeLessThanOrEqual(platz + 0.5);
+  });
+
+  test('zeigt auf dem Handy 5 Buchungen', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/start');
+
+    await expect(finanzen(page).locator('.zeile')).toHaveCount(5);
+  });
+});
+
 test('passt auf dem Handy in die Breite', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await backendSimulieren(page, { angemeldet: true });
@@ -63,11 +100,51 @@ test.describe('Vertragskachel', () => {
 
     await expect(kachel(page)).toContainText('Laufende Verträge6');
     await expect(kachel(page)).toContainText('124,56');
-    await expect(kachel(page)).toContainText('Bei geteilten Verträgen nur dein Anteil');
-    await expect(kachel(page)).toContainText('Ohne Verträge, die erst später beginnen');
-    await expect(kachel(page)).toContainText('Verbindlich ist der Betrag je Abbuchung.');
+    await expect(kachel(page)).not.toContainText('Verbindlich ist der Betrag je Abbuchung.');
     await expect(kachel(page)).toContainText(/Kfz-Versicherung\s*586,80\s€\/Jahr/);
     await expect(kachel(page)).toContainText('bis 30.11.2026');
+  });
+
+  test('erklärt „Kosten pro Monat“ im Info-Knopf, per Tastatur bedienbar', async ({ page }) => {
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/start');
+
+    const knopf = kachel(page).getByRole('button', { name: 'Info zu Kosten pro Monat' });
+    await knopf.focus();
+    await page.keyboard.press('Enter');
+    await expect(knopf).toHaveAttribute('aria-expanded', 'true');
+    await expect(kachel(page).getByRole('status').getByRole('listitem')).toHaveText([
+      'Bei geteilten Verträgen zählt nur dein Anteil.',
+      'Verträge, die erst später beginnen, sind noch nicht enthalten.',
+      'Gerundet, kann um wenige Cent abweichen. Verbindlich ist der Betrag je Abbuchung.',
+    ]);
+
+    await page.keyboard.press('Escape');
+    await expect(knopf).toHaveAttribute('aria-expanded', 'false');
+    await expect(knopf).toBeFocused();
+    await expect(kachel(page).getByRole('listitem')).toHaveCount(0);
+
+    await knopf.click();
+    await page.getByRole('heading', { level: 1 }).click();
+    await expect(kachel(page).getByRole('listitem')).toHaveCount(0);
+  });
+
+  test('beide Kennzahlen gleich hoch, Fristen einzeilig', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/start');
+
+    const kennzahlen = kachel(page).locator('.kennzahl');
+    await expect(kennzahlen).toHaveCount(2);
+    const [links, rechts] = await kennzahlen.evaluateAll((e) => e.map((k) => k.clientHeight));
+    expect(links).toBe(rechts);
+
+    const frist = kachel(page).locator('.frist').first();
+    const { name, betrag } = await frist.evaluate((e) => ({
+      name: e.querySelector('b')!.getBoundingClientRect().top,
+      betrag: e.querySelector('.betrag')!.getBoundingClientRect().top,
+    }));
+    expect(Math.abs(name - betrag)).toBeLessThan(4);
   });
 
   test('kürzt lange Namen auf zwei Zeilen', async ({ page }) => {

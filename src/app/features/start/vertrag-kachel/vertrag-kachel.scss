@@ -8,7 +8,8 @@
 @include formular.knoepfe;
 
 :host {
-  display: block;
+  // Raster statt Block: Die Kachel wird so hoch wie die Nachbarkarte in der Zeile.
+  display: grid;
   min-width: 0;
 }
 
@@ -24,12 +25,22 @@ a[kachelLink] {
   gap: $abstand-3;
 }
 
-app-rundungshinweis {
-  margin-top: $abstand-2;
-}
-
 .kennzahl span {
   color: var(--app-text-gedaempft);
+}
+
+// Die Blase des Info-Knopfs hängt unter der Beschriftung.
+.info-anker {
+  position: relative;
+}
+
+// Fließtext: Bricht die Beschriftung um, bleibt das ⓘ beim letzten Wort.
+.zusammen {
+  white-space: nowrap;
+}
+
+.beschriftung app-info-knopf {
+  vertical-align: middle;
 }
 
 .fristen {
@@ -46,28 +57,32 @@ app-rundungshinweis {
 
 .frist {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: $abstand-2 $abstand-3;
-  padding: $abstand-3 0;
+  padding: $abstand-2 0;
   border-top: 1px solid var(--app-trenner-innen);
   font-size: $schrift-text;
 }
 
+// Name und Betrag in einer Zeile; bei wenig Platz bricht der Betrag unter den Namen um.
 .vertrag {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: $abstand-2;
   min-width: 0;
-  // Erste Zeile mittig zum höheren Badge.
-  padding-top: $abstand-1;
   overflow-wrap: anywhere;
-  color: var(--app-text-gedaempft);
 
   b {
     @include kuerzen.zeilen(2);
     font-weight: 700;
-    color: var(--app-text);
   }
+}
+
+.betrag {
+  font-size: $schrift-beschriftung;
+  color: var(--app-text-gedaempft);
 }
 
 .termin {
