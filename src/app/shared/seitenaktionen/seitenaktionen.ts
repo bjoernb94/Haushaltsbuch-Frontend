@@ -5,6 +5,10 @@ export interface Seitenaktion {
   ziel: string | UrlTree;
   /** Beschriftung für Screenreader; ohne bleibt es beim sichtbaren Text. */
   label: string | null;
+  /** Sichtbarer Text bei „Zurück“, z. B. „Einstellungen“; ohne „Zurück“. */
+  text?: string;
+  /** „Zurück“ geht im Verlauf zurück statt vorwärts zu {@code ziel} (siehe {@code ZurueckLink}). */
+  verlauf?: boolean;
 }
 
 /** Was eine Seite bis 900 px im Kopf anbietet. */

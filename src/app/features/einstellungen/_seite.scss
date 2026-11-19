@@ -1,0 +1,73 @@
+// Gemeinsamer Aufbau der Einstellungen und ihrer Unterseiten: „Zurück“ am Rand, der Inhalt schmal und
+// mittig, Abschnitte mit kleiner Überschrift über einer Karte.
+@use 'masse' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-8;
+  color: var(--app-text);
+}
+
+// „Zurück“ am Rand wie auf Impressum und Datenschutz, der Inhalt schmal und mittig.
+.zurueck {
+  align-self: flex-start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: $abstand-2;
+  font-size: $schrift-text;
+  font-weight: 700;
+  text-decoration: none;
+
+  // Bis 900 px steht „Zurück“ in der Kopfzeile.
+  @media (max-width: 900px) {
+    display: none;
+  }
+}
+
+.spalte {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-8;
+}
+
+h1 {
+  margin: 0;
+  font-size: $schrift-seitentitel;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-2;
+}
+
+h2 {
+  margin: 0 0 0 $abstand-4;
+  font-size: $schrift-hinweis;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-text-gedaempft);
+}
+
+.liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  border: 1px solid var(--app-trenner);
+  border-radius: $radius-karte;
+  background: var(--app-flaeche);
+
+  > li + li,
+  > div + div {
+    border-top: 1px solid var(--app-trenner-innen);
+  }
+}

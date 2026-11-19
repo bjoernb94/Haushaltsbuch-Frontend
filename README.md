@@ -99,7 +99,8 @@ src/app/
                systemstatus/, ungespeichert/, version/
   features/    Seiten, lazy geladen
     anmeldung/   login/, registrierung/ und ihr gemeinsamer anmelde-rahmen/
-    einstellungen/ Systemstatus, Version und Umgebung, rechtliche Links (über das Kontomenü)
+    einstellungen/ Konto, Systemstatus, Version und Umgebung, rechtliche Links (über das Kontomenü),
+                 Unterseiten wie profil/
     rechtliches/ Impressum und Datenschutz, mit und ohne Session erreichbar
     start/       Startseite nach der Anmeldung
     vertraege/   je ein Backend-Modul (weitere kommen mit ihren Seiten dazu), nach Bereich gegliedert:

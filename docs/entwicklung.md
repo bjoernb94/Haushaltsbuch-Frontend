@@ -86,6 +86,20 @@ bewusst nicht. Neuer Vertrag (`/vertraege/neu`) ist eine eigene Seite.
 - Esc, ein Klick daneben und der Zurück-Button schließen alle über die Route, damit
   `ungespeichertGuard` nachfragt. Navigationen innerhalb der Seite übergeben `scroll: 'manual'`.
 
+### Einstellungen
+
+Die Einstellungen (`/einstellungen`, über das Kontomenü) führen mit „Zurück“ zur Herkunft, ohne sie zur
+Startseite. Ihre Unterseiten (`/einstellungen/profil`, eigene Routen in `einstellungen.routes.ts`) zählen
+nicht dazu und führen mit „Zurück“ immer zu den Einstellungen (`zurueckZuEinstellungen()`):
+
+- Von den Einstellungen geöffnet (State `intern`) geht „Zurück“ im Verlauf zurück (`shared/zurueck-link`),
+  auf genau den Eintrag der Einstellungen samt ihrer Herkunft. Auch nach dem Neuladen.
+- Direkt aufgerufen navigiert es zu `/einstellungen`, dort ohne Herkunft.
+- „Einstellungen“ im Kontomenü ist auf den Unterseiten markiert (`aria-current`) und ein neuer Schritt: Die
+  Einstellungen bekommen die Unterseite als Herkunft.
+
+Bis 900 px zeigt der Kopf „‹ Einstellungen“ statt „Zurück“ (`text` der Seitenaktion).
+
 ## Tests und CI
 
 Die E2E-Tests simulieren das Backend im Browser (`e2e/backend-mock.ts`) und brauchen weder

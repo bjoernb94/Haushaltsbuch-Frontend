@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -43,6 +44,24 @@ describe('Kopfzeile', () => {
     expect(zurueck.textContent?.trim()).toBe('Zurück');
     expect(zurueck.getAttribute('href')).toBe('/vertraege');
     expect(zurueck.getAttribute('aria-label')).toBe('Zurück zu Verträge');
+  });
+
+  it('zeigt einen eigenen Text und geht auf Wunsch im Verlauf zurück', async () => {
+    const back = vi.spyOn(TestBed.inject(Location), 'back').mockImplementation(() => undefined);
+    const { element } = await kopfzeile({
+      zurueck: {
+        ziel: '/einstellungen',
+        label: 'Zurück zu Einstellungen',
+        text: 'Einstellungen',
+        verlauf: true,
+      },
+    });
+    const zurueck = element.querySelector<HTMLAnchorElement>('a.zurueck')!;
+    expect(zurueck.textContent?.trim()).toBe('Einstellungen');
+    expect(zurueck.getAttribute('href')).toBe('/einstellungen');
+
+    zurueck.click();
+    expect(back).toHaveBeenCalledOnce();
   });
 
   it('zeigt „+“ mit Beschriftung vor dem Nutzermenü', async () => {

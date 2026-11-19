@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { Logo } from '../logo/logo';
 import { Nutzermenue } from '../nutzermenue/nutzermenue';
 import { Seitenaktionen } from '../seitenaktionen/seitenaktionen';
+import { ZurueckLink } from '../zurueck-link/zurueck-link';
 
 /**
  * Kopfzeile mit Logo und, mit Session, dem Nutzermenü. In der Shell und auf Impressum und
@@ -13,7 +14,7 @@ import { Seitenaktionen } from '../seitenaktionen/seitenaktionen';
  */
 @Component({
   selector: 'app-kopfzeile',
-  imports: [Logo, Nutzermenue, RouterLink],
+  imports: [Logo, Nutzermenue, RouterLink, ZurueckLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './kopfzeile.html',
   styleUrl: './kopfzeile.scss',

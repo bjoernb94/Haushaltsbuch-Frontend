@@ -1,7 +1,12 @@
 <header class="kopfzeile">
   <div class="kopfzeile-innen">
     @if (aktionen().zurueck; as zurueck) {
-      <a class="aktion zurueck" [routerLink]="zurueck.ziel" [attr.aria-label]="zurueck.label">
+      <a
+        class="aktion zurueck"
+        [appZurueckLink]="zurueck.ziel"
+        [verlauf]="zurueck.verlauf ?? false"
+        [attr.aria-label]="zurueck.label"
+      >
         <svg
           width="20"
           height="20"
@@ -15,7 +20,7 @@
         >
           <path d="M15 18l-6-6 6-6"></path>
         </svg>
-        Zurück
+        {{ zurueck.text ?? 'Zurück' }}
       </a>
     }
     <div class="logo">

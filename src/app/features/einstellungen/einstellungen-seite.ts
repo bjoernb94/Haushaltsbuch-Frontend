@@ -7,10 +7,12 @@ import { VersionService } from '../../core/version/version.service';
 import { HERKUNFT, herkunftAus, zurueckLabel } from '../../shared/herkunft/herkunft';
 import { seitenaktionenMelden } from '../../shared/seitenaktionen/seitenaktionen';
 import { EINSTELLUNGEN, istEinstellungen } from '../../shared/nutzermenue/nutzermenue';
+import { UNTERSEITE_STATE } from './unterseite';
 
 /**
- * Einstellungen, vorerst nur zum Nachsehen: Systemstatus, Version und Umgebung, rechtliche Links. Der
- * Systemstatus steht in der Shell nur hier. „Zurück“ führt zur Herkunft, ohne sie zur Startseite.
+ * Einstellungen: Konto (Profil), Systemstatus, Version und Umgebung, rechtliche Links. Der Systemstatus
+ * steht in der Shell nur hier. „Zurück“ führt zur Herkunft, ohne sie zur Startseite; die Unterseiten
+ * kehren im Verlauf hierher zurück, damit sie erhalten bleibt.
  */
 @Component({
   selector: 'app-einstellungen-seite',
@@ -30,6 +32,8 @@ export class EinstellungenSeite {
 
   protected readonly zurueck = this.router.parseUrl(this.herkunft ?? STARTSEITE);
   protected readonly zurueckLabel = zurueckLabel(this.router.serializeUrl(this.zurueck));
+
+  protected readonly unterseiteState = UNTERSEITE_STATE;
 
   /** Von Impressum und Datenschutz führt „Zurück“ hierher. */
   protected readonly rechtlichState = { [HERKUNFT]: EINSTELLUNGEN };
