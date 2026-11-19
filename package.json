@@ -12,6 +12,7 @@
     "e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "design:pruefen": "node scripts/design-pruefen.mjs",
     "api:typen": "openapi-typescript ../Haushaltsbuch-Backend/docs/openapi.json -o src/app/core/api/api.generated.ts",
     "outdated": "ng update",
     "audit": "npm audit",
