@@ -100,7 +100,7 @@ src/app/
   features/    Seiten, lazy geladen
     anmeldung/   login/, registrierung/ und ihr gemeinsamer anmelde-rahmen/
     einstellungen/ Konto, Systemstatus, Version und Umgebung, rechtliche Links (über das Kontomenü),
-                 Unterseiten wie profil/
+                 Unterseiten profil/ und komponenten/
     rechtliches/ Impressum und Datenschutz, mit und ohne Session erreichbar
     start/       Startseite nach der Anmeldung
     vertraege/   je ein Backend-Modul (weitere kommen mit ihren Seiten dazu), nach Bereich gegliedert:

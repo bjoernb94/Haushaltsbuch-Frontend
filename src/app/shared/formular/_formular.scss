@@ -55,6 +55,56 @@
   }
 }
 
+// Schalter wie im Design: Ankreuzfeld mit role="switch", als Schiebeschalter gezeichnet.
+@mixin schalter {
+  .schalter {
+    appearance: none;
+    flex: none;
+    position: relative;
+    // Maße des Schalters wie im Design (Layoutmaße, keine Abstände).
+    width: 51px;
+    height: 31px;
+    margin: 0;
+    border-radius: $radius-pille;
+    background: var(--app-rand);
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 27px;
+      height: 27px;
+      border-radius: $radius-pille;
+      background: var(--app-flaeche);
+      box-shadow: 0 2px 4px var(--app-schatten-schalter);
+      transition: transform 0.15s;
+    }
+
+    &:checked {
+      background: var(--app-gruen);
+
+      &::after {
+        transform: translateX(20px);
+      }
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--app-gruen-fokus-rand);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &,
+      &::after {
+        transition: none;
+      }
+    }
+  }
+}
+
 @mixin knoepfe {
   .aktionen {
     display: flex;

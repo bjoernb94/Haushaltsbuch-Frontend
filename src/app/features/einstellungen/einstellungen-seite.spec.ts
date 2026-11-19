@@ -78,10 +78,11 @@ describe('EinstellungenSeite', () => {
     expect(app[1].textContent).toContain('Unbekannt');
   });
 
-  it('verlinkt im Abschnitt Konto das Profil, das im Verlauf hierher zurückkehrt', async () => {
+  it('verlinkt im Abschnitt Konto Profil und Komponenten, die im Verlauf hierher zurückkehren', async () => {
     const element = await seite({ herkunft: '/vertraege' });
     const konto = zeilen(element, 'Konto');
-    expect([...konto].map((z) => z.textContent?.trim())).toEqual(['Profil']);
+    expect([...konto].map((z) => z.textContent?.trim())).toEqual(['Profil', 'Komponenten']);
+    expect(konto[1].querySelector('a')?.getAttribute('href')).toBe('/einstellungen/komponenten');
     expect([...element.querySelectorAll('section h2')].map((h) => h.textContent)).toEqual([
       'Konto',
       'Systemstatus',

@@ -10,9 +10,9 @@ import { EINSTELLUNGEN, istEinstellungen } from '../../shared/nutzermenue/nutzer
 import { UNTERSEITE_STATE } from './unterseite';
 
 /**
- * Einstellungen: Konto (Profil), Systemstatus, Version und Umgebung, rechtliche Links. Der Systemstatus
- * steht in der Shell nur hier. „Zurück“ führt zur Herkunft, ohne sie zur Startseite; die Unterseiten
- * kehren im Verlauf hierher zurück, damit sie erhalten bleibt.
+ * Einstellungen: Konto (Profil, Komponenten), Systemstatus, Version und Umgebung, rechtliche Links. Der
+ * Systemstatus steht in der Shell nur hier. „Zurück“ führt zur Herkunft, ohne sie zur Startseite; die
+ * Unterseiten kehren im Verlauf hierher zurück, damit sie erhalten bleibt.
  */
 @Component({
   selector: 'app-einstellungen-seite',

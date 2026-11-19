@@ -89,8 +89,9 @@ bewusst nicht. Neuer Vertrag (`/vertraege/neu`) ist eine eigene Seite.
 ### Einstellungen
 
 Die Einstellungen (`/einstellungen`, über das Kontomenü) führen mit „Zurück“ zur Herkunft, ohne sie zur
-Startseite. Ihre Unterseiten (`/einstellungen/profil`, eigene Routen in `einstellungen.routes.ts`) zählen
-nicht dazu und führen mit „Zurück“ immer zu den Einstellungen (`zurueckZuEinstellungen()`):
+Startseite. Ihre Unterseiten (`/einstellungen/profil`, `/einstellungen/komponenten`, eigene Routen in
+`einstellungen.routes.ts`) zählen nicht dazu und führen mit „Zurück“ immer zu den Einstellungen
+(`zurueckZuEinstellungen()`):
 
 - Von den Einstellungen geöffnet (State `intern`) geht „Zurück“ im Verlauf zurück (`shared/zurueck-link`),
   auf genau den Eintrag der Einstellungen samt ihrer Herkunft. Auch nach dem Neuladen.
@@ -99,6 +100,11 @@ nicht dazu und führen mit „Zurück“ immer zu den Einstellungen (`zurueckZuE
   Einstellungen bekommen die Unterseite als Herkunft.
 
 Bis 900 px zeigt der Kopf „‹ Einstellungen“ statt „Zurück“ (`text` der Seitenaktion).
+
+Die Seite Komponenten lädt die Auswahl beim Öffnen selbst, samt `version`, und speichert sie per `PUT`.
+Danach lädt `AuthService` die Komponenten neu, damit Hauptmenü und Startseite sofort passen. Ohne Auswahl
+schickt sie nichts ab; maßgeblich ist aber `VALIDIERUNG` aus dem Backend. Bei 409 `KONFLIKT` lädt sie den
+aktuellen Stand und weist darauf hin. Geänderte Schalter zählen als ungespeicherte Eingaben.
 
 ## Tests und CI
 

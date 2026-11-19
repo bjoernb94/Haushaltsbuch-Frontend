@@ -79,13 +79,16 @@ export async function backendSimulieren(
     angemeldet = false,
     datenbank = true,
     keycloak = true,
-    komponenten = ALLE_KOMPONENTEN,
+    komponenten: gebucht = ALLE_KOMPONENTEN,
     vertraege = [] as VertragAntwort[],
     stage = 'PROD',
     instanz = INSTANZ as object | null,
   } = {},
 ) {
   let session = angemeldet;
+  // Wie im Backend: ändert sich die Auswahl, steigt die Version; eine veraltete gibt 409.
+  let komponenten = [...gebucht];
+  let komponentenVersion = 0;
   const komponente = (up: boolean) => ({ status: up ? 'UP' : 'DOWN' });
   await page.route('/actuator/health/systemstatus', (route) =>
     route.fulfill({
@@ -113,11 +116,26 @@ export async function backendSimulieren(
       ? route.fulfill({ json: MAX })
       : problem(route, 401, 'NICHT_ANGEMELDET', 'Authentication required.'),
   );
-  await page.route('/api/nutzer/ich/komponenten', (route) =>
-    session
-      ? route.fulfill({ json: { komponenten, version: 0 } })
-      : problem(route, 401, 'NICHT_ANGEMELDET', 'Authentication required.'),
-  );
+  await page.route('/api/nutzer/ich/komponenten', (route) => {
+    if (!session) {
+      return problem(route, 401, 'NICHT_ANGEMELDET', 'Authentication required.');
+    }
+    if (route.request().method() === 'PUT') {
+      const aenderung = route.request().postDataJSON();
+      if (aenderung.version !== komponentenVersion) {
+        return problem(route, 409, 'KONFLIKT', 'Version veraltet.');
+      }
+      if (aenderung.komponenten.length === 0) {
+        return problem(route, 400, 'VALIDIERUNG', 'Mindestens eine Komponente.');
+      }
+      const neu = [...aenderung.komponenten].sort();
+      if (neu.join() !== [...komponenten].sort().join()) {
+        komponenten = neu;
+        komponentenVersion++;
+      }
+    }
+    return route.fulfill({ json: { komponenten, version: komponentenVersion } });
+  });
   await page.route('/api/anmeldung', async (route) => {
     const { email, passwort } = route.request().postDataJSON();
     if (email === MAX.email && passwort === 'geheim123') {

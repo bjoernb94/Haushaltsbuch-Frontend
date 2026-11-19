@@ -1,7 +1,8 @@
 <div
   class="box"
   [class.info]="art() === 'info'"
-  [attr.role]="art() === 'fehler' ? 'alert' : 'status'"
+  [class.hinweis]="art() === 'hinweis'"
+  [attr.role]="art() === 'info' ? 'status' : 'alert'"
 >
   <svg
     width="20"
@@ -15,11 +16,18 @@
     aria-hidden="true"
   >
     <circle cx="12" cy="12" r="9"></circle>
-    @if (art() === 'fehler') {
-      <path d="M12 7.5v5.5"></path>
-      <path d="M12 16.5h.01"></path>
-    } @else {
-      <path d="M8 12.5l2.8 2.8L16 10"></path>
+    @switch (art()) {
+      @case ('fehler') {
+        <path d="M12 7.5v5.5"></path>
+        <path d="M12 16.5h.01"></path>
+      }
+      @case ('hinweis') {
+        <path d="M12 11v5.5"></path>
+        <path d="M12 7.5h.01"></path>
+      }
+      @default {
+        <path d="M8 12.5l2.8 2.8L16 10"></path>
+      }
     }
   </svg>
   <span>{{ text() }}</span>
