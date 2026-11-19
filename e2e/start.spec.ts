@@ -137,7 +137,9 @@ test.describe('Vertragskachel', () => {
     await backendSimulieren(page, { angemeldet: true });
     let abbestellt = false;
     await page.route('/api/nutzer/ich/komponenten', (route) =>
-      abbestellt ? route.fulfill({ json: ['PORTFOLIO'] }) : route.fallback(),
+      abbestellt
+        ? route.fulfill({ json: { komponenten: ['PORTFOLIO'], version: 1 } })
+        : route.fallback(),
     );
     await page.route(UEBERSICHT, (route) => {
       abbestellt = true;

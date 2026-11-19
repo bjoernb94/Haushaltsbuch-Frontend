@@ -115,7 +115,7 @@ export async function backendSimulieren(
   );
   await page.route('/api/nutzer/ich/komponenten', (route) =>
     session
-      ? route.fulfill({ json: komponenten })
+      ? route.fulfill({ json: { komponenten, version: 0 } })
       : problem(route, 401, 'NICHT_ANGEMELDET', 'Authentication required.'),
   );
   await page.route('/api/anmeldung', async (route) => {

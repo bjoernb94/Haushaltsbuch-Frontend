@@ -61,7 +61,7 @@ export interface paths {
             cookie?: never;
         };
         get: operations["meineKomponenten"];
-        put?: never;
+        put: operations["meineKomponentenAendern"];
         post?: never;
         delete?: never;
         options?: never;
@@ -204,6 +204,16 @@ export interface components {
         };
         /** @enum {string} */
         Komponente: "FINANZUEBERSICHT" | "VERTRAGSUEBERSICHT" | "VERSORGUNGSVERTRAEGE" | "PORTFOLIO";
+        KomponentenAenderung: {
+            komponenten: components["schemas"]["Komponente"][];
+            /** Format: int64 */
+            version: number;
+        };
+        KomponentenAntwort: {
+            komponenten: components["schemas"]["Komponente"][];
+            /** Format: int64 */
+            version: number;
+        };
         Kuendigung: {
             art: components["schemas"]["Kuendigungsart"];
             dringend: boolean;
@@ -624,7 +634,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Komponente"][];
+                    "application/json": components["schemas"]["KomponentenAntwort"];
                 };
             };
             /** @description Nicht angemeldet (NICHT_ANGEMELDET). */
@@ -638,6 +648,66 @@ export interface operations {
             };
             /** @description Keine Berechtigung, z. B. Komponente nicht gebucht (KEIN_ZUGRIFF). */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    meineKomponentenAendern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KomponentenAenderung"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KomponentenAntwort"];
+                };
+            };
+            /** @description Ungültige Anfrage (VALIDIERUNG mit felder, ANFRAGE_UNGUELTIG). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Nicht angemeldet (NICHT_ANGEMELDET). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Keine Berechtigung, z. B. Komponente nicht gebucht (KEIN_ZUGRIFF), oder CSRF-Token fehlt (CSRF_TOKEN_UNGUELTIG). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Inzwischen von jemand anderem geändert, version veraltet (KONFLIKT). */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

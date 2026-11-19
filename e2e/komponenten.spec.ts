@@ -74,7 +74,9 @@ test('nach dem Abmelden sieht der nächste Nutzer nur seine Bereiche', async ({ 
   await abmelden(page);
   await expect(page).toHaveURL(/\/login$/);
 
-  await page.route(KOMPONENTEN_URL, (route) => route.fulfill({ json: ['PORTFOLIO'] }));
+  await page.route(KOMPONENTEN_URL, (route) =>
+    route.fulfill({ json: { komponenten: ['PORTFOLIO'], version: 1 } }),
+  );
   await page.getByLabel('E-Mail-Adresse').fill('max@beispiel.de');
   await page.getByLabel('Passwort').fill('geheim123');
   await page.getByRole('button', { name: 'Login' }).click();

@@ -7,6 +7,7 @@ export type Betrag = Schemas['Betrag'];
 export type Erhoehungsrhythmus = Schemas['Erhoehungsrhythmus'];
 export type Feldfehler = Schemas['Feldfehler'];
 export type Komponente = Schemas['Komponente'];
+export type KomponentenAntwort = Schemas['KomponentenAntwort'];
 export type Kuendigung = Schemas['Kuendigung'];
 export type Kuendigungsart = Schemas['Kuendigungsart'];
 export type Preisaenderung = Schemas['Preisaenderung'];
