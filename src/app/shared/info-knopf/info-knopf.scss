@@ -1,0 +1,74 @@
+@use 'masse' as *;
+
+:host {
+  display: inline-flex;
+  flex: none;
+}
+
+.knopf {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // Sichtbar 24 px, ohne die Zeile höher zu machen.
+  width: 24px;
+  height: 24px;
+  margin: -#{$abstand-1} 0;
+  padding: 0;
+  border: 0;
+  border-radius: $radius-pille;
+  background: transparent;
+  color: var(--app-text-gedaempft);
+  font: inherit;
+  cursor: pointer;
+
+  // Trefferfläche 44 px.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+  }
+
+  &:hover {
+    background: var(--app-seitenleiste-hover);
+  }
+
+  &[aria-expanded='true'] {
+    background: var(--app-gruen-hell);
+    color: var(--app-gruen);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 1px;
+  }
+}
+
+.blase {
+  position: absolute;
+  // Unter der Beschriftung, an deren rechter Kante.
+  top: calc(100% + #{$abstand-2});
+  right: 0;
+  z-index: 31;
+  box-sizing: border-box;
+  // Höchstens 300 px, nie breiter als der Bildschirm minus 48 px.
+  width: min(300px, calc(100vw - 48px));
+  margin: 0;
+  padding: $abstand-3 $abstand-4;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-1;
+  border: 1px solid var(--app-trenner);
+  border-radius: $radius-karte;
+  background: var(--app-flaeche);
+  box-shadow: 0 12px 32px var(--app-schatten-menue);
+  font-size: $schrift-beschriftung;
+  line-height: 1.45;
+  font-weight: 500;
+  color: var(--app-text);
+  // Unabhängig von der Beschriftung, an der sie hängt.
+  text-align: left;
+  white-space: normal;
+}

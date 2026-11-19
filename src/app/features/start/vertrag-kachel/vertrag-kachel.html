@@ -13,23 +13,22 @@
           <span>Laufende Verträge</span><b>{{ daten.laufendeVertraege }}</b>
         </div>
         <div class="kennzahl">
-          <span>Kosten pro Monat</span><b>{{ daten.kostenProMonat | betraege }}</b>
-          @if (daten.hatNichtBegonnene) {
-            <small>{{ ohneNichtBegonnene }}</small>
-          }
-          @if (daten.hatAnteile) {
-            <small>{{ nurAnteil }}</small>
-          }
+          <span class="beschriftung info-anker">
+            Kosten pro
+            <span class="zusammen"
+              >Monat <app-info-knopf beschriftung="Kosten pro Monat" [saetze]="infoKosten()"
+            /></span>
+          </span>
+          <b>{{ daten.kostenProMonat | betraege }}</b>
         </div>
       </div>
-      <app-rundungshinweis />
       <div class="fristen">
         <span class="ueberschrift">Nächste Kündigungsfristen</span>
         @for (frist of fristen(); track frist.id) {
           <div class="frist">
             <span class="vertrag">
               <b>{{ frist.name }}</b>
-              <span>{{ frist.betrag | betrag }}/{{ frist.einheit }}</span>
+              <span class="betrag">{{ frist.betrag | betrag }}/{{ frist.einheit }}</span>
             </span>
             <span class="termin" [class.dringend]="frist.dringend">
               bis {{ frist.kuendigenBis | datum }}

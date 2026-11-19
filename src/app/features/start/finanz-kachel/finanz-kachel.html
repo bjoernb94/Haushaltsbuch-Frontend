@@ -1,0 +1,21 @@
+<app-kachel komponente="FINANZUEBERSICHT" titel="Finanzübersicht">
+  <div class="kennzahlen">
+    <div class="kennzahl"><span>Einnahmen</span><b class="plus">3.850,00 €</b></div>
+    <div class="kennzahl"><span>Ausgaben</span><b class="minus">2.614,35 €</b></div>
+    <div class="kennzahl"><span>Saldo</span><b>+1.235,65 €</b></div>
+  </div>
+  <div class="liste">
+    <span class="ueberschrift">Letzte Buchungen</span>
+    <div #platz class="platz" [style.min-height.px]="mindesthoehe()">
+      <div class="zeilen">
+        @for (buchung of buchungen(); track $index) {
+          <div class="zeile">
+            <span
+              ><b>{{ buchung.text }}</b> · {{ buchung.datum }}</span
+            ><b [class.plus]="buchung.plus" [class.minus]="!buchung.plus">{{ buchung.betrag }}</b>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</app-kachel>

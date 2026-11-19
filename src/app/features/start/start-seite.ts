@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, LOCALE_ID } from '@angular/core';
 import { Komponente } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
+import { FinanzKachel } from './finanz-kachel/finanz-kachel';
 import { Kachel } from './kachel/kachel';
 import { VertragKachel } from './vertrag-kachel/vertrag-kachel';
 
 /** Überblick nach der Anmeldung: je gebuchter Komponente eine Kachel, von dort geht es weiter. */
 @Component({
   selector: 'app-start-seite',
-  imports: [Kachel, VertragKachel],
+  imports: [Kachel, FinanzKachel, VertragKachel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './start-seite.html',
   styleUrl: './start-seite.scss',

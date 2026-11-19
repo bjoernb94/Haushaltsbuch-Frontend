@@ -1,0 +1,37 @@
+@if (saetze().length) {
+  <button
+    #knopf
+    type="button"
+    class="knopf"
+    [attr.aria-label]="'Info zu ' + beschriftung()"
+    [attr.aria-expanded]="offen()"
+    [attr.aria-controls]="offen() ? blaseId : null"
+    (click)="umschalten()"
+  >
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 11v5.5"></path>
+      <path d="M12 7.5h.01"></path>
+    </svg>
+  </button>
+  <!-- Immer da, der Text kommt erst beim Öffnen hinein: So lesen Screenreader ihn vor. -->
+  <div role="status">
+    @if (offen()) {
+      <ul [id]="blaseId" class="blase">
+        @for (satz of saetze(); track satz) {
+          <li>{{ satz }}</li>
+        }
+      </ul>
+    }
+  </div>
+}

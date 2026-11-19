@@ -189,6 +189,15 @@ export const NUR_ANTEIL = 'Bei geteilten Verträgen nur dein Anteil';
 /** Unter „Kosten pro Monat“, wenn das Backend {@code hatNichtBegonnene} meldet. */
 export const OHNE_NICHT_BEGONNENE = 'Ohne Verträge, die erst später beginnen';
 
+// Dieselben Hinweise als Sätze im Info-Knopf; ersetzen die beiden oben, sobald die Vertragsseite ihn hat.
+
+/** Info zu einer Kennzahl, wenn das Backend {@code hatAnteile} meldet. */
+export const INFO_NUR_ANTEIL = 'Bei geteilten Verträgen zählt nur dein Anteil.';
+
+/** Info zu „Kosten pro Monat“, wenn das Backend {@code hatNichtBegonnene} meldet. */
+export const INFO_OHNE_NICHT_BEGONNENE =
+  'Verträge, die erst später beginnen, sind noch nicht enthalten.';
+
 /**
  * „33,3“: Prozent wie vom Backend, beim Anteil höchstens eine Nachkommastelle, bei der Erhöhung
  * zwei („2,75“).

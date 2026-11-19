@@ -1,0 +1,62 @@
+@use '../kennzahl';
+@use 'masse' as *;
+
+@include kennzahl.kennzahl;
+
+:host {
+  // Raster statt Block: Die Kachel wird so hoch wie die Nachbarkarte in der Zeile.
+  display: grid;
+  min-width: 0;
+}
+
+.kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: $abstand-3;
+}
+
+.plus {
+  color: var(--app-gruen);
+}
+
+.minus {
+  color: var(--app-ausgabe);
+}
+
+.liste {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ueberschrift {
+  padding-bottom: $abstand-2;
+  font-size: $schrift-hinweis;
+  font-weight: 700;
+}
+
+// Wächst mit der Karte; die Zeilen liegen absolut darin und zählen so nicht zur Höhe.
+.platz {
+  position: relative;
+  flex: 1 1 auto;
+}
+
+.zeilen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.zeile {
+  box-sizing: border-box;
+  // Feste Höhe (ZEILENHOEHE in finanz-kachel.ts): Polster, 20 px Zeile und 1 px Linie.
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $abstand-3;
+  padding: $abstand-3 0;
+  border-top: 1px solid var(--app-trenner-innen);
+  font-size: $schrift-text;
+  line-height: 20px;
+}

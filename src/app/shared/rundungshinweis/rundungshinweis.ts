@@ -12,6 +12,10 @@ export const RUNDUNG_TEXT =
 /** Unter der Prognose; dort steht schon, dass es keine Abbuchung ist. */
 export const RUNDUNG_TEXT_KURZ = 'Gerundet, kann um wenige Cent abweichen.';
 
+/** Im Info-Knopf an einem umgerechneten Wert, statt der Fußnote. */
+export const RUNDUNG_TEXT_INFO =
+  'Gerundet, kann um wenige Cent abweichen. Verbindlich ist der Betrag je Abbuchung.';
+
 /**
  * Fußnote unter umgerechneten Werten (pro Monat, im Jahr, Anteil, Summen, Prognose): Das Backend
  * rundet erst bei der Ausgabe, verbindlich ist nur der Betrag je Abbuchung. Die SPA erklärt oder
