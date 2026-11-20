@@ -12,7 +12,7 @@ async function pflichtfelderFuellen(page: Page, anbieter = 'Neuer Anbieter') {
   await page.getByLabel('Anbieter *').fill(anbieter);
   await page.getByLabel('Kategorie *').selectOption({ label: 'Versicherung' });
   await tab(page, 'Kosten');
-  await page.getByLabel('Betrag in € *').fill('19,99');
+  await page.getByLabel('Betrag ab Vertragsbeginn in € *').fill('19,99');
   await page.getByLabel('Zahlweise *').selectOption({ label: 'monatlich' });
   await page.getByLabel('Vertragsbeginn *').fill('2026-01-01');
 }
@@ -134,7 +134,7 @@ test.describe('Neuer Vertrag', () => {
       bezeichnung: 'Mein Vertrag',
       kategorieId: 'kategorie-2',
       vertragsnummer: 'V-1',
-      preise: [{ gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } }],
+      preise: [{ gueltigAb: '2026-01-01', betrag: { wert: 19.99, waehrung: 'EUR' } }],
       zahlweise: 'MONATLICH',
       beginn: '2026-01-01',
       zahlungsweg: 'PAYPAL',
@@ -372,21 +372,44 @@ test.describe('Neuer Vertrag', () => {
       ['19,999', 'Höchstens 2 Nachkommastellen.', { wert: 19.999, waehrung: 'EUR' }],
       ['-5', 'Der Betrag muss größer als 0 sein.', { wert: -5, waehrung: 'EUR' }],
       ['0', 'Der Betrag muss größer als 0 sein.', { wert: 0, waehrung: 'EUR' }],
-      ['abc', 'Bitte gib einen gültigen Betrag ein, z. B. 19,99.', null],
-      ['12.50', 'Bitte gib einen gültigen Betrag ein, z. B. 19,99.', null],
     ] as const;
     for (const [eingabe, text, betrag] of faelle) {
       test(`Betrag „${eingabe}“`, async ({ page }) => {
         await backendSimulieren(page, { angemeldet: true });
         await page.goto('/vertraege/neu');
         await pflichtfelderFuellen(page);
-        await page.getByLabel('Betrag in € *').fill(eingabe);
+        await page.getByLabel('Betrag ab Vertragsbeginn in € *').fill(eingabe);
 
         expect((await speichernUndAnfrageLesen(page)).preise[0].betrag).toEqual(betrag);
         await expect(page.getByRole('alert')).toHaveText('Bitte prüfe die markierten Felder.');
-        await expect(page.getByLabel('Betrag in € *')).toHaveAccessibleDescription(text);
-        await expect(page.getByLabel('Betrag in € *')).toBeFocused();
+        await expect(
+          page.getByLabel('Betrag ab Vertragsbeginn in € *'),
+        ).toHaveAccessibleDescription(`${text} Spätere Preise trägst du unter „Preisverlauf“ ein.`);
+        await expect(page.getByLabel('Betrag ab Vertragsbeginn in € *')).toBeFocused();
         await expect(page).toHaveURL(/\/vertraege\/neu$/);
+      });
+    }
+
+    for (const eingabe of ['abc', '12.50']) {
+      test(`Betrag „${eingabe}“ meldet schon das Formular, ohne zu senden`, async ({ page }) => {
+        await backendSimulieren(page, { angemeldet: true });
+        let gesendet = false;
+        page.on('request', (r) => {
+          if (r.method() === 'POST' && new URL(r.url()).pathname === '/api/vertraege') {
+            gesendet = true;
+          }
+        });
+        await page.goto('/vertraege/neu');
+        await pflichtfelderFuellen(page);
+        const betrag = page.getByLabel('Betrag ab Vertragsbeginn in € *');
+        await betrag.fill(eingabe);
+        await page.getByRole('button', { name: 'Vertrag speichern' }).click();
+        await expect(page.getByRole('alert')).toHaveText('Bitte prüfe die markierten Felder.');
+        await expect(betrag).toHaveAccessibleDescription(
+          'Bitte gib einen gültigen Betrag ein, z. B. 19,99. Spätere Preise trägst du unter „Preisverlauf“ ein.',
+        );
+        await expect(betrag).toBeFocused();
+        expect(gesendet).toBe(false);
       });
     }
 
@@ -527,20 +550,32 @@ test.describe('Neuer Vertrag', () => {
     });
   });
 
-  test('Preise: weitere Preise brauchen kein „Betrag gilt seit“, er gilt ab Vertragsbeginn', async ({
-    page,
-  }) => {
+  test('Preise: zuerst der Betrag ab Vertragsbeginn, jeder weitere mit Datum', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true });
     await page.goto('/vertraege/neu');
     await pflichtfelderFuellen(page);
     await tab(page, 'Preisverlauf');
+    const erste = page.locator('.preis.erster');
+    await expect(erste.getByLabel('Gilt ab')).toHaveValue('01.01.2026');
+    await expect(erste.getByLabel('Gilt ab')).toHaveAccessibleDescription(
+      'Vertragsbeginn, änderbar unter „Kosten“.',
+    );
+    await expect(erste.getByRole('button', { name: /entfernen/ })).toHaveCount(0);
+    await expect(erste.getByLabel('Betrag in € *')).toHaveValue('19,99');
+    await erste.getByLabel('Betrag in € *').fill('9,99');
     await page.getByRole('button', { name: 'Preis hinzufügen' }).click();
-    const zeile = page.locator('.preis');
-    await zeile.getByLabel('Gilt ab *').fill('2027-06-01');
-    await zeile.getByLabel('Betrag in € *').fill('24,99');
+    const zeile = page.locator('.preis:not(.erster)');
+    await zeile.getByLabel('Gilt ab *').fill('2026-07-01');
+    await zeile.getByLabel('Betrag in € *').fill('19,99');
+    const verlauf = page.getByRole('status').filter({ hasText: 'Preisverlauf' });
+    await expect(verlauf).toContainText('ab 01.01.2026: 9,99 €');
+    await expect(verlauf).toContainText('ab 01.07.2026: 19,99 €');
+    await tab(page, 'Kosten');
+    await expect(page.getByLabel('Betrag ab Vertragsbeginn in € *')).toHaveValue('9,99');
+    await expect(page.getByText(/Aktuell: 19,99\s€ seit 01\.07\.2026/)).toBeVisible();
     expect((await speichernUndAnfrageLesen(page)).preise).toEqual([
-      { gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } },
-      { gueltigAb: '2027-06-01', betrag: { wert: 24.99, waehrung: 'EUR' } },
+      { gueltigAb: '2026-01-01', betrag: { wert: 9.99, waehrung: 'EUR' } },
+      { gueltigAb: '2026-07-01', betrag: { wert: 19.99, waehrung: 'EUR' } },
     ]);
   });
 
@@ -577,13 +612,13 @@ test.describe('Neuer Vertrag', () => {
       ).toBeVisible();
       const tabs = page.getByRole('tablist', { name: 'Bereiche des Vertrags' }).getByRole('tab');
       await expect(tabs).toHaveText(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
-      await expect(page.getByLabel('Betrag in € *')).toBeHidden();
+      await expect(page.getByLabel('Betrag ab Vertragsbeginn in € *')).toBeHidden();
 
       await tabs.first().focus();
       await page.keyboard.press('ArrowRight');
       await expect(tabs.nth(1)).toBeFocused();
       await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
-      await expect(page.getByLabel('Betrag in € *')).toBeVisible();
+      await expect(page.getByLabel('Betrag ab Vertragsbeginn in € *')).toBeVisible();
       await expect(page.getByLabel('Anbieter *')).toBeHidden();
     });
 
@@ -606,7 +641,7 @@ test.describe('Neuer Vertrag', () => {
         'aria-selected',
         'true',
       );
-      await expect(page.getByLabel('Betrag in € *')).toBeFocused();
+      await expect(page.getByLabel('Betrag ab Vertragsbeginn in € *')).toBeFocused();
     });
 
     test('die Zusammenfassung folgt den Eingaben', async ({ page }) => {
@@ -632,7 +667,10 @@ test.describe('Neuer Vertrag', () => {
       await page.getByRole('button', { name: 'Einmalkosten hinzufügen' }).click();
       await expect(zusammenfassung).toContainText('EinmalkostenNoch offen');
       await page.getByLabel('Wofür *').fill('Anschluss');
-      await page.getByLabel('Betrag in € *').nth(1).fill('49,90');
+      await page
+        .locator('app-vertrag-einmalkosten-zeilen')
+        .getByLabel('Betrag in € *')
+        .fill('49,90');
       await page.getByLabel('Fällig am *').fill('2027-01-15');
       await expect(zusammenfassung).toContainText('Einmalkosten49,90 €');
       await tab(page, 'Preisverlauf');

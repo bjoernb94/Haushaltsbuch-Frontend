@@ -252,13 +252,20 @@ describe('VertragFormular', () => {
       expect(vorschau).not.toHaveBeenCalled();
     });
 
-    it('schickt den Betrag als ersten Preis mit', async () => {
+    it('schickt den Betrag als ersten Preis ab Vertragsbeginn mit', async () => {
       const { setzen } = await offen();
       setzen('betrag', '19,99');
       vi.advanceTimersByTime(400);
       expect(vorschau).toHaveBeenLastCalledWith({
         ...OHNE_EINGABEN,
         preise: [{ gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } }],
+      });
+      setzen('beginn', '2026-02-01');
+      vi.advanceTimersByTime(400);
+      expect(vorschau).toHaveBeenLastCalledWith({
+        ...OHNE_EINGABEN,
+        beginn: '2026-02-01',
+        preise: [{ gueltigAb: '2026-02-01', betrag: { wert: 19.99, waehrung: 'EUR' } }],
       });
     });
 
@@ -357,6 +364,39 @@ describe('VertragFormular', () => {
       expect(info(el, 'deinem Anteil')).toBeNull();
     });
 
+    it('nennt unter dem Betrag den heutigen Preis der Vorschau, wenn er ein späterer ist', async () => {
+      TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
+      const { el, setzen } = await offen();
+      const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
+      const hinweis = () => {
+        TestBed.tick();
+        const feld = el.querySelector('[formcontrolname="betrag"]')!.closest('.feld')!;
+        return feld.querySelector('.feldhinweis')?.textContent?.replace(/\s+/g, ' ').trim();
+      };
+      setzen('betrag', '55,20');
+      vi.advanceTimersByTime(400);
+      anfragen.at(-1)!.next(
+        vorschauAntwort(ERGEBNIS, {
+          preise: [
+            { gueltigAb: '2013-01-01', betrag: EUR(55.2), art: 'FRUEHER' },
+            { gueltigAb: '2021-07-01', betrag: EUR(52.2), art: 'AKTUELL' },
+          ],
+        }),
+      );
+      expect(hinweis()).toBe(
+        'Aktuell: 52,20 € seit 01.07.2021 Spätere Preise trägst du unter „Preisverlauf“ ein.',
+      );
+
+      setzen('betrag', '55,21');
+      vi.advanceTimersByTime(400);
+      anfragen.at(-1)!.next(
+        vorschauAntwort(ERGEBNIS, {
+          preise: [{ gueltigAb: '2013-01-01', betrag: EUR(55.21), art: 'AKTUELL' }],
+        }),
+      );
+      expect(hinweis()).toBe('Spätere Preise trägst du unter „Preisverlauf“ ein.');
+    });
+
     it('schickt ein eingetragenes Kündigungsdatum nur, solange „Gekündigt“ gesetzt ist', async () => {
       const { feld, setzen } = await offen();
       feld('gekuendigt').click();
@@ -389,7 +429,7 @@ describe('VertragFormular', () => {
     expect(host.gespeichert[0]).toMatchObject({
       anbieter: 'Anbieter',
       kategorieId: 'k1',
-      preise: [{ gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' } }],
+      preise: [{ gueltigAb: '2026-01-01', betrag: { wert: 19.99, waehrung: 'EUR' } }],
       kuendbar: true,
       notiz: null,
     });
@@ -796,7 +836,8 @@ describe('VertragFormular', () => {
           .click();
         await fixture.whenStable();
       };
-      const zeile = (i: number) => el.querySelectorAll<HTMLElement>('.preis')[i];
+      const zeile = (i: number) => el.querySelectorAll<HTMLElement>('.preis:not(.erster)')[i];
+      const erste = () => el.querySelector<HTMLElement>('.preis.erster')!;
       const eingeben = async (i: number, feld: 'gueltigAb' | 'betrag', wert: string) => {
         const input = zeile(i).querySelector<HTMLInputElement>(`[formcontrolname="${feld}"]`)!;
         input.value = wert;
@@ -805,18 +846,47 @@ describe('VertragFormular', () => {
       };
       const zeilenFehler = (i: number) =>
         zeile(i).querySelector('.feldfehler')?.textContent?.trim();
-      return { ...hilfen, hinzufuegen, zeile, eingeben, zeilenFehler };
+      return { ...hilfen, hinzufuegen, zeile, erste, eingeben, zeilenFehler };
     }
 
+    it('zeigt zuerst den Betrag ab Vertragsbeginn, ohne Entfernen, mit demselben Feld', async () => {
+      const { fixture, erste, feld, setzen } = await imTabPreise();
+      const [datum, betrag] = [...erste().querySelectorAll('input')];
+      expect(datum.readOnly).toBe(true);
+      expect(datum.value).toBe('');
+      expect(datum.placeholder).toBe('Vertragsbeginn fehlt');
+      expect(erste().querySelector('.entfernen')).toBeNull();
+      setzen('beginn', '2026-02-01');
+      setzen('betrag', '19,99');
+      await fixture.whenStable();
+      expect([datum.value, betrag.value]).toEqual(['01.02.2026', '19,99']);
+      betrag.value = '21,50';
+      betrag.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+      expect(feld('betrag').value).toBe('21,50');
+    });
+
+    it('zeigt den Fehler am Betrag auch in der ersten Zeile, gezählt im Tab Kosten', async () => {
+      const { el, erste, absenden } = await imTabPreise();
+      await absenden();
+      const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
+        t.textContent?.replace(/\s+/g, ' ').trim(),
+      );
+      expect(tabs[3]).toBe('Preisverlauf');
+      const betrag = erste().querySelectorAll('input')[1];
+      expect(betrag.getAttribute('aria-invalid')).toBe('true');
+      const fehler = document.getElementById(betrag.getAttribute('aria-describedby')!);
+      expect(fehler?.textContent?.trim()).toBe('Bitte gib einen gültigen Betrag ein, z. B. 19,99.');
+    });
+
     it('fügt Zeilen hinzu, fokussiert das Datum und schickt sie nach dem Betrag', async () => {
-      const { host, hinzufuegen, zeile, eingeben, pflichtfelderFuellen, setzen, absenden } =
+      const { host, hinzufuegen, zeile, eingeben, pflichtfelderFuellen, absenden } =
         await imTabPreise();
       await hinzufuegen();
       expect(document.activeElement).toBe(zeile(0).querySelector('input[type="date"]'));
       await eingeben(0, 'gueltigAb', '2027-01-01');
       await eingeben(0, 'betrag', '24,99');
       pflichtfelderFuellen();
-      setzen('gueltigSeit', '2026-01-01');
       await absenden();
       expect(host.gespeichert[0].preise).toEqual([
         { gueltigAb: '2026-01-01', betrag: { wert: 19.99, waehrung: 'EUR' } },
@@ -838,22 +908,23 @@ describe('VertragFormular', () => {
       const datum = zeile(0).querySelector('input[type="date"]')!;
       expect(datum.getAttribute('aria-invalid')).toBe('true');
       expect(document.activeElement).toBe(datum);
-      expect(fehlerText('gueltigSeit')).toBeUndefined();
+      expect(fehlerText('beginn')).toBeUndefined();
     });
 
-    it('ordnet Feldfehler des Backends der Zeile zu, preise[0] dem Betrag', async () => {
+    it('ordnet Feldfehler des Backends der Zeile zu, das Datum von preise[0] dem Beginn', async () => {
       const { host, fixture, hinzufuegen, zeilenFehler, fehlerText } = await imTabPreise();
       await hinzufuegen();
       await hinzufuegen();
       host.fehler.set(
         validierung(
-          ['preise[0].gueltigAb', 'PreisNichtVorBeginn'],
+          ['preise[0].gueltigAb', 'ErsterPreisAbBeginn'],
+          ['preise[1].gueltigAb', 'PreisNichtVorBeginn'],
           ['preise[2].gueltigAb', 'GueltigAbEindeutig'],
         ),
       );
       await fixture.whenStable();
-      expect(fehlerText('gueltigSeit')).toBe('Ein Preis kann nicht vor dem Vertragsbeginn gelten.');
-      expect(zeilenFehler(0)).toBeUndefined();
+      expect(fehlerText('beginn')).toBe('Der früheste Preis muss ab Vertragsbeginn gelten.');
+      expect(zeilenFehler(0)).toBe('Ein Preis kann nicht vor dem Vertragsbeginn gelten.');
       expect(zeilenFehler(1)).toBe('Für dieses Datum gibt es schon einen Preis.');
     });
 
@@ -871,7 +942,7 @@ describe('VertragFormular', () => {
       expect(entfernen[0].getAttribute('aria-label')).toBe('Preis entfernen');
       entfernen[0].click();
       await fixture.whenStable();
-      expect(el.querySelectorAll('.preis')).toHaveLength(1);
+      expect(el.querySelectorAll('.preis:not(.erster)')).toHaveLength(1);
       expect(zeilenFehler(0)).toBe('Für dieses Datum gibt es schon einen Preis.');
       expect(document.activeElement).toBe(el.querySelector('.preis input[type="date"]'));
     });
@@ -888,7 +959,7 @@ describe('VertragFormular', () => {
           s.className,
         ]);
       const preise: VertragVorschauAntwort['preise'] = [
-        { gueltigAb: null, betrag: { wert: 19.99, waehrung: 'EUR' }, art: 'AKTUELL' },
+        { gueltigAb: '2026-01-01', betrag: { wert: 19.99, waehrung: 'EUR' }, art: 'AKTUELL' },
         { gueltigAb: '2027-01-01', betrag: { wert: 24.99, waehrung: 'EUR' }, art: 'ANGEKUENDIGT' },
       ];
       antwort.next(vorschauAntwort(KEINE, { preise }));
@@ -898,7 +969,7 @@ describe('VertragFormular', () => {
       await hinzufuegen();
       expect(el.querySelector('.verlauf')?.getAttribute('role')).toBe('status');
       expect(verlauf()).toEqual([
-        ['ab Vertragsbeginn: 19,99 € · aktuell', 'aktuell'],
+        ['ab 01.01.2026: 19,99 € · aktuell', 'aktuell'],
         ['ab 01.01.2027: 24,99 € · angekündigt', ''],
       ]);
     });
@@ -1232,7 +1303,9 @@ describe('VertragFormular', () => {
       kategorie: KATEGORIEN[1],
       vertragsnummer: null,
       betrag: { wert: 586.8, waehrung: 'USD' },
-      preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'USD' }, art: 'AKTUELL' }],
+      preise: [
+        { gueltigAb: '2026-01-31', betrag: { wert: 586.8, waehrung: 'USD' }, art: 'AKTUELL' },
+      ],
       anteilProzent: null,
       einmalkosten: [],
       preissteigerung: null,
@@ -1360,7 +1433,7 @@ describe('VertragFormular', () => {
       expect(host.gespeichert[0]).toMatchObject({
         beginn: '2026-01-31',
         kuendigungsfristMonate: 4,
-        preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'USD' } }],
+        preise: [{ gueltigAb: '2026-01-31', betrag: { wert: 586.8, waehrung: 'USD' } }],
       });
     });
 
@@ -1416,29 +1489,28 @@ describe('VertragFormular', () => {
         ...VERTRAG,
         betrag: USD(20),
         preise: [
-          { gueltigAb: null, betrag: USD(10), art: 'FRUEHER' },
-          { gueltigAb: '2026-01-01', betrag: USD(20), art: 'AKTUELL' },
+          { gueltigAb: '2026-01-31', betrag: USD(10), art: 'FRUEHER' },
+          { gueltigAb: '2026-06-01', betrag: USD(20), art: 'AKTUELL' },
           { gueltigAb: '2027-01-01', betrag: USD(25), art: 'ANGEKUENDIGT' },
         ],
       };
       const zeilen = (el: HTMLElement) =>
-        [...el.querySelectorAll('.preis')].map((zeile) =>
+        [...el.querySelectorAll('.preis:not(.erster)')].map((zeile) =>
           [...zeile.querySelectorAll('input')].map((input) => input.value),
         );
 
-      it('trennt den aktuellen Preis von den übrigen und schickt sie in dieser Reihenfolge', async () => {
+      it('der erste Preis steht unter „Betrag“, die übrigen in der Liste, in dieser Reihenfolge', async () => {
         const { fixture, el, feld, host } = await offen(MIT_PREISEN);
-        expect(feld('betrag').value).toBe('20,00');
-        expect(feld('gueltigSeit').value).toBe('2026-01-01');
+        expect(feld('betrag').value).toBe('10,00');
         expect(zeilen(el)).toEqual([
-          ['', '10,00'],
+          ['2026-06-01', '20,00'],
           ['2027-01-01', '25,00'],
         ]);
         el.querySelector('form')!.dispatchEvent(new Event('submit'));
         await fixture.whenStable();
         expect(host.gespeichert[0].preise).toEqual([
-          { gueltigAb: '2026-01-01', betrag: USD(20) },
-          { gueltigAb: null, betrag: USD(10) },
+          { gueltigAb: '2026-01-31', betrag: USD(10) },
+          { gueltigAb: '2026-06-01', betrag: USD(20) },
           { gueltigAb: '2027-01-01', betrag: USD(25) },
         ]);
       });

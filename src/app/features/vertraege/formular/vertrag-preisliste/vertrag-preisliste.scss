@@ -43,3 +43,14 @@
     color: var(--app-text);
   }
 }
+
+// Das Datum der ersten Zeile ist der Vertragsbeginn; geändert wird er im Tab Kosten.
+.erster input[readonly] {
+  border-color: var(--app-trenner);
+  background: transparent;
+  color: var(--app-text-gedaempft);
+}
+
+.erster .feldhinweis {
+  grid-column: 1 / -1;
+}

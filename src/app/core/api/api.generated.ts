@@ -410,13 +410,13 @@ export interface components {
         VertragPreisAnfrage: {
             betrag: components["schemas"]["Betrag"];
             /** Format: date */
-            gueltigAb?: string | null;
+            gueltigAb: string;
         };
         VertragPreisAntwort: {
             art: components["schemas"]["Preiszeilenart"];
             betrag: components["schemas"]["Betrag"];
             /** Format: date */
-            gueltigAb: string | null;
+            gueltigAb: string;
         };
         VertragPreissteigerungAnfrage: {
             art: components["schemas"]["Steigerungsart"];

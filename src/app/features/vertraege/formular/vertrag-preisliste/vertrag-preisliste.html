@@ -1,11 +1,43 @@
 <div class="abschnitt">
-  <h3>Frühere und angekündigte Preise <span class="optional">(optional)</span></h3>
+  <h3>Preise</h3>
   <p class="feldhinweis">
-    Ein Preis gilt bis zum nächsten Eintrag. Auch Aktionspreise lassen sich so abbilden, z. B. 9,99
-    € ab Vertragsbeginn und 19,99 € ab dem 7. Monat.
+    Der erste Preis gilt ab Vertragsbeginn, jeder Preis bis zum nächsten Eintrag. Auch Aktionspreise
+    lassen sich so abbilden, z. B. 9,99 € ab Vertragsbeginn und 19,99 € ab dem 7. Monat.
   </p>
 </div>
 <div class="preise">
+  <div class="preis erster">
+    <div class="feld">
+      <label [for]="erstId('gueltigAb')">Gilt ab</label>
+      <input
+        [id]="erstId('gueltigAb')"
+        type="text"
+        readonly
+        placeholder="Vertragsbeginn fehlt"
+        [value]="beginnText()"
+        [attr.aria-describedby]="erstId('hinweis')"
+      />
+    </div>
+    <div class="feld">
+      <label [for]="erstId('betrag')">Betrag in {{ waehrung() }} *</label>
+      <input
+        [id]="erstId('betrag')"
+        type="text"
+        inputmode="decimal"
+        placeholder="0,00"
+        [value]="betrag()"
+        (input)="betragEingabe($event)"
+        [attr.aria-invalid]="!!ersterFehler()"
+        [attr.aria-describedby]="ersterFehler() ? erstId('fehler') : null"
+      />
+    </div>
+    <!-- Hält die Spalte von „Entfernen“ frei, damit die Felder unter denen der übrigen Zeilen stehen. -->
+    <span aria-hidden="true"></span>
+    <p class="feldhinweis" [id]="erstId('hinweis')">Vertragsbeginn, änderbar unter „Kosten“.</p>
+    @if (ersterFehler(); as text) {
+      <p class="feldfehler" [id]="erstId('fehler')">{{ text }}</p>
+    }
+  </div>
   @for (zeile of zeilen().controls; track zeile; let i = $index) {
     <div class="preis" [formGroup]="zeile">
       <div class="feld">

@@ -18,7 +18,6 @@ export function vertragGruppe(fb: NonNullableFormBuilder) {
     kategorieId: [''],
     vertragsnummer: [''],
     betrag: [''],
-    gueltigSeit: [''],
     preise: fb.array<PreisZeile>([]),
     anteilProzent: [''],
     zahlweise: fb.control<Zahlweise | ''>(''),

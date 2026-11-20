@@ -84,7 +84,7 @@ test.describe('Seite Verträge', () => {
       /ab 01\.03\.2027\s*39,90\s€ · angekündigt/,
     );
     await expect(panel.getByRole('tabpanel').getByRole('listitem')).toHaveText([
-      'ab Vertragsbeginn: 29,90 €',
+      'ab 01.05.2025: 29,90 €',
       'ab 01.01.2026: 34,90 € · aktuell',
       'ab 01.03.2027: 39,90 € · angekündigt',
     ]);

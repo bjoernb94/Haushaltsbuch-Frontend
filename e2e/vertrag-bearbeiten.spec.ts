@@ -36,21 +36,25 @@ test.describe('Vertrag bearbeiten', () => {
     await page.goto('/vertraege');
   });
 
-  test('Preise: aktueller unter „Betrag“, übrige in der Liste; ändern, entfernen, hinzufügen', async ({
+  test('Preise: erster unter „Betrag“, alle in der Liste; ändern, entfernen, hinzufügen', async ({
     page,
   }) => {
     const formular = await bearbeiten(page, FITNESS);
     await tab(page, 'Kosten');
-    await expect(formular.getByLabel('Betrag in € *').first()).toHaveValue('34,90');
-    await expect(formular.getByLabel('Betrag gilt seit')).toHaveValue('2026-01-01');
+    await expect(formular.getByLabel('Betrag ab Vertragsbeginn in € *')).toHaveValue('29,90');
+    await expect(formular.getByText(/Aktuell: 34,90\s€ seit 01\.01\.2026/)).toBeVisible();
 
     await tab(page, 'Preisverlauf');
-    const zeilen = formular.locator('.preis');
+    const erste = formular.locator('.preis.erster');
+    await expect(erste.getByLabel('Gilt ab')).toHaveValue('01.05.2025');
+    await expect(erste.getByLabel('Betrag in € *')).toHaveValue('29,90');
+    const zeilen = formular.locator('.preis:not(.erster)');
     await expect(zeilen).toHaveCount(2);
-    await expect(zeilen.nth(0).getByLabel('Betrag in € *')).toHaveValue('29,90');
+    await expect(zeilen.nth(0).getByLabel('Gilt ab *')).toHaveValue('2026-01-01');
+    await expect(zeilen.nth(0).getByLabel('Betrag in € *')).toHaveValue('34,90');
     await expect(zeilen.nth(1).getByLabel('Gilt ab *')).toHaveValue('2027-03-01');
     const verlauf = formular.getByRole('status').filter({ hasText: 'Preisverlauf' });
-    await expect(verlauf).toContainText('ab Vertragsbeginn: 29,90 €');
+    await expect(verlauf).toContainText('ab 01.05.2025: 29,90 €');
     await expect(verlauf).toContainText('ab 01.01.2026: 34,90 € · aktuell');
     await expect(verlauf).toContainText('ab 01.03.2027: 39,90 € · angekündigt');
 
@@ -63,8 +67,8 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(verlauf).toContainText('ab 01.06.2027: 42,00 € · angekündigt');
 
     expect((await speichernUndAnfrageLesen(page)).preise).toEqual([
+      { gueltigAb: '2025-05-01', betrag: { wert: 29.9, waehrung: 'EUR' } },
       { gueltigAb: '2026-01-01', betrag: { wert: 34.9, waehrung: 'EUR' } },
-      { gueltigAb: null, betrag: { wert: 29.9, waehrung: 'EUR' } },
       { gueltigAb: '2027-06-01', betrag: { wert: 42, waehrung: 'EUR' } },
     ]);
     await expect(zeile(page, FITNESS).getByText('Preis ↑ ab 01.06.2027')).toBeVisible();
@@ -197,12 +201,12 @@ test.describe('Vertrag bearbeiten', () => {
     const formular = await bearbeiten(page, FITNESS);
     await tab(page, 'Preisverlauf');
     await formular.getByRole('button', { name: 'Preis hinzufügen' }).click();
-    await formular.locator('.preis').nth(2).getByLabel('Gilt ab *').fill('2027-03-01');
-    await formular.locator('.preis').nth(2).getByLabel('Betrag in € *').fill('45');
+    await formular.locator('.preis:not(.erster)').nth(2).getByLabel('Gilt ab *').fill('2027-03-01');
+    await formular.locator('.preis:not(.erster)').nth(2).getByLabel('Betrag in € *').fill('45');
     await sheet(page).getByRole('button', { name: 'Sichern' }).click();
 
     await expect(sheet(page).getByRole('tab', { name: /^Preisverlauf.*1 Fehler$/ })).toBeVisible();
-    const datum = formular.locator('.preis').nth(2).getByLabel('Gilt ab *');
+    const datum = formular.locator('.preis:not(.erster)').nth(2).getByLabel('Gilt ab *');
     await expect(datum).toBeFocused();
     await expect(datum).toHaveAccessibleDescription('Für dieses Datum gibt es schon einen Preis.');
   });
@@ -235,7 +239,7 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(formular.getByLabel('Anbieter *')).toHaveValue('Musterversicherung AG');
     await expect(formular.getByLabel('Anbieter *')).toBeFocused();
     await expect(formular.getByLabel('Bezeichnung')).toHaveValue(KFZ);
-    await expect(formular.getByLabel('Betrag in € *')).toHaveValue('586,80');
+    await expect(formular.getByLabel('Betrag ab Vertragsbeginn in € *')).toHaveValue('586,80');
     await expect(formular.getByLabel('Zahlweise *')).toHaveValue('JAEHRLICH');
     await expect(formular.getByLabel('Vertragsbeginn *')).toHaveValue('2023-01-01');
     await expect(formular.getByLabel('Zahlungsweg')).toHaveValue('LASTSCHRIFT');
@@ -263,7 +267,7 @@ test.describe('Vertrag bearbeiten', () => {
       bezeichnung: KFZ,
       kategorieId: 'kategorie-2',
       vertragsnummer: 'KFZ-4711-23',
-      preise: [{ gueltigAb: null, betrag: { wert: 586.8, waehrung: 'EUR' } }],
+      preise: [{ gueltigAb: '2023-01-01', betrag: { wert: 586.8, waehrung: 'EUR' } }],
       zahlweise: 'JAEHRLICH',
       zahlungsweg: 'LASTSCHRIFT',
       kuendbar: true,
@@ -365,13 +369,15 @@ test.describe('Vertrag bearbeiten', () => {
   test('Feldfehler: Sheet bleibt offen und zeigt sie am Feld', async ({ page }) => {
     const formular = await bearbeiten(page);
     await tab(page, 'Kosten');
-    await formular.getByLabel('Betrag in € *').fill('19,999');
+    await formular.getByLabel('Betrag ab Vertragsbeginn in € *').fill('19,999');
     await sheet(page).getByRole('button', { name: 'Sichern' }).click();
     await expect(formular.getByRole('alert')).toHaveText('Bitte prüfe die markierten Felder.');
-    await expect(formular.getByLabel('Betrag in € *')).toHaveAccessibleDescription(
-      'Höchstens 2 Nachkommastellen.',
+    await expect(
+      formular.getByLabel('Betrag ab Vertragsbeginn in € *'),
+    ).toHaveAccessibleDescription(
+      'Höchstens 2 Nachkommastellen. Spätere Preise trägst du unter „Preisverlauf“ ein.',
     );
-    await expect(formular.getByLabel('Betrag in € *')).toBeFocused();
+    await expect(formular.getByLabel('Betrag ab Vertragsbeginn in € *')).toBeFocused();
     await expect(page).toHaveURL(/\/bearbeiten$/);
   });
 
