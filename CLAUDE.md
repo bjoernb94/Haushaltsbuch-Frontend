@@ -111,8 +111,9 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   heights, layout sizes) stay fixed values with a comment.
 - The design in the Claude Design canvas "Haushaltsbuch" (https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx; pages
   Anmeldung, Allgemein, Verträge with desktop and 390 px artboards, Grundlagen with the shared building blocks) is
-  authoritative (ADR 0020): pages and behaviour are designed there first, the code follows. A deliberate
-  deviation goes into the artboard first or is noted on the issue. Logo, app icons and UI symbols live in the design
+  authoritative (ADR 0020): pages and behaviour are designed there first, the code follows. App and canvas are
+  always kept the same: if the code has to differ (texts, conditions, layout), update the artboard in the same
+  change; a note on the issue alone is not enough. Logo, app icons and UI symbols live in the design
   system's assets (symbols: 24 grid, stroke 2, below 16 px 2.5). Colour tokens `--app-*` are exactly the colours
   of the design system "Haushaltsbuch" (https://claude.ai/artifact/1mDWVeKNzU1Mp3Co6TFD7H) with the same names; a
   new colour or building block goes there first. `--app-trenner` frames an area, `--app-trenner-innen` separates

@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
 import { VertragsuebersichtAntwort } from '../../../core/api/api';
-import { RUNDUNG_TEXT_INFO } from '../../../shared/rundungshinweis/rundungshinweis';
+import { INFO_RUNDUNG } from '../../vertraege/vertrag-texte';
 import { VertragService } from '../../vertraege/vertrag.service';
 import { VertragKachel } from './vertrag-kachel';
 
@@ -75,9 +75,9 @@ describe('VertragKachel', () => {
     const { element } = await kachel();
     const kennzahlen = element.querySelectorAll('.kennzahl');
     expect(text(kennzahlen[0])).toBe('Laufende Verträge9');
-    expect(text(kennzahlen[1])).toBe('Kosten pro Monat 202,08 €');
+    expect(text(kennzahlen[1])).toBe('Kosten pro Monat202,08 €');
     expect(element.querySelector('a')?.getAttribute('href')).toBe('/vertraege');
-    expect(element.querySelector('small, app-rundungshinweis')).toBeNull();
+    expect(element.querySelector('small')).toBeNull();
   });
 
   /** Öffnet den Info-Knopf an „Kosten pro Monat“ und liefert seine Sätze. */
@@ -92,20 +92,20 @@ describe('VertragKachel', () => {
   }
 
   it('erklärt „Kosten pro Monat“ im Info-Knopf, ohne Besonderheiten nur die Rundung', async () => {
-    expect(await infoSaetze({})).toEqual([RUNDUNG_TEXT_INFO]);
+    expect(await infoSaetze({})).toEqual([INFO_RUNDUNG]);
   });
 
   it('nennt im Info-Knopf bei geteilten Verträgen „nur dein Anteil“', async () => {
     expect(await infoSaetze({ hatAnteile: true })).toEqual([
       'Bei geteilten Verträgen zählt nur dein Anteil.',
-      RUNDUNG_TEXT_INFO,
+      INFO_RUNDUNG,
     ]);
   });
 
   it('nennt im Info-Knopf, dass Verträge mit späterem Beginn fehlen', async () => {
     expect(await infoSaetze({ hatNichtBegonnene: true })).toEqual([
       'Verträge, die erst später beginnen, sind noch nicht enthalten.',
-      RUNDUNG_TEXT_INFO,
+      INFO_RUNDUNG,
     ]);
   });
 
@@ -113,7 +113,7 @@ describe('VertragKachel', () => {
     expect(await infoSaetze({ hatAnteile: true, hatNichtBegonnene: true })).toEqual([
       'Bei geteilten Verträgen zählt nur dein Anteil.',
       'Verträge, die erst später beginnen, sind noch nicht enthalten.',
-      RUNDUNG_TEXT_INFO,
+      INFO_RUNDUNG,
     ]);
   });
 
@@ -128,12 +128,12 @@ describe('VertragKachel', () => {
       }),
     );
     expect(text((await kachel()).element.querySelectorAll('.kennzahl')[1])).toBe(
-      'Kosten pro Monat 10,00 € · 5,00 $',
+      'Kosten pro Monat10,00 € · 5,00 $',
     );
 
     uebersicht.mockReturnValue(of({ ...UEBERSICHT, kostenProMonat: [] }));
     expect(text((await kachel()).element.querySelectorAll('.kennzahl')[1])).toBe(
-      'Kosten pro Monat 0,00 €',
+      'Kosten pro Monat0,00 €',
     );
   });
 

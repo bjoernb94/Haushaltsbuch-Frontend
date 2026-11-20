@@ -14,10 +14,10 @@ import { BetraegePipe, BetragPipe } from '../../../shared/format/betrag.pipe';
 import { DatumPipe } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import { InfoKnopf } from '../../../shared/info-knopf/info-knopf';
-import { RUNDUNG_TEXT_INFO } from '../../../shared/rundungshinweis/rundungshinweis';
 import {
   INFO_NUR_ANTEIL,
   INFO_OHNE_NICHT_BEGONNENE,
+  INFO_RUNDUNG,
   vertragName,
   ZAHLWEISE_EINHEIT,
 } from '../../vertraege/vertrag-texte';
@@ -47,7 +47,7 @@ export class VertragKachel {
     return [
       ...(daten?.hatAnteile ? [INFO_NUR_ANTEIL] : []),
       ...(daten?.hatNichtBegonnene ? [INFO_OHNE_NICHT_BEGONNENE] : []),
-      RUNDUNG_TEXT_INFO,
+      INFO_RUNDUNG,
     ];
   });
 

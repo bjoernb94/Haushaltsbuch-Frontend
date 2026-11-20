@@ -94,11 +94,6 @@ h1 {
   gap: $abstand-4;
 }
 
-// Gehört zu den Kennzahlen darüber, näher als der Abstand der Seite.
-.kennzahlen + app-rundungshinweis {
-  margin-top: -#{$abstand-4};
-}
-
 .kennzahl {
   display: flex;
   flex-direction: column;
@@ -118,11 +113,11 @@ h1 {
     font-size: $schrift-titel-gross;
     font-weight: 800;
   }
+}
 
-  small {
-    font-size: $schrift-klein;
-    color: var(--app-text-gedaempft);
-  }
+// Die Blase des Info-Knopfs hängt an der Beschriftung.
+.info-anker {
+  position: relative;
 }
 
 .liste {

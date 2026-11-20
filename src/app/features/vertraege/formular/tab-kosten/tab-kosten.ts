@@ -15,8 +15,8 @@ import {
 } from '@angular/forms';
 import { VertragVorschauAntwort, Zahlungsweg, Zahlweise } from '../../../../core/api/api';
 import { betragText } from '../../../../shared/format/betrag.pipe';
-import { Rundungshinweis } from '../../../../shared/rundungshinweis/rundungshinweis';
-import { ZAHLUNGSWEG_TEXT, ZAHLWEISE_TEXT } from '../../vertrag-texte';
+import { InfoKnopf } from '../../../../shared/info-knopf/info-knopf';
+import { INFO_RUNDUNG, ZAHLUNGSWEG_TEXT, ZAHLWEISE_TEXT } from '../../vertrag-texte';
 import {
   EinmalkostenZeile,
   VertragEinmalkostenZeilen,
@@ -31,7 +31,7 @@ import { optionen, VertragTab } from '../vertrag-tabs';
  */
 @Component({
   selector: 'app-vertrag-tab-kosten',
-  imports: [ReactiveFormsModule, Rundungshinweis, VertragEinmalkostenZeilen],
+  imports: [ReactiveFormsModule, InfoKnopf, VertragEinmalkostenZeilen],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './tab-kosten.html',
@@ -69,6 +69,8 @@ export class VertragTabKosten extends VertragTab {
       `${betragText(vorschau.eigenerAnteil.betrag, this.locale)}${zahlweise}`
     );
   });
+
+  protected readonly infoAnteil = computed(() => (this.anteilText() ? [INFO_RUNDUNG] : []));
 
   /** Summe der vollständigen Zeilen aus der Vorschau; ohne Zeilen keine. */
   protected readonly summe = computed(() => {

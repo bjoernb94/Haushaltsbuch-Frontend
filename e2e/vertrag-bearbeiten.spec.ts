@@ -144,7 +144,7 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(formular.getByRole('switch', { name: 'Preis steigt regelmäßig' })).toBeChecked();
     await expect(formular.getByLabel('Erhöhung in', { exact: true })).toHaveValue('BETRAG');
     await expect(formular.getByLabel('Erhöhung in € *')).toHaveValue('1,00');
-    const prognose = formular.getByRole('status').filter({ hasText: 'Prognose' });
+    const prognose = formular.locator('.prognose > [role="status"]');
     await expect(prognose).toContainText(/ab 01\.01\.2027 voraussichtlich 6,00\s€/);
 
     await formular.getByLabel('Erhöhung in', { exact: true }).selectOption('PROZENT');
@@ -298,7 +298,9 @@ test.describe('Vertrag bearbeiten', () => {
     await speichernUndAnfrageLesen(page);
 
     await expect(page).toHaveURL(/\/vertraege\/kfz$/);
-    await expect(details(page, KFZ).getByRole('status')).toHaveText(`„${KFZ}“ wurde gespeichert.`);
+    await expect(details(page, KFZ).locator('.meldung').getByRole('status')).toHaveText(
+      `„${KFZ}“ wurde gespeichert.`,
+    );
     await expect(zeile(page, KFZ).getByRole('status')).toHaveCount(0);
 
     // Bearbeiten liegt nicht mehr im Verlauf.
@@ -581,6 +583,8 @@ test.describe('Vertrag bearbeiten', () => {
     await sheet(page).getByLabel('Notiz').fill('Vom Handy');
     const anfrage = await speichernUndAnfrageLesen(page);
     expect(anfrage.notiz).toBe('Vom Handy');
-    await expect(details(page, KFZ).getByRole('status')).toContainText('wurde gespeichert');
+    await expect(details(page, KFZ).locator('.meldung').getByRole('status')).toContainText(
+      'wurde gespeichert',
+    );
   });
 });

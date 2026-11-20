@@ -13,6 +13,8 @@
   gap: $abstand-2;
 
   h3 {
+    // Die Blase des Info-Knopfs hängt an der Überschrift.
+    position: relative;
     margin: 0;
     font-size: $schrift-text;
     font-weight: 800;

@@ -59,6 +59,16 @@ legend {
   line-height: 1.45;
 }
 
+// Anteil: Fließtext, das ⓘ direkt hinter dem letzten Wort; die Blase hängt an der Box.
+.anteil {
+  position: relative;
+  display: block;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
 .ankreuzen {
   min-width: 0;
   display: flex;

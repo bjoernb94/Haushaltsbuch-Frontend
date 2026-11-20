@@ -101,19 +101,16 @@
         >Bei geteilten Verträgen, z. B. 50 oder 33,3. Übersichten zählen dann nur deinen
         Anteil.</span
       >
-      <!-- Die Live-Region steht immer da, sonst sagen Screenreader die erste Zeile nicht an. -->
-      <div role="status">
-        @if (anteilText(); as text) {
-          <div class="vorschau">
-            <b>Dein Anteil:</b>
-            <span>{{ text }}</span>
-          </div>
-        }
+      <!-- Die Live-Region steht immer da, sonst sagen Screenreader die erste Zeile nicht an. Der
+           Info-Knopf steht daneben, sonst wird er bei jeder Eingabe mit vorgelesen. -->
+      <div class="vorschau anteil" [hidden]="!anteilText()">
+        <span role="status">
+          @if (anteilText(); as text) {
+            <b>Dein Anteil:</b> {{ text }}
+          }
+        </span>
+        <app-info-knopf beschriftung="deinem Anteil" [saetze]="infoAnteil()" />
       </div>
-      <!-- Außerhalb der Live-Region, sonst wird er bei jeder Eingabe vorgelesen. -->
-      @if (anteilText()) {
-        <app-rundungshinweis />
-      }
     </div>
   </div>
 </fieldset>

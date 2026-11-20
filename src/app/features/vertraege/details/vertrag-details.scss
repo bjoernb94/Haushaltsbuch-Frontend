@@ -43,21 +43,20 @@
     white-space: nowrap;
   }
 
-  button {
-    font: inherit;
-    cursor: pointer;
-
-    &:focus-visible {
-      outline: 3px solid var(--app-gruen-fokus-rand);
-      outline-offset: 2px;
-    }
+  button:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
   }
+}
+
+.kopf button,
+.kopf-knopf {
+  font: inherit;
+  cursor: pointer;
 }
 
 .kopf-knopf {
   flex: none;
-  font: inherit;
-  cursor: pointer;
   min-height: 32px;
   padding: 0 $abstand-3;
   border: 1.5px solid var(--app-rand);
@@ -133,6 +132,8 @@
 }
 
 .kachel-titel {
+  // Die Blase des Info-Knopfs hängt an der Beschriftung.
+  position: relative;
   font-weight: 700;
 }
 

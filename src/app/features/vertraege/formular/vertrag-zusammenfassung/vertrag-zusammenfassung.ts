@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Betrag, VertragKategorieAntwort, VertragVorschauAntwort } from '../../../../core/api/api';
 import { betragText } from '../../../../shared/format/betrag.pipe';
 import { datumText } from '../../../../shared/format/datum.pipe';
-import { Rundungshinweis } from '../../../../shared/rundungshinweis/rundungshinweis';
+import { InfoKnopf } from '../../../../shared/info-knopf/info-knopf';
 import {
+  INFO_RUNDUNG,
   kategorieText,
   kuendigungText,
   PREISAENDERUNG_ART_TEXT,
@@ -15,7 +16,8 @@ export interface Uebersicht {
   name: string;
   /** „Anbieter · Kategorie“ */
   unter: string;
-  zeilen: { label: string; wert: string }[];
+  /** {@code info}: Sätze für den Info-Knopf an der Zeile, ohne keiner. */
+  zeilen: { label: string; wert: string; info?: string[] }[];
 }
 
 const NOCH_OFFEN = 'Noch offen';
@@ -67,7 +69,8 @@ export function uebersichtAus(
         .join(' · ') || 'Noch keine Angaben',
     zeilen: [
       { label: 'Betrag', wert: v?.betrag ? text(v.betrag) + zahlweise : NOCH_OFFEN },
-      { label: 'Pro Monat', wert: proMonat },
+      // Umgerechnet und damit gerundet, sobald ein Wert dasteht.
+      { label: 'Pro Monat', wert: proMonat, info: v?.kostenProMonat ? [INFO_RUNDUNG] : [] },
       { label: 'Vertragsbeginn', wert: datumText(w.beginn) || NOCH_OFFEN },
       { label: 'Kündigung', wert: kuendigung },
       { label: 'Nächste Preisänderung', wert: preis },
@@ -80,12 +83,12 @@ let letzte = 0;
 
 /**
  * Zusammenfassung neben dem Formular „Neuer Vertrag“; die Werte bereitet
- * {@link uebersichtAus} aus Eingaben und Vorschau des Formulars auf. Pro Monat,
- * Anteil und Summen sind gerundet, daher der Hinweis darunter.
+ * {@link uebersichtAus} aus Eingaben und Vorschau des Formulars auf. „Pro Monat“ und
+ * der Anteil sind gerundet, das sagt der Info-Knopf an der Zeile.
  */
 @Component({
   selector: 'app-vertrag-zusammenfassung',
-  imports: [Rundungshinweis],
+  imports: [InfoKnopf],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<h2 [id]="titelId">Zusammenfassung</h2>
     <div class="titel">
@@ -95,12 +98,14 @@ let letzte = 0;
     <dl>
       @for (zeile of uebersicht().zeilen; track zeile.label) {
         <div>
-          <dt>{{ zeile.label }}</dt>
+          <dt>
+            {{ zeile.label
+            }}<app-info-knopf [beschriftung]="zeile.label" [saetze]="zeile.info ?? []" />
+          </dt>
           <dd>{{ zeile.wert }}</dd>
         </div>
       }
-    </dl>
-    <app-rundungshinweis />`,
+    </dl>`,
   styleUrl: './vertrag-zusammenfassung.scss',
   host: { role: 'complementary', '[attr.aria-labelledby]': 'titelId' },
 })

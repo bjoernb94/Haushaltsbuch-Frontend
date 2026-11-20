@@ -1,8 +1,11 @@
 @use 'masse' as *;
 
+// Hinter der Beschriftung, im Fließtext mittig zur Zeile; der Anker braucht nur position: relative.
 :host {
   display: inline-flex;
   flex: none;
+  margin-left: $abstand-1;
+  vertical-align: middle;
 }
 
 .knopf {
@@ -47,9 +50,9 @@
 
 .blase {
   position: absolute;
-  // Unter der Beschriftung, an deren rechter Kante.
+  // Ohne berechnete Lage unter dem Anker, an dessen linker Kante.
   top: calc(100% + #{$abstand-2});
-  right: 0;
+  left: 0;
   z-index: 31;
   box-sizing: border-box;
   // Höchstens 300 px, nie breiter als der Bildschirm minus 48 px.

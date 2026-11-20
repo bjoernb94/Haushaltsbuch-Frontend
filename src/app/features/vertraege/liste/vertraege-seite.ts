@@ -20,10 +20,17 @@ import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicher
 import { BestaetigenDialog } from '../../../shared/bestaetigen-dialog/bestaetigen-dialog';
 import { BetraegePipe } from '../../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
+import { InfoKnopf } from '../../../shared/info-knopf/info-knopf';
 import { inDenBlick } from '../../../shared/in-den-blick/in-den-blick';
 import { seitenaktionenMelden } from '../../../shared/seitenaktionen/seitenaktionen';
-import { Rundungshinweis } from '../../../shared/rundungshinweis/rundungshinweis';
-import { NUR_ANTEIL, OHNE_NICHT_BEGONNENE, vertragName } from '../vertrag-texte';
+import {
+  INFO_KALENDERJAHR,
+  INFO_KALENDERJAHR_MIT_PROGNOSE,
+  INFO_NUR_ANTEIL,
+  INFO_OHNE_NICHT_BEGONNENE,
+  INFO_RUNDUNG,
+  vertragName,
+} from '../vertrag-texte';
 import { VertragNavigation } from './vertrag-navigation';
 import { VertragZeile, ZeilenMeldung } from './vertrag-zeile/vertrag-zeile';
 import { VertragService } from '../vertrag.service';
@@ -57,7 +64,7 @@ const NEU = '/vertraege/neu';
     BetraegePipe,
     VertragZeile,
     BestaetigenDialog,
-    Rundungshinweis,
+    InfoKnopf,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertraege-seite.html',
@@ -101,8 +108,26 @@ export class VertraegeSeite {
   });
 
   protected readonly neu = NEU;
-  protected readonly nurAnteil = NUR_ANTEIL;
-  protected readonly ohneNichtBegonnene = OHNE_NICHT_BEGONNENE;
+
+  // Hinweise zu den Kennzahlen, nur die zutreffenden; gerundet sind die Summen immer.
+  private readonly uebersicht = computed(() => this.daten()?.uebersicht);
+  private readonly anteil = computed(() =>
+    this.uebersicht()?.hatAnteile ? [INFO_NUR_ANTEIL] : [],
+  );
+  protected readonly infoMonat = computed(() => [
+    ...this.anteil(),
+    ...(this.uebersicht()?.hatNichtBegonnene ? [INFO_OHNE_NICHT_BEGONNENE] : []),
+    INFO_RUNDUNG,
+  ]);
+  protected readonly infoJahr = computed(() => [
+    this.uebersicht()?.kostenImJahrMitPrognose ? INFO_KALENDERJAHR_MIT_PROGNOSE : INFO_KALENDERJAHR,
+    ...this.anteil(),
+    INFO_RUNDUNG,
+  ]);
+  /** Einmalkosten werden nicht umgerechnet, nur der Anteil rundet. */
+  protected readonly infoEinmal = computed(() =>
+    this.anteil().length ? [...this.anteil(), INFO_RUNDUNG] : [],
+  );
 
   private ladevorgang?: Subscription;
 

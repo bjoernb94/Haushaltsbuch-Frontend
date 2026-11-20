@@ -183,20 +183,32 @@ export function vorbei({ status }: VertragAntwort['berechnet']): boolean {
   return status === 'BEENDET' || status === 'STORNIERT';
 }
 
-/** Unter Kennzahlen, wenn das Backend {@code hatAnteile} meldet. */
-export const NUR_ANTEIL = 'Bei geteilten Verträgen nur dein Anteil';
-
-/** Unter „Kosten pro Monat“, wenn das Backend {@code hatNichtBegonnene} meldet. */
-export const OHNE_NICHT_BEGONNENE = 'Ohne Verträge, die erst später beginnen';
-
-// Dieselben Hinweise als Sätze im Info-Knopf; ersetzen die beiden oben, sobald die Vertragsseite ihn hat.
-
 /** Info zu einer Kennzahl, wenn das Backend {@code hatAnteile} meldet. */
 export const INFO_NUR_ANTEIL = 'Bei geteilten Verträgen zählt nur dein Anteil.';
 
 /** Info zu „Kosten pro Monat“, wenn das Backend {@code hatNichtBegonnene} meldet. */
 export const INFO_OHNE_NICHT_BEGONNENE =
   'Verträge, die erst später beginnen, sind noch nicht enthalten.';
+
+/** Info zu „Kosten im Jahr“; die Prognose nur, wenn das Backend {@code kostenImJahrMitPrognose} meldet. */
+export const INFO_KALENDERJAHR = 'Alle Abbuchungen im Kalenderjahr.';
+export const INFO_KALENDERJAHR_MIT_PROGNOSE =
+  'Alle Abbuchungen im Kalenderjahr, inklusive Prognose.';
+
+// Rundung: Das Backend rundet erst bei der Ausgabe, verbindlich ist nur der Betrag je Abbuchung. Die
+// SPA erklärt oder korrigiert die Abweichung nicht (ADR 0010). Nie am Betrag je Abbuchung selbst.
+
+/** Info an einem umgerechneten Wert (pro Monat, im Jahr, Anteil, Summen). */
+export const INFO_RUNDUNG =
+  'Gerundet, kann um wenige Cent abweichen. Verbindlich ist der Betrag je Abbuchung.';
+
+/** Info an „Pro Monat“ der Details; gilt für alle umgerechneten Werte dort, auch im Tab Kosten. */
+export const INFO_RUNDUNG_DETAILS =
+  'Umgerechnete Werte (pro Monat, im Jahr, dein Anteil) sind gerundet und können um wenige Cent abweichen. Verbindlich ist der Betrag je Abbuchung.';
+
+/** Info an der Prognose; dort steht schon, dass es keine Abbuchung ist. */
+export const INFO_RUNDUNG_PROGNOSE =
+  'Prognosewerte sind gerundet und können um wenige Cent abweichen.';
 
 /**
  * „33,3“: Prozent wie vom Backend, beim Anteil höchstens eine Nachkommastelle, bei der Erhöhung

@@ -204,8 +204,9 @@ im Backend.
   [Canvas „Haushaltsbuch“](https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx), der Code folgt daraus.
   Die Farb-Tokens `--app-*` in `src/styles.scss` sind genau die Farben des
   [Design Systems „Haushaltsbuch“](https://claude.ai/artifact/1mDWVeKNzU1Mp3Co6TFD7H), mit denselben
-  Namen; eine neue Farbe oder ein neuer Baustein kommt zuerst dorthin. Weicht der Code bewusst ab, wird
-  erst das Artboard angepasst oder die Abweichung am Issue festgehalten.
+  Namen; eine neue Farbe oder ein neuer Baustein kommt zuerst dorthin. Anwendung und Canvas
+  bleiben immer gleich: Muss der Code abweichen (Texte, Bedingungen, Layout), wird das Artboard in derselben
+  Änderung angepasst; ein Vermerk am Issue allein reicht nicht.
 - **Canvas und Design System prüfen:** Im Canvas stehen Farben nur als `var(--app-…, <Wert>)`: Der Canvas stellt
   die Tokens des Design Systems als CSS-Variablen bereit, und sein Farbwähler schreibt sie so. Farben von SVGs
   stehen dafür in `style`, nicht in Attributen wie `stroke="…"`. Abstände, Radien und Schriftgrößen kommen nur aus

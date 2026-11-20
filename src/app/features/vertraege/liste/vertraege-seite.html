@@ -40,35 +40,28 @@
       <span>Laufende Verträge</span><b>{{ stand.uebersicht.laufendeVertraege }}</b>
     </div>
     <div class="kennzahl">
-      <span>Kosten pro Monat</span><b>{{ stand.uebersicht.kostenProMonat | betraege }}</b>
-      @if (stand.uebersicht.hatNichtBegonnene) {
-        <small>{{ ohneNichtBegonnene }}</small>
-      }
-      @if (stand.uebersicht.hatAnteile) {
-        <small>{{ nurAnteil }}</small>
-      }
+      <span class="info-anker"
+        >Kosten pro Monat<app-info-knopf beschriftung="Kosten pro Monat" [saetze]="infoMonat()"
+      /></span>
+      <b>{{ stand.uebersicht.kostenProMonat | betraege }}</b>
     </div>
     <div class="kennzahl">
-      <span>Kosten {{ stand.uebersicht.jahr }}</span
-      ><b>{{ stand.uebersicht.kostenImJahr | betraege }}</b>
-      <small
-        >Alle Abbuchungen im Kalenderjahr{{
-          stand.uebersicht.kostenImJahrMitPrognose ? ', inkl. Prognose' : ''
-        }}</small
-      >
-      @if (stand.uebersicht.hatAnteile) {
-        <small>{{ nurAnteil }}</small>
-      }
+      <span class="info-anker"
+        >Kosten {{ stand.uebersicht.jahr
+        }}<app-info-knopf [beschriftung]="'Kosten ' + stand.uebersicht.jahr" [saetze]="infoJahr()"
+      /></span>
+      <b>{{ stand.uebersicht.kostenImJahr | betraege }}</b>
     </div>
     <div class="kennzahl">
-      <span>Einmalkosten {{ stand.uebersicht.jahr }}</span
-      ><b>{{ stand.uebersicht.einmalkostenImJahr | betraege }}</b>
-      @if (stand.uebersicht.hatAnteile) {
-        <small>{{ nurAnteil }}</small>
-      }
+      <span class="info-anker"
+        >Einmalkosten {{ stand.uebersicht.jahr
+        }}<app-info-knopf
+          [beschriftung]="'Einmalkosten ' + stand.uebersicht.jahr"
+          [saetze]="infoEinmal()"
+      /></span>
+      <b>{{ stand.uebersicht.einmalkostenImJahr | betraege }}</b>
     </div>
   </div>
-  <app-rundungshinweis />
 } @else {
   <p class="laedt" role="status">Wird geladen …</p>
 }
