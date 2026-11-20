@@ -100,18 +100,18 @@
       }
     </div>
   </div>
-  <div class="prognose" role="status">
-    <b>Prognose</b>
-    @for (zeile of prognose().zeilen; track $index) {
-      <span>{{ zeile }}</span>
-    }
-    @if (prognose().hinweis; as hinweis) {
-      <span class="leer">{{ hinweis }}</span>
-    }
+  <!-- Der Info-Knopf steht außerhalb der Live-Region, sonst wird er bei jeder Eingabe mit vorgelesen. -->
+  <div class="prognose">
+    <span><b>Prognose</b><app-info-knopf beschriftung="Prognose" [saetze]="infoPrognose()" /></span>
+    <div role="status">
+      @for (zeile of prognose().zeilen; track $index) {
+        <span>{{ zeile }}</span>
+      }
+      @if (prognose().hinweis; as hinweis) {
+        <span class="leer">{{ hinweis }}</span>
+      }
+    </div>
   </div>
-  @if (prognose().zeilen.length) {
-    <app-rundungshinweis kurz />
-  }
 }
 
 @if (erinnerung()) {

@@ -3,15 +3,12 @@
     <app-vertrag-preisverlauf [punkte]="vertrag().berechnet.preisverlauf" />
   }
   <div class="preise">
-    <h3>Preise</h3>
+    <h3>Preise<app-info-knopf beschriftung="Preise" [saetze]="info()" /></h3>
     <ul>
       @for (preis of preise(); track $index) {
         <li [class]="preis.art">{{ preis.text }}</li>
       }
     </ul>
-    @if (vertrag().berechnet.prognose.length) {
-      <app-rundungshinweis kurz />
-    }
   </div>
 } @else {
   <div class="keine-preise">

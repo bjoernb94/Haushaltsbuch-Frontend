@@ -8,9 +8,9 @@ import {
   output,
 } from '@angular/core';
 import { VertragAntwort } from '../../../../core/api/api';
-import { Rundungshinweis } from '../../../../shared/rundungshinweis/rundungshinweis';
+import { InfoKnopf } from '../../../../shared/info-knopf/info-knopf';
 import { VertragPreisverlauf } from '../vertrag-preisverlauf/vertrag-preisverlauf';
-import { preisText, prognoseText } from '../../vertrag-texte';
+import { INFO_RUNDUNG_PROGNOSE, preisText, prognoseText } from '../../vertrag-texte';
 
 /**
  * Tab Preisverlauf der Details: Diagramm des Preisverlaufs (ab zwei Punkten), alle Preise und die
@@ -19,7 +19,7 @@ import { preisText, prognoseText } from '../../vertrag-texte';
  */
 @Component({
   selector: 'app-vertrag-preise',
-  imports: [Rundungshinweis, VertragPreisverlauf],
+  imports: [InfoKnopf, VertragPreisverlauf],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-preise.html',
   styleUrl: './vertrag-preise.scss',
@@ -30,6 +30,10 @@ export class VertragPreise {
   readonly vertrag = input.required<VertragAntwort>();
 
   readonly hinzufuegen = output();
+
+  protected readonly info = computed(() =>
+    this.vertrag().berechnet.prognose.length ? [INFO_RUNDUNG_PROGNOSE] : [],
+  );
 
   protected readonly preise = computed(() => {
     const { preise, berechnet } = this.vertrag();

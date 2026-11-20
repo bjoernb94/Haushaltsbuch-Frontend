@@ -14,6 +14,21 @@ class Rahmen {
   readonly saetze = signal<string[]>(['Erster Satz.', 'Zweiter Satz.']);
 }
 
+@Component({
+  imports: [InfoKnopf],
+  template: `
+    <div class="rahmen" style="overflow-x: auto">
+      <span class="anker" style="position: relative"
+        >Kosten <app-info-knopf beschriftung="Kosten" [saetze]="['Ein Satz.']"
+      /></span>
+    </div>
+  `,
+})
+class ImRahmen {}
+
+const rechteck = (left: number, top: number, width: number, height: number) =>
+  ({ left, top, width, height, right: left + width, bottom: top + height }) as DOMRect;
+
 describe('InfoKnopf', () => {
   async function aufbauen(saetze?: string[]) {
     const fixture = TestBed.createComponent(Rahmen);
@@ -102,5 +117,32 @@ describe('InfoKnopf', () => {
     const { knopf, status } = await aufbauen([]);
     expect(knopf()).toBeNull();
     expect(status()).toBeNull();
+  });
+
+  it('hält die Blase im Rahmen: unter dem Knopf, links verschoben, höchstens so breit wie er', async () => {
+    const fixture = TestBed.createComponent(ImRahmen);
+    document.body.appendChild(fixture.nativeElement);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    const anker = element.querySelector<HTMLElement>('.anker')!;
+    const knopf = element.querySelector('button')!;
+    // Ohne Layout (jsdom) die Maße vorgeben: Rahmen 0–250 px, Anker ab 150 px, Knopf bei 220 px.
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(390);
+    Object.defineProperty(element.querySelector('app-info-knopf'), 'offsetParent', {
+      value: anker,
+    });
+    vi.spyOn(element.querySelector('.rahmen')!, 'getBoundingClientRect').mockReturnValue(
+      rechteck(0, 0, 250, 400),
+    );
+    vi.spyOn(anker, 'getBoundingClientRect').mockReturnValue(rechteck(150, 100, 100, 20));
+    vi.spyOn(knopf, 'getBoundingClientRect').mockReturnValue(rechteck(220, 98, 24, 24));
+
+    knopf.click();
+    await fixture.whenStable();
+
+    const blase = element.querySelector<HTMLElement>('.blase')!;
+    expect(blase.style.width).toBe('234px');
+    expect(blase.style.left).toBe('-142px');
+    expect(blase.style.top).toBe('30px');
   });
 });

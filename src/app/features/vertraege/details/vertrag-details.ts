@@ -17,7 +17,7 @@ import { VertragAntwort } from '../../../core/api/api';
 import { betragText } from '../../../shared/format/betrag.pipe';
 import { datumText } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
-import { Rundungshinweis } from '../../../shared/rundungshinweis/rundungshinweis';
+import { InfoKnopf } from '../../../shared/info-knopf/info-knopf';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
 import { VertragEinmalkosten } from './vertrag-einmalkosten/vertrag-einmalkosten';
 import { VertragPreise } from './vertrag-preise/vertrag-preise';
@@ -25,6 +25,7 @@ import { VertraegeSeite } from '../liste/vertraege-seite';
 import { VertragNavigation } from '../liste/vertrag-navigation';
 import {
   fristDauerText,
+  INFO_RUNDUNG_DETAILS,
   kategorieText,
   kuendigungAnzeige,
   kuendigungText,
@@ -89,14 +90,7 @@ interface Eintrag {
  */
 @Component({
   selector: 'app-vertrag-details',
-  imports: [
-    HinweisBox,
-    RouterOutlet,
-    Rundungshinweis,
-    Tabliste,
-    VertragEinmalkosten,
-    VertragPreise,
-  ],
+  imports: [HinweisBox, RouterOutlet, InfoKnopf, Tabliste, VertragEinmalkosten, VertragPreise],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-details.html',
   styleUrl: './vertrag-details.scss',
@@ -145,17 +139,26 @@ export class VertragDetails {
             ? `Dein Anteil ${betragText(eigenerAnteil.kostenProMonat, this.locale)} (${prozentText(v.anteilProzent, this.locale)} %)`
             : '',
         ton: '',
+        // „Pro Monat“ steht in jedem Tab; der Satz gilt auch für den Tab Kosten.
+        info: [INFO_RUNDUNG_DETAILS],
       },
-      { label: 'Laufzeit', ...laufzeitKachel(v), ton: '' },
-      { label: 'Kündigung', wert: anzeige.text, zusatz: anzeige.zusatz, ton: anzeige.ton },
+      { label: 'Laufzeit', ...laufzeitKachel(v), ton: '', info: [] },
+      {
+        label: 'Kündigung',
+        wert: anzeige.text,
+        zusatz: anzeige.zusatz,
+        ton: anzeige.ton,
+        info: [],
+      },
       naechstePreisaenderung
         ? {
             label: 'Nächste Preisänderung',
             wert: `ab ${datumText(naechstePreisaenderung.ab)}`,
             zusatz: `${betragText(naechstePreisaenderung.betrag, this.locale)} · ${PREISAENDERUNG_ART_TEXT[naechstePreisaenderung.art]}`,
             ton: 'warnung',
+            info: [],
           }
-        : { label: 'Nächste Preisänderung', wert: 'Keine bekannt', zusatz: '', ton: '' },
+        : { label: 'Nächste Preisänderung', wert: 'Keine bekannt', zusatz: '', ton: '', info: [] },
     ];
   });
 

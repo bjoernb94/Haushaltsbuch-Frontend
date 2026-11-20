@@ -27,7 +27,13 @@
   <!-- Immer da, der Text kommt erst beim Öffnen hinein: So lesen Screenreader ihn vor. -->
   <div role="status">
     @if (offen()) {
-      <ul [id]="blaseId" class="blase">
+      <ul
+        [id]="blaseId"
+        class="blase"
+        [style.left.px]="lage()?.links"
+        [style.top.px]="lage()?.oben"
+        [style.width.px]="lage()?.breite"
+      >
         @for (satz of saetze(); track satz) {
           <li>{{ satz }}</li>
         }

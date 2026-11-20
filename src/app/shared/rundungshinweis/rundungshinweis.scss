@@ -1,8 +1,0 @@
-@use 'masse' as *;
-
-:host {
-  display: block;
-  font-size: $schrift-klein;
-  line-height: 1.45;
-  color: var(--app-text-gedaempft);
-}

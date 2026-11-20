@@ -36,7 +36,9 @@
     border-top: 1px solid var(--app-trenner-innen);
   }
 
+  // Die Blase des Info-Knopfs hängt an der Beschriftung.
   dt {
+    position: relative;
     font-size: $schrift-hinweis;
     font-weight: 600;
     color: var(--app-text-gedaempft);

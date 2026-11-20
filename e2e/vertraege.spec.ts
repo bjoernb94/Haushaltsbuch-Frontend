@@ -11,6 +11,19 @@ const oeffnen = (page: Page, name: string) =>
 const details = (page: Page, name: string) => page.getByRole('complementary', { name });
 const menue = (page: Page, name: string) =>
   page.getByRole('menu', { name: `Aktionen für ${name}` });
+const kennzahl = (page: Page, name: string) => page.locator('.kennzahl').filter({ hasText: name });
+
+/** Öffnet den Info-Knopf, prüft seine Sätze und schließt ihn wieder. */
+async function infoPruefen(page: Page, beschriftung: string, saetze: string[]) {
+  const knopf = page.getByRole('button', { name: `Info zu ${beschriftung}`, exact: true });
+  await knopf.click();
+  await expect(page.locator('.blase li')).toHaveText(saetze);
+  await knopf.click();
+  await expect(page.locator('.blase')).toHaveCount(0);
+}
+
+const RUNDUNG = 'Gerundet, kann um wenige Cent abweichen. Verbindlich ist der Betrag je Abbuchung.';
+const ANTEIL = 'Bei geteilten Verträgen zählt nur dein Anteil.';
 
 test.describe('Seite Verträge', () => {
   const liste = '/api/vertraege';
@@ -44,17 +57,14 @@ test.describe('Seite Verträge', () => {
       await expect(page.getByText(laufzeit, { exact: true })).toBeVisible();
     }
     await expect(page.getByText('Nächste Abbuchung')).toHaveCount(0);
-    await expect(page.locator('.kennzahl').filter({ hasText: 'Kosten pro Monat' })).toContainText(
-      'Ohne Verträge, die erst später beginnen',
-    );
-    await expect(
-      page.getByText(
-        'Umgerechnete Werte und Summen sind gerundet und können um wenige Cent abweichen.',
-        {
-          exact: false,
-        },
-      ),
-    ).toBeVisible();
+    // Die Hinweise stehen hinter Info-Knöpfen, nicht als Zeilen unter den Zahlen.
+    await expect(page.locator('.kennzahl small')).toHaveCount(0);
+    await expect(page.getByText('gerundet', { exact: false })).toHaveCount(0);
+    await infoPruefen(page, 'Kosten pro Monat', [
+      ANTEIL,
+      'Verträge, die erst später beginnen, sind noch nicht enthalten.',
+      RUNDUNG,
+    ]);
     await expect(page.getByRole('link', { name: 'Zur Übersicht' })).toHaveCount(0);
   });
 
@@ -66,7 +76,7 @@ test.describe('Seite Verträge', () => {
     const fitness = page.locator('app-vertrag-zeile').filter({ hasText: 'Fitnessstudio am Park' });
     await expect(fitness.getByText('Preis ↑ ab 01.03.2027')).toBeVisible();
     await expect(page.getByText('Kosten 2026', { exact: true })).toBeVisible();
-    await expect(page.getByText('Alle Abbuchungen im Kalenderjahr')).toBeVisible();
+    await infoPruefen(page, 'Kosten 2026', ['Alle Abbuchungen im Kalenderjahr.', ANTEIL, RUNDUNG]);
 
     await page.goto('/vertraege/fitness?tab=preise');
     const panel = page.getByRole('complementary', { name: 'Fitnessstudio am Park' });
@@ -87,10 +97,8 @@ test.describe('Seite Verträge', () => {
     await page.goto('/vertraege');
     const app = page.locator('app-vertrag-zeile').filter({ hasText: 'Software GmbH' });
     await expect(app.getByText('Anteil 50 %')).toBeVisible();
-    await expect(page.getByText('Bei geteilten Verträgen nur dein Anteil')).toHaveCount(3);
-    await expect(page.locator('.kennzahl').filter({ hasText: 'Einmalkosten 2026' })).toHaveText(
-      /Einmalkosten 2026\s*15,00\s€\s*Bei geteilten Verträgen nur dein Anteil/,
-    );
+    await expect(kennzahl(page, 'Einmalkosten 2026')).toHaveText(/^Einmalkosten 2026\s*15,00\s€$/);
+    await infoPruefen(page, 'Einmalkosten 2026', [ANTEIL, RUNDUNG]);
 
     await page.goto('/vertraege/app?tab=kosten');
     const panel = page.getByRole('complementary', { name: 'Software GmbH' });
@@ -237,6 +245,64 @@ test.describe('Seite Verträge', () => {
     await expect(neu).toBeInViewport();
     await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
   });
+
+  test('Info-Knöpfe: per Tastatur bedienbar, höchstens eine Blase offen', async ({ page }) => {
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/vertraege');
+    const monat = page.getByRole('button', { name: 'Info zu Kosten pro Monat' });
+    const jahr = page.getByRole('button', { name: 'Info zu Kosten 2026' });
+
+    await monat.focus();
+    await page.keyboard.press('Enter');
+    await expect(monat).toHaveAttribute('aria-expanded', 'true');
+    await expect(kennzahl(page, 'Kosten pro Monat').getByRole('status')).toContainText(RUNDUNG);
+    await page.keyboard.press('Escape');
+    await expect(monat).toHaveAttribute('aria-expanded', 'false');
+    await expect(monat).toBeFocused();
+
+    await monat.click();
+    await jahr.click();
+    await expect(monat).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('.blase')).toHaveCount(1);
+    await page.getByRole('heading', { level: 1 }).click();
+    await expect(page.locator('.blase')).toHaveCount(0);
+  });
+
+  test('Kennzahlen ohne Hinweiszeilen gleich hoch', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    await page.goto('/vertraege');
+    await expect(page.locator('.kennzahl')).toHaveCount(4);
+    const hoehen = await page
+      .locator('.kennzahl')
+      .evaluateAll((kacheln) => kacheln.map((k) => k.getBoundingClientRect().height));
+    expect(hoehen).toHaveLength(4);
+    expect(new Set(hoehen).size).toBe(1);
+  });
+
+  for (const breite of [390, 1280]) {
+    test(`die Blase bleibt bei ${breite} px im Fenster bzw. im Detailpanel`, async ({ page }) => {
+      await page.setViewportSize({ width: breite, height: 844 });
+      await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+      const imRahmen = async (knopf: string, rahmen?: string) => {
+        await page.getByRole('button', { name: `Info zu ${knopf}`, exact: true }).click();
+        const blase = (await page.locator('.blase').boundingBox())!;
+        const grenze = rahmen
+          ? (await page.locator(rahmen).boundingBox())!
+          : { x: 0, width: breite };
+        expect(blase.x).toBeGreaterThanOrEqual(grenze.x);
+        expect(blase.x + blase.width).toBeLessThanOrEqual(grenze.x + grenze.width);
+        await page.keyboard.press('Escape');
+      };
+
+      await page.goto('/vertraege');
+      for (const knopf of ['Kosten pro Monat', 'Kosten 2026', 'Einmalkosten 2026']) {
+        await imRahmen(knopf);
+      }
+      await page.goto('/vertraege/app');
+      await imRahmen('Pro Monat', breite > 900 ? '.panel' : undefined);
+    });
+  }
 
   test('passt auf dem Handy in die Breite', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });

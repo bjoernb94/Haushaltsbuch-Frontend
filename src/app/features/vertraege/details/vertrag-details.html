@@ -67,7 +67,10 @@
       <div class="kacheln">
         @for (kachel of kacheln(); track kachel.label) {
           <div class="kachel">
-            <span class="kachel-titel">{{ kachel.label }}</span>
+            <span class="kachel-titel"
+              >{{ kachel.label
+              }}<app-info-knopf [beschriftung]="kachel.label" [saetze]="kachel.info"
+            /></span>
             <span class="kachel-wert" [class]="kachel.ton && 'ton-' + kachel.ton">{{
               kachel.wert
             }}</span>
@@ -77,8 +80,6 @@
           </div>
         }
       </div>
-      <!-- „Pro Monat“ steht in jedem Tab; der Hinweis gilt auch für den Tab Kosten. -->
-      <app-rundungshinweis />
 
       <app-tabliste
         #tabliste

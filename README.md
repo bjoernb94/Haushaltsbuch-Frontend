@@ -112,8 +112,8 @@ src/app/
                    oben: Service, Routen und vertrag-texte.ts
   shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, fusszeile/,
                herkunft/, hinweis-box/, in-den-blick/, info-knopf/, kopfzeile/, layout/, logo/,
-               nutzermenue/, rechtliche-links/, rundungshinweis/, seitenaktionen/, systemstatus-leiste/,
-               tabliste/, version-anzeige/, verwerfen-dialog/, zustaende/
+               nutzermenue/, rechtliche-links/, seitenaktionen/, systemstatus-leiste/, tabliste/,
+               version-anzeige/, verwerfen-dialog/, zustaende/
   shell/       Rahmen der angemeldeten Bereiche (hauptmenue/ als Seitenleiste, bis 900 px als Tab-Leiste,
                Fußzeile); die Startseite kommt ab 901 px ohne Navigation aus (Route-Data ohneNavigation)
                und behält die Kopfzeile

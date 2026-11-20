@@ -10,7 +10,15 @@ import { VertragAntwort, VertragsuebersichtAntwort } from '../../../core/api/api
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { VERTRAEGE_ROUTES } from '../vertraege.routes';
 import { VertraegeSeite } from './vertraege-seite';
-import { RUNDUNG_TEXT, RUNDUNG_TEXT_KURZ } from '../../../shared/rundungshinweis/rundungshinweis';
+import {
+  INFO_KALENDERJAHR,
+  INFO_KALENDERJAHR_MIT_PROGNOSE,
+  INFO_NUR_ANTEIL,
+  INFO_OHNE_NICHT_BEGONNENE,
+  INFO_RUNDUNG,
+  INFO_RUNDUNG_DETAILS,
+  INFO_RUNDUNG_PROGNOSE,
+} from '../vertrag-texte';
 import { VertragService } from '../vertrag.service';
 
 const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
@@ -255,11 +263,27 @@ describe('VertraegeSeite', () => {
       await fixture.whenStable();
     };
     await stabil();
+    /** Öffnet den Info-Knopf, liest die Sätze der Blase und schließt ihn wieder; ohne Knopf null. */
+    const info = async (beschriftung: string) => {
+      const knopf = element.querySelector<HTMLButtonElement>(
+        `button[aria-label="Info zu ${beschriftung}"]`,
+      );
+      if (!knopf) {
+        return null;
+      }
+      knopf.click();
+      await stabil();
+      const saetze = [...element.querySelectorAll('.blase li')].map((li) => li.textContent);
+      knopf.click();
+      await stabil();
+      return saetze;
+    };
     return {
       harness,
       fixture,
       element,
       stabil,
+      info,
       url: () => TestBed.inject(Router).url,
       instanz: () => harness.routeDebugElement!.componentInstance as VertraegeSeite,
     };
@@ -288,26 +312,27 @@ describe('VertraegeSeite', () => {
     );
 
   describe('Liste', () => {
-    it('zeigt die Kennzahlen je Währung vollständig', async () => {
-      const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
+    it('zeigt die Kennzahlen je Währung vollständig, ohne Hinweiszeilen', async () => {
+      const { element } = await seite();
+      const kennzahlen = element.querySelectorAll('.kennzahl');
       expect(text(kennzahlen[0])).toBe('Laufende Verträge2');
       expect(text(kennzahlen[1])).toBe('Kosten pro Monat58,90 € · 5,00 $');
-      expect(text(kennzahlen[2])).toBe('Kosten 2026706,80 €Alle Abbuchungen im Kalenderjahr');
+      expect(text(kennzahlen[2])).toBe('Kosten 2026706,80 €');
       expect(text(kennzahlen[3])).toBe('Einmalkosten 20260,00 €');
+      expect(element.querySelector('.kennzahl small')).toBeNull();
     });
 
-    it('nennt die Rundung unter den Kennzahlen, nicht in den Zeilen', async () => {
-      const { element } = await seite();
-      expect(text(element.querySelector('.kennzahlen + app-rundungshinweis'))).toBe(RUNDUNG_TEXT);
-      expect(element.querySelectorAll('app-rundungshinweis')).toHaveLength(1);
+    it('erklärt die Kennzahlen im Info-Knopf, nur die zutreffenden Sätze', async () => {
+      const { info } = await seite();
+      expect(await info('Kosten pro Monat')).toEqual([INFO_RUNDUNG]);
+      expect(await info('Kosten 2026')).toEqual([INFO_KALENDERJAHR, INFO_RUNDUNG]);
+      expect(await info('Einmalkosten 2026')).toBeNull();
     });
 
-    it('nennt „inkl. Prognose“ unter „Kosten <Jahr>“, wenn das Backend es meldet', async () => {
+    it('nennt die Prognose bei „Kosten <Jahr>“, wenn das Backend es meldet', async () => {
       uebersicht.mockReturnValue(of({ ...UEBERSICHT, kostenImJahrMitPrognose: true }));
-      const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
-      expect(text(kennzahlen[2])).toBe(
-        'Kosten 2026706,80 €Alle Abbuchungen im Kalenderjahr, inkl. Prognose',
-      );
+      const { info } = await seite();
+      expect(await info('Kosten 2026')).toEqual([INFO_KALENDERJAHR_MIT_PROGNOSE, INFO_RUNDUNG]);
     });
 
     it('zeigt die Einmalkosten im Jahr des Backends je Währung', async () => {
@@ -322,27 +347,23 @@ describe('VertraegeSeite', () => {
       expect(text(kennzahlen[3])).toBe('Einmalkosten 2027149,90 € · 20,00 $');
     });
 
-    it('nennt unter „Kosten pro Monat“, dass später beginnende fehlen', async () => {
+    it('nennt bei „Kosten pro Monat“, dass später beginnende fehlen', async () => {
       uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatNichtBegonnene: true }));
-      const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
-      expect(text(kennzahlen[1])).toBe(
-        'Kosten pro Monat58,90 € · 5,00 $Ohne Verträge, die erst später beginnen',
-      );
-      expect(text(kennzahlen[2])).toBe('Kosten 2026706,80 €Alle Abbuchungen im Kalenderjahr');
+      const { info } = await seite();
+      expect(await info('Kosten pro Monat')).toEqual([INFO_OHNE_NICHT_BEGONNENE, INFO_RUNDUNG]);
+      expect(await info('Kosten 2026')).toEqual([INFO_KALENDERJAHR, INFO_RUNDUNG]);
     });
 
-    it('nennt bei geteilten Verträgen unter allen Kosten „nur dein Anteil“', async () => {
-      uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatAnteile: true }));
-      const kennzahlen = (await seite()).element.querySelectorAll('.kennzahl');
-      expect(text(kennzahlen[1])).toBe(
-        'Kosten pro Monat58,90 € · 5,00 $Bei geteilten Verträgen nur dein Anteil',
-      );
-      expect(text(kennzahlen[2])).toBe(
-        'Kosten 2026706,80 €Alle Abbuchungen im KalenderjahrBei geteilten Verträgen nur dein Anteil',
-      );
-      expect(text(kennzahlen[3])).toBe(
-        'Einmalkosten 20260,00 €Bei geteilten Verträgen nur dein Anteil',
-      );
+    it('nennt bei geteilten Verträgen an allen Kosten „nur dein Anteil“', async () => {
+      uebersicht.mockReturnValue(of({ ...UEBERSICHT, hatAnteile: true, hatNichtBegonnene: true }));
+      const { info } = await seite();
+      expect(await info('Kosten pro Monat')).toEqual([
+        INFO_NUR_ANTEIL,
+        INFO_OHNE_NICHT_BEGONNENE,
+        INFO_RUNDUNG,
+      ]);
+      expect(await info('Kosten 2026')).toEqual([INFO_KALENDERJAHR, INFO_NUR_ANTEIL, INFO_RUNDUNG]);
+      expect(await info('Einmalkosten 2026')).toEqual([INFO_NUR_ANTEIL, INFO_RUNDUNG]);
     });
 
     it('behält die Reihenfolge des Backends', async () => {
@@ -516,16 +537,15 @@ describe('VertraegeSeite', () => {
     });
 
     it('zeigt Kacheln und die Tabs Allgemein, Kosten, Laufzeit und Preisverlauf', async () => {
-      const { element, stabil, url } = await seite('/vertraege/kfz');
+      const { element, stabil, url, info } = await seite('/vertraege/kfz');
       expect([...element.querySelectorAll('.kachel')].map(text)).toEqual([
         'Pro Monat48,90 €',
         'Laufzeitseit 01.01.2023Mindestlaufzeit bis 31.12.2023',
         'KündigungKündbar bis 30.11.2026Vertrag endet zum 31.12.2026',
         'Nächste PreisänderungKeine bekannt',
       ]);
-      expect(text(panel(element)?.querySelector('.kacheln + app-rundungshinweis'))).toBe(
-        RUNDUNG_TEXT,
-      );
+      expect(element.querySelectorAll('.kachel button[aria-label^="Info zu"]')).toHaveLength(1);
+      expect(await info('Pro Monat')).toEqual([INFO_RUNDUNG_DETAILS]);
       const tabs = [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
       expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
@@ -579,7 +599,7 @@ describe('VertraegeSeite', () => {
 
     it('Tab Preisverlauf: alle Preise mit Art und Prognose, Kachel und Chip zur nächsten Änderung', async () => {
       auflisten.mockReturnValue(of([MIT_PREISEN, BEENDET]));
-      const { element } = await seite('/vertraege/strom?tab=preise');
+      const { element, info } = await seite('/vertraege/strom?tab=preise');
       expect([...element.querySelectorAll('app-vertrag-preise li')].map(text)).toEqual([
         'ab Vertragsbeginn: 549,00 €',
         'ab 01.01.2026: 600,00 € · aktuell',
@@ -592,9 +612,7 @@ describe('VertraegeSeite', () => {
       );
       expect(text(zeilen(element)[0].querySelector('.chip'))).toBe('Preis ↑ ab 01.01.2027');
       expect(zeilen(element)[1].querySelector('.chip')).toBeNull();
-      expect(text(element.querySelector('app-vertrag-preise app-rundungshinweis'))).toBe(
-        RUNDUNG_TEXT_KURZ,
-      );
+      expect(await info('Preise')).toEqual([INFO_RUNDUNG_PROGNOSE]);
     });
 
     it('Tab Preisverlauf: Diagramm ab zwei Punkten, darunter Garantie, Regel und Erinnerung', async () => {
@@ -724,7 +742,7 @@ describe('VertraegeSeite', () => {
     it('Tab Preisverlauf ohne Änderungen: „Preis hinzufügen“ öffnet Bearbeiten im Tab Preisverlauf', async () => {
       const { element, stabil, url } = await seite('/vertraege/kfz?tab=preise');
       expect(element.querySelector('app-vertrag-preise li')).toBeNull();
-      expect(element.querySelector('app-vertrag-preise app-rundungshinweis')).toBeNull();
+      expect(element.querySelector('app-vertrag-preise app-info-knopf button')).toBeNull();
       expect(text(element.querySelector('.keine-preise span'))).toBe(
         'Noch keine Preisänderungen hinterlegt.',
       );

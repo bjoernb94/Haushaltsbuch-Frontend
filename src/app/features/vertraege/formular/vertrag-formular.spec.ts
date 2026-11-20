@@ -10,7 +10,7 @@ import {
   VertragVorschauAntwort,
 } from '../../../core/api/api';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
-import { RUNDUNG_TEXT, RUNDUNG_TEXT_KURZ } from '../../../shared/rundungshinweis/rundungshinweis';
+import { INFO_RUNDUNG, INFO_RUNDUNG_PROGNOSE } from '../vertrag-texte';
 import { VertragEingabe, VertragService } from '../vertrag.service';
 import { VertragFormular } from './vertrag-formular';
 
@@ -43,6 +43,21 @@ function vorschauAntwort(
     kuendigung,
     ...mehr,
   };
+}
+
+/** Öffnet den Info-Knopf, liest die Sätze der Blase und schließt ihn wieder; ohne Knopf null. */
+function info(el: HTMLElement, beschriftung: string): (string | null)[] | null {
+  TestBed.tick();
+  const knopf = el.querySelector<HTMLButtonElement>(`button[aria-label="Info zu ${beschriftung}"]`);
+  if (!knopf) {
+    return null;
+  }
+  knopf.click();
+  TestBed.tick();
+  const saetze = [...el.querySelectorAll('.blase li')].map((li) => li.textContent);
+  knopf.click();
+  TestBed.tick();
+  return saetze;
 }
 
 function validierung(...felder: [string, string][]): HttpErrorResponse {
@@ -186,7 +201,10 @@ describe('VertragFormular', () => {
       };
       const zeile = () => {
         TestBed.tick();
-        return hilfen.el.querySelector('.vorschau')?.textContent?.replace(/\s+/g, ' ').trim();
+        return hilfen.el
+          .querySelector('app-vertrag-tab-laufzeit .vorschau')
+          ?.textContent?.replace(/\s+/g, ' ')
+          .trim();
       };
       return { ...hilfen, antworten, zeile };
     }
@@ -197,7 +215,9 @@ describe('VertragFormular', () => {
       expect(zeile()).toBe('Nächster Kündigungstermin:–');
       antworten(0, { ...ERGEBNIS, art: 'KEINE_LAUFZEIT' });
       expect(zeile()).toBe('Nächster Kündigungstermin:Kein Termin bekannt');
-      expect(el.querySelector('.vorschau')?.getAttribute('role')).toBe('status');
+      expect(el.querySelector('app-vertrag-tab-laufzeit .vorschau')?.getAttribute('role')).toBe(
+        'status',
+      );
     });
 
     it('zeigt das Ergebnis mit den Texten der Liste', async () => {
@@ -312,12 +332,6 @@ describe('VertragFormular', () => {
         const feld = el.querySelector('[formcontrolname="anteilProzent"]')!.closest('.feld')!;
         return feld.querySelector('[role="status"]')?.textContent?.replace(/\s+/g, ' ').trim();
       };
-      const rundung = () =>
-        el
-          .querySelector('[formcontrolname="anteilProzent"]')!
-          .closest('.feld')!
-          .querySelector('app-rundungshinweis')
-          ?.textContent?.trim();
       setzen('betrag', '586,80');
       setzen('zahlweise', 'JAEHRLICH');
       setzen('anteilProzent', '33,3');
@@ -331,14 +345,16 @@ describe('VertragFormular', () => {
           eigenerAnteil: { betrag: EUR(195.4), kostenProMonat: EUR(16.28) },
         }),
       );
-      expect(status()).toBe('Dein Anteil:33,3 % von 586,80 € = 195,40 € jährlich');
-      expect(rundung()).toBe(RUNDUNG_TEXT);
+      expect(status()).toBe('Dein Anteil: 33,3 % von 586,80 € = 195,40 € jährlich');
+      expect(info(el, 'deinem Anteil')).toEqual([INFO_RUNDUNG]);
+      // Der Knopf steht neben der Live-Region, sonst würde er bei jeder Eingabe mit vorgelesen.
+      expect(el.querySelector('[role="status"] app-info-knopf')).toBeNull();
 
       setzen('anteilProzent', '');
       vi.advanceTimersByTime(400);
       anfragen.at(-1)!.next(vorschauAntwort(ERGEBNIS, { betrag: EUR(586.8) }));
       expect(status()).toBe('');
-      expect(rundung()).toBeUndefined();
+      expect(info(el, 'deinem Anteil')).toBeNull();
     });
 
     it('schickt ein eingetragenes Kündigungsdatum nur, solange „Gekündigt“ gesetzt ist', async () => {
@@ -616,9 +632,7 @@ describe('VertragFormular', () => {
         'complementary',
       );
       expect(titel()).toEqual(['Neuer Vertrag', 'Noch keine Angaben']);
-      expect(
-        el.querySelector('app-vertrag-zusammenfassung app-rundungshinweis')?.textContent?.trim(),
-      ).toBe(RUNDUNG_TEXT);
+      expect(el.querySelector('app-vertrag-zusammenfassung app-info-knopf button')).toBeNull();
       expect(zeilen()).toEqual({
         Betrag: 'Noch offen',
         'Pro Monat': 'Noch offen',
@@ -641,7 +655,7 @@ describe('VertragFormular', () => {
     it('zeigt die Werte der Vorschau, die SPA rechnet nichts', async () => {
       const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
       vorschau.mockReturnValue(antwort);
-      const { fixture, setzen, zeilen } = await mitZusammenfassung();
+      const { fixture, el, setzen, zeilen } = await mitZusammenfassung();
       await setzen('zahlweise', 'JAEHRLICH');
       await setzen('beginn', '2026-02-01');
       const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
@@ -664,6 +678,10 @@ describe('VertragFormular', () => {
         'Nächste Preisänderung': 'ab 01.06.2027: 601,47 € (Prognose)',
         Einmalkosten: '49,90 €',
       });
+      expect(info(el, 'Pro Monat')).toEqual([INFO_RUNDUNG]);
+      expect(el.querySelectorAll('app-vertrag-zusammenfassung app-info-knopf button')).toHaveLength(
+        1,
+      );
     });
 
     it('null der Vorschau: „Noch offen“, unvollständige Einmalkosten ebenso', async () => {
@@ -898,7 +916,7 @@ describe('VertragFormular', () => {
       };
       /** Jede Zeile der Box „Prognose“ für sich. */
       const prognose = () =>
-        [...el.querySelectorAll('.prognose > *')].map((e) =>
+        [...el.querySelectorAll('.prognose b, .prognose [role="status"] > *')].map((e) =>
           e.textContent?.replace(/\s+/g, ' ').trim(),
         );
       return { ...hilfen, einschalten, prognose };
@@ -973,12 +991,9 @@ describe('VertragFormular', () => {
       const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
       vorschau.mockReturnValue(antwort);
       const { setzen, einschalten, prognose, fixture } = await imTabPreise();
-      const rundung = () =>
-        (fixture.nativeElement as HTMLElement)
-          .querySelector('app-vertrag-preissteigerung app-rundungshinweis')
-          ?.textContent?.trim();
+      const rundung = () => info(fixture.nativeElement as HTMLElement, 'Prognose');
       await einschalten();
-      expect(rundung()).toBeUndefined();
+      expect(rundung()).toBeNull();
       expect(prognose()).toEqual([
         'Prognose',
         'Gib Wert und Datum der nächsten Erhöhung ein, dann zeigen wir hier die nächsten drei Preise.',
@@ -1001,7 +1016,7 @@ describe('VertragFormular', () => {
         'ab 01.01.2027 voraussichtlich 20,49 €',
         'ab 01.01.2028 voraussichtlich 21,00 €',
       ]);
-      expect(rundung()).toBe(RUNDUNG_TEXT_KURZ);
+      expect(rundung()).toEqual([INFO_RUNDUNG_PROGNOSE]);
 
       antwort.next(vorschauAntwort(KEINE));
       setzen('preisgarantieBis', '2030-01-01');
@@ -1011,7 +1026,7 @@ describe('VertragFormular', () => {
         'Prognose',
         'Bis zum Vertragsende ist keine Erhöhung zu erwarten.',
       ]);
-      expect(rundung()).toBeUndefined();
+      expect(rundung()).toBeNull();
     });
 
     it('Erinnerung: bei Regel oder angekündigtem Preis, nicht bei „Nicht kündbar“', async () => {

@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ControlContainer, FormGroupDirective, ReactiveFormsModule } from '@angular/forms';
 import { Erhoehungsrhythmus, Steigerungsart } from '../../../../core/api/api';
-import { Rundungshinweis } from '../../../../shared/rundungshinweis/rundungshinweis';
+import { InfoKnopf } from '../../../../shared/info-knopf/info-knopf';
 import { VertragFeld } from '../vertrag-pruefung';
-import { RHYTHMUS_TEXT } from '../../vertrag-texte';
+import { INFO_RUNDUNG_PROGNOSE, RHYTHMUS_TEXT } from '../../vertrag-texte';
 
 /** Die Prognose in der Box: drei Zeilen oder ein Hinweis, warum es keine gibt. */
 export interface PrognoseAnzeige {
@@ -23,7 +23,7 @@ const RHYTHMEN = (Object.keys(RHYTHMUS_TEXT) as Erhoehungsrhythmus[]).map((wert)
  */
 @Component({
   selector: 'app-vertrag-preissteigerung',
-  imports: [ReactiveFormsModule, Rundungshinweis],
+  imports: [ReactiveFormsModule, InfoKnopf],
   viewProviders: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-preissteigerung.html',
@@ -42,6 +42,10 @@ export class VertragPreissteigerung {
   readonly erinnerung = input.required<boolean>();
 
   protected readonly rhythmen = RHYTHMEN;
+
+  protected readonly infoPrognose = computed(() =>
+    this.prognose().zeilen.length ? [INFO_RUNDUNG_PROGNOSE] : [],
+  );
 
   protected readonly wertLabel = computed(() =>
     this.art() === 'PROZENT' ? 'Erhöhung in % *' : `Erhöhung in ${this.waehrung()} *`,
