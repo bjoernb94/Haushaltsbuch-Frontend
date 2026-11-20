@@ -62,8 +62,8 @@ const VERTRAG_LEER = {
 } as const;
 
 /** Ein Preis seit Vertragsbeginn, wie bei den meisten Verträgen. */
-function einPreis(wert: number): VertragPreisAntwort[] {
-  return [{ gueltigAb: null, betrag: betrag(wert), art: 'AKTUELL' }];
+function einPreis(wert: number, beginn: string): VertragPreisAntwort[] {
+  return [{ gueltigAb: beginn, betrag: betrag(wert), art: 'AKTUELL' }];
 }
 
 const BERECHNET_LEER: Pick<
@@ -95,7 +95,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     kategorie: kategorie('VERSICHERUNG'),
     vertragsnummer: 'KFZ-4711-23',
     betrag: betrag(586.8),
-    preise: einPreis(586.8),
+    preise: einPreis(586.8, '2023-01-01'),
     zahlweise: 'JAEHRLICH',
     zahlungsweg: 'LASTSCHRIFT',
     beginn: '2023-01-01',
@@ -124,7 +124,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     kategorie: kategorie('MITGLIEDSCHAFTEN'),
     betrag: betrag(34.9),
     preise: [
-      { gueltigAb: null, betrag: betrag(29.9), art: 'FRUEHER' },
+      { gueltigAb: '2025-05-01', betrag: betrag(29.9), art: 'FRUEHER' },
       { gueltigAb: '2026-01-01', betrag: betrag(34.9), art: 'AKTUELL' },
       { gueltigAb: '2027-03-01', betrag: betrag(39.9), art: 'ANGEKUENDIGT' },
     ],
@@ -155,7 +155,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     bezeichnung: 'Rundfunkbeitrag',
     kategorie: kategorie('GEBUEHREN_BEITRAEGE'),
     betrag: betrag(55.08),
-    preise: einPreis(55.08),
+    preise: einPreis(55.08, '2013-01-15'),
     zahlweise: 'VIERTELJAEHRLICH',
     beginn: '2013-01-15',
     kuendbar: false,
@@ -174,7 +174,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     anbieter: 'Sprachschule',
     kategorie: kategorie('SONSTIGES'),
     betrag: betrag(60),
-    preise: einPreis(60),
+    preise: einPreis(60, '2026-07-01'),
     zahlweise: 'HALBJAEHRLICH',
     beginn: '2026-07-01',
     laufzeitende: '2027-06-30',
@@ -196,7 +196,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     bezeichnung: 'Internet',
     kategorie: kategorie('MOBILFUNK_INTERNET'),
     betrag: betrag(39.99),
-    preise: einPreis(39.99),
+    preise: einPreis(39.99, '2027-01-01'),
     zahlweise: 'MONATLICH',
     beginn: '2027-01-01',
     laufzeitende: '2028-12-31',
@@ -223,7 +223,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     anbieter: 'Streamingdienst',
     kategorie: kategorie('STREAMING_ABOS'),
     betrag: betrag(12.99),
-    preise: einPreis(12.99),
+    preise: einPreis(12.99, '2026-12-01'),
     zahlweise: 'MONATLICH',
     beginn: '2026-12-01',
     gekuendigtZum: '2026-11-30',
@@ -243,7 +243,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     anbieter: 'Software GmbH',
     kategorie: kategorie('SOFTWARE_APPS'),
     betrag: betrag(5),
-    preise: einPreis(5),
+    preise: einPreis(5, '2025-11-15'),
     anteilProzent: 50,
     preissteigerung: {
       art: 'BETRAG',
@@ -287,7 +287,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     bezeichnung: 'Zeitschriften-Abo',
     kategorie: kategorie('STREAMING_ABOS'),
     betrag: betrag(9.9),
-    preise: einPreis(9.9),
+    preise: einPreis(9.9, '2024-01-05'),
     zahlweise: 'MONATLICH',
     beginn: '2024-01-05',
     zahlungsweg: 'PAYPAL',
@@ -311,7 +311,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     anbieter: 'Mobilfunk GmbH',
     kategorie: kategorie('MOBILFUNK_INTERNET'),
     betrag: betrag(19.99),
-    preise: einPreis(19.99),
+    preise: einPreis(19.99, '2024-01-15'),
     zahlweise: 'MONATLICH',
     beginn: '2024-01-15',
     gekuendigtZum: '2026-06-30',
@@ -414,16 +414,21 @@ interface PreisAnfrage {
   betrag?: Betrag | null;
 }
 
-/** Sortiert wie das Backend, „heute“ ist der Tag des Browsers; der Eintrag ohne Datum zuerst. */
+/** Ohne Datum oder Betrag ignoriert das Backend die Zeile (Vorschau); beim Speichern ist ein Fehler. */
+function vollstaendig(p: PreisAnfrage): p is { gueltigAb: string; betrag: Betrag } {
+  return !!p.betrag && !!p.gueltigAb;
+}
+
+/** Sortiert wie das Backend, „heute“ ist der Tag des Browsers. */
 function preiseMitArt(preise: PreisAnfrage[]): VertragPreisAntwort[] {
   const heute = new Date().toISOString().slice(0, 10);
   const sortiert = preise
-    .filter((p): p is { gueltigAb?: string | null; betrag: Betrag } => !!p.betrag)
-    .map((p) => ({ gueltigAb: p.gueltigAb ?? null, betrag: p.betrag }))
-    .sort((a, b) => (a.gueltigAb ?? '').localeCompare(b.gueltigAb ?? ''));
+    .filter(vollstaendig)
+    .map(({ gueltigAb, betrag }) => ({ gueltigAb, betrag }))
+    .sort((a, b) => a.gueltigAb.localeCompare(b.gueltigAb));
   const aktuell = Math.max(
     0,
-    sortiert.findLastIndex((p) => !p.gueltigAb || p.gueltigAb <= heute),
+    sortiert.findLastIndex((p) => p.gueltigAb <= heute),
   );
   return sortiert.map((p, i) => ({
     ...p,
@@ -499,7 +504,7 @@ function prognoseFuer(
       break;
     }
     if (
-      (letzter.gueltigAb && ab <= letzter.gueltigAb) ||
+      ab <= letzter.gueltigAb ||
       (anfrage.preisgarantieBis && ab <= anfrage.preisgarantieBis) ||
       ab < heute
     ) {
@@ -512,17 +517,12 @@ function prognoseFuer(
   return prognose;
 }
 
-/** Erster Preis ohne Datum: ab Beginn. */
-function preisverlaufFuer(
-  preise: VertragPreisAntwort[],
-  prognose: Prognosepreis[],
-  beginn: string,
-): Preispunkt[] {
+function preisverlaufFuer(preise: VertragPreisAntwort[], prognose: Prognosepreis[]): Preispunkt[] {
   return [
     ...preise
       .filter(({ art }) => art !== 'NACH_ENDE')
       .map(({ gueltigAb, betrag, art }) => ({
-        ab: gueltigAb ?? beginn,
+        ab: gueltigAb,
         betrag,
         art: art === 'ANGEKUENDIGT' ? ('ANGEKUENDIGT' as const) : ('GEZAHLT' as const),
       })),
@@ -530,8 +530,9 @@ function preisverlaufFuer(
   ];
 }
 
+/** Ohne Beginn ohne Preise: Der erste gilt ab dem Beginn. */
 function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwort {
-  const preise = preiseMitArt(anfrage.preise ?? []);
+  const preise = anfrage.beginn ? preiseMitArt(anfrage.preise ?? []) : [];
   const aktuell = preise.find((p) => p.art === 'AKTUELL')?.betrag ?? null;
   const angekuendigt = preise.find((p) => p.art === 'ANGEKUENDIGT');
   const prognose = prognoseFuer(anfrage, preise);
@@ -556,7 +557,7 @@ function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwor
         : null,
     einmalkosten: einmalkostenSumme(vollstaendigeEinmalkosten(anfrage.einmalkosten ?? [])),
     naechstePreisaenderung: angekuendigt
-      ? { ab: angekuendigt.gueltigAb!, betrag: angekuendigt.betrag, art: 'ANGEKUENDIGT' }
+      ? { ab: angekuendigt.gueltigAb, betrag: angekuendigt.betrag, art: 'ANGEKUENDIGT' }
       : prognose[0]
         ? { ...prognose[0], art: 'PROGNOSE' }
         : null,
@@ -628,7 +629,7 @@ function ausAnfrage(
       naechstePreisaenderung,
       prognose,
       vertragsende: vertragsendeFuer(anfrage),
-      preisverlauf: preisverlaufFuer(preise, prognose, anfrage.beginn),
+      preisverlauf: preisverlaufFuer(preise, prognose),
       kostenImJahrMitPrognose: prognose.some(({ ab }) => ab.startsWith(`${JAHR}-`)),
       eigenerAnteil: eigenerAnteil && {
         betrag: eigenerAnteil.betrag,
@@ -676,15 +677,21 @@ function feldfehler(anfrage: VertragAnfrage): Feldfehler[] {
     } else if (Math.round(betrag.wert * 100) / 100 !== betrag.wert) {
       melden(`preise[${i}].betrag.wert`, 'Digits', { integer: 17, fraction: 2 });
     }
-    if (!gueltigAb && anfrage.preise.slice(0, i).some((p) => !p.gueltigAb)) {
-      melden(`preise[${i}].gueltigAb`, 'GueltigAbPflicht');
-    } else if (gueltigAb && daten.has(gueltigAb)) {
+    if (!gueltigAb) {
+      melden(`preise[${i}].gueltigAb`, 'NotNull');
+    } else if (daten.has(gueltigAb)) {
       melden(`preise[${i}].gueltigAb`, 'GueltigAbEindeutig');
     } else if (gueltigAb && anfrage.beginn && gueltigAb < anfrage.beginn) {
       melden(`preise[${i}].gueltigAb`, 'PreisNichtVorBeginn');
     }
     if (gueltigAb) daten.add(gueltigAb);
   });
+  // Der früheste vollständige Preis gilt genau ab Beginn; davor meldet PreisNichtVorBeginn.
+  const vollstaendige = (anfrage.preise ?? []).map((p, i) => ({ ...p, i })).filter(vollstaendig);
+  const fruehester = vollstaendige.sort((a, b) => a.gueltigAb.localeCompare(b.gueltigAb))[0];
+  if (fruehester && anfrage.beginn && fruehester.gueltigAb > anfrage.beginn) {
+    melden(`preise[${fruehester.i}].gueltigAb`, 'ErsterPreisAbBeginn');
+  }
   const regel = anfrage.preissteigerung;
   if (regel) {
     if (!regel.naechsteAm) melden('preissteigerung.naechsteAm', 'NotNull');

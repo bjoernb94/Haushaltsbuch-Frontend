@@ -17,7 +17,6 @@ const TAB_VON: Record<EinzelFeld, TabKey> = {
   vertragsnummer: 'allgemein',
   notiz: 'allgemein',
   betrag: 'kosten',
-  gueltigSeit: 'kosten',
   anteilProzent: 'kosten',
   zahlweise: 'kosten',
   beginn: 'kosten',

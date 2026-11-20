@@ -38,7 +38,9 @@ const LEER = {
   kategorie: { id: 'k', schluessel: 'VERSICHERUNG', name: null },
   zahlweise: 'MONATLICH',
   betrag: EUR(10),
-  preise: [{ gueltigAb: null, betrag: EUR(10), art: 'AKTUELL' }] as VertragAntwort['preise'],
+  preise: [
+    { gueltigAb: '2025-01-01', betrag: EUR(10), art: 'AKTUELL' },
+  ] as VertragAntwort['preise'],
   anteilProzent: null,
   einmalkosten: [] as VertragAntwort['einmalkosten'],
   preissteigerung: null,
@@ -83,7 +85,7 @@ const JAEHRLICH: VertragAntwort = {
   notiz: 'Wichtig',
   zahlweise: 'JAEHRLICH',
   betrag: EUR(586.8),
-  preise: [{ gueltigAb: null, betrag: EUR(586.8), art: 'AKTUELL' }],
+  preise: [{ gueltigAb: '2023-01-01', betrag: EUR(586.8), art: 'AKTUELL' }],
   berechnet: {
     ...BERECHNET,
     status: 'AKTIV',
@@ -169,7 +171,7 @@ const MIT_PREISEN: VertragAntwort = {
   bezeichnung: 'Strom',
   betrag: EUR(600),
   preise: [
-    { gueltigAb: null, betrag: EUR(549), art: 'FRUEHER' },
+    { gueltigAb: '2023-01-01', betrag: EUR(549), art: 'FRUEHER' },
     { gueltigAb: '2026-01-01', betrag: EUR(600), art: 'AKTUELL' },
     { gueltigAb: '2027-01-01', betrag: EUR(620), art: 'ANGEKUENDIGT' },
     { gueltigAb: '2031-01-01', betrag: EUR(700), art: 'NACH_ENDE' },
@@ -601,7 +603,7 @@ describe('VertraegeSeite', () => {
       auflisten.mockReturnValue(of([MIT_PREISEN, BEENDET]));
       const { element, info } = await seite('/vertraege/strom?tab=preise');
       expect([...element.querySelectorAll('app-vertrag-preise li')].map(text)).toEqual([
-        'ab Vertragsbeginn: 549,00 €',
+        'ab 01.01.2023: 549,00 €',
         'ab 01.01.2026: 600,00 € · aktuell',
         'ab 01.01.2027: 620,00 € · angekündigt',
         'ab 01.01.2031: 700,00 € · nach Vertragsende',
@@ -753,7 +755,7 @@ describe('VertraegeSeite', () => {
       expect(text(formular.querySelector('[role="tab"][aria-selected="true"]'))).toBe(
         'Preisverlauf',
       );
-      expect(formular.querySelectorAll('.preis')).toHaveLength(1);
+      expect(formular.querySelectorAll('.preis:not(.erster)')).toHaveLength(1);
     });
 
     it('Kachel „Laufzeit“ je nach Status, Mindestlaufzeit und Verlängerung', async () => {

@@ -68,6 +68,7 @@
       [waehrungName]="waehrungName()"
       [werte]="werte()"
       [vorschau]="vorschau()"
+      (betragGeaendert)="formular.controls.betrag.setValue($event)"
       (hinzufuegen)="preisHinzufuegen()"
       (entfernen)="preisEntfernen($event)"
       (geaendert)="preisGeaendert($event.index, $event.feld)"

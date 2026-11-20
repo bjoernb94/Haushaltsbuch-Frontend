@@ -15,6 +15,7 @@ import {
 } from '@angular/forms';
 import { VertragVorschauAntwort, Zahlungsweg, Zahlweise } from '../../../../core/api/api';
 import { betragText } from '../../../../shared/format/betrag.pipe';
+import { datumText } from '../../../../shared/format/datum.pipe';
 import { InfoKnopf } from '../../../../shared/info-knopf/info-knopf';
 import { INFO_RUNDUNG, ZAHLUNGSWEG_TEXT, ZAHLWEISE_TEXT } from '../../vertrag-texte';
 import {
@@ -25,7 +26,8 @@ import { EinmalkostenWerte, VertragWerte } from '../vertrag-pruefung';
 import { optionen, VertragTab } from '../vertrag-tabs';
 
 /**
- * Tab Kosten des Vertragsformulars: Betrag, Zahlweise, Beginn, Zahlungsweg, Anteil und Einmalkosten.
+ * Tab Kosten des Vertragsformulars: Betrag ab Vertragsbeginn, Zahlweise, Beginn, Zahlungsweg, Anteil und
+ * Einmalkosten.
  * Anteil und Summe der Einmalkosten kommen aus der Vorschau des Formulars; die Zeilen der Einmalkosten
  * fügt das Formular hinzu und entfernt sie.
  */
@@ -68,6 +70,18 @@ export class VertragTabKosten extends VertragTab {
       `${w.anteilProzent.trim()} % von ${betragText(vorschau.betrag, this.locale)} = ` +
       `${betragText(vorschau.eigenerAnteil.betrag, this.locale)}${zahlweise}`
     );
+  });
+
+  /**
+   * „Aktuell: 52,20 € seit 01.07.2021“, wenn heute laut Vorschau ein späterer Preis gilt als der Betrag
+   * ab Vertragsbeginn; sonst keine Zeile.
+   */
+  protected readonly aktuell = computed(() => {
+    const preise = this.vorschau()?.preise ?? [];
+    const aktuell = preise.find(({ art }) => art === 'AKTUELL');
+    return aktuell && aktuell !== preise[0]
+      ? `Aktuell: ${betragText(aktuell.betrag, this.locale)} seit ${datumText(aktuell.gueltigAb)}`
+      : null;
   });
 
   protected readonly infoAnteil = computed(() => (this.anteilText() ? [INFO_RUNDUNG] : []));

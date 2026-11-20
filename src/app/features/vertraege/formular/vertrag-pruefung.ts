@@ -16,7 +16,7 @@ import {
   VertragEingabe,
 } from '../vertrag.service';
 
-/** Eine Zeile der Liste „Frühere und angekündigte Preise“. */
+/** Eine Zeile der Liste „Preise“ nach dem Betrag ab Vertragsbeginn. */
 export interface PreisWerte {
   gueltigAb: string;
   betrag: string;
@@ -35,11 +35,9 @@ export interface VertragWerte {
   bezeichnung: string;
   kategorieId: string;
   vertragsnummer: string;
-  /** Der heute gültige Preis (Art {@code AKTUELL}). */
+  /** Der erste Preis; er gilt ab {@link beginn}. */
   betrag: string;
-  /** Leer = ab Vertragsbeginn. */
-  gueltigSeit: string;
-  /** Alle übrigen Preise, in der Reihenfolge der Antwort bzw. der Eingabe. */
+  /** Alle späteren Preise, in der Reihenfolge der Antwort bzw. der Eingabe. */
   preise: PreisWerte[];
   /** Leer = 100 %. */
   anteilProzent: string;
@@ -151,29 +149,32 @@ const STEIGERUNG_PFLICHT_TEXT = {
 
 const GUELTIG_AB_TEXT = 'Bitte gib an, ab wann dieser Preis gilt.';
 
-const GUELTIG_SEIT_TEXT = 'Bitte gib an, seit wann der Betrag oben gilt.';
+const ERSTER_PREIS_TEXT = 'Der früheste Preis muss ab Vertragsbeginn gelten.';
+
+/** Leer oder nicht eindeutig lesbar: Das Backend bekäme {@code betrag: null}. */
+function betragFehlt(eingabe: string): boolean {
+  return betragLesen(eingabe) === null;
+}
 
 /**
- * Nur Pflichtfelder, zur Bedienung; alles Weitere entscheidet das Backend (ADR 0010). Ohne Datum darf
- * nur ein Preis sein (er gilt ab Vertragsbeginn): zuerst der Betrag, sonst die erste Zeile ohne Datum.
+ * Nur Pflichtfelder und lesbare Beträge, zur Bedienung; alles Weitere entscheidet das Backend
+ * (ADR 0010). Jeder spätere Preis braucht ein Datum, der erste gilt ab Vertragsbeginn.
  */
 export function vertragPruefen(w: VertragWerte): ReadonlyMap<VertragFeld, string> {
-  const leer = (Object.keys(PFLICHT_TEXT) as (keyof typeof PFLICHT_TEXT)[]).filter(
-    (feld) => !w[feld].trim() && (feld !== 'gekuendigtZum' || w.gekuendigt),
+  const leer = (Object.keys(PFLICHT_TEXT) as (keyof typeof PFLICHT_TEXT)[]).filter((feld) =>
+    feld === 'betrag'
+      ? betragFehlt(w.betrag)
+      : !w[feld].trim() && (feld !== 'gekuendigtZum' || w.gekuendigt),
   );
   const fehler = new Map<VertragFeld, string>(leer.map((feld) => [feld, PFLICHT_TEXT[feld]]));
   if (w.anteilProzent.trim() && prozentLesen(w.anteilProzent) === null) {
     fehler.set('anteilProzent', ANTEIL_TEXT);
   }
-  let ohneDatum = !w.gueltigSeit;
   w.preise.forEach((preis, i) => {
     if (!preis.gueltigAb) {
-      if (ohneDatum) {
-        fehler.set(preisFeld(i, 'gueltigAb'), GUELTIG_AB_TEXT);
-      }
-      ohneDatum = true;
+      fehler.set(preisFeld(i, 'gueltigAb'), GUELTIG_AB_TEXT);
     }
-    if (!preis.betrag.trim()) {
+    if (betragFehlt(preis.betrag)) {
       fehler.set(preisFeld(i, 'betrag'), PFLICHT_TEXT.betrag);
     }
   });
@@ -185,10 +186,17 @@ export function vertragPruefen(w: VertragWerte): ReadonlyMap<VertragFeld, string
         fehler.set(feld, STEIGERUNG_PFLICHT_TEXT[feld]);
       }
     }
+    if (
+      w.steigerungsart === 'BETRAG' &&
+      w.steigerungswert.trim() &&
+      betragFehlt(w.steigerungswert)
+    ) {
+      fehler.set('steigerungswert', PFLICHT_TEXT.betrag);
+    }
   }
   w.einmalkosten.forEach((zeile, i) => {
     for (const feld of Object.keys(EINMALKOSTEN_PFLICHT_TEXT) as (keyof EinmalkostenWerte)[]) {
-      if (!zeile[feld].trim()) {
+      if (feld === 'betrag' ? betragFehlt(zeile.betrag) : !zeile[feld].trim()) {
         fehler.set(einmalkostenFeld(i, feld), EINMALKOSTEN_PFLICHT_TEXT[feld]);
       }
     }
@@ -206,20 +214,21 @@ function textOderNull(eingabe: string): string | null {
 }
 
 /**
- * Vorbelegung zum Bearbeiten. Welcher Preis heute gilt, sagt das Backend ({@code art}); er steht unter „Betrag“, die übrigen in der Liste.
+ * Vorbelegung zum Bearbeiten. Das Backend sortiert die Preise nach Datum, der erste gilt ab Vertragsbeginn;
+ * er steht unter „Betrag“, die übrigen in der Liste.
  */
 export function werteAus(v: VertragAntwort): VertragWerte {
-  const aktuell = v.preise.find(({ art }) => art === 'AKTUELL');
+  const [erster, ...spaetere] = v.preise;
   return {
     anbieter: v.anbieter,
     bezeichnung: v.bezeichnung ?? '',
     kategorieId: v.kategorie.id,
     vertragsnummer: v.vertragsnummer ?? '',
-    betrag: betragEingabe(aktuell?.betrag ?? v.betrag),
-    gueltigSeit: aktuell?.gueltigAb ?? '',
-    preise: v.preise
-      .filter((preis) => preis !== aktuell)
-      .map((preis) => ({ gueltigAb: preis.gueltigAb ?? '', betrag: betragEingabe(preis.betrag) })),
+    betrag: betragEingabe(erster?.betrag ?? v.betrag),
+    preise: spaetere.map((preis) => ({
+      gueltigAb: preis.gueltigAb,
+      betrag: betragEingabe(preis.betrag),
+    })),
     anteilProzent: v.anteilProzent?.toString().replace('.', ',') ?? '',
     zahlweise: v.zahlweise,
     beginn: v.beginn,
@@ -306,7 +315,8 @@ function steigerungEingabe(w: VertragWerte, waehrung: string): PreissteigerungEi
 /**
  * Anfrage aus den Formularwerten. Leere Felder gehen als {@code null}, denn {@code ""} wäre bei Enums
  * und Datum {@code ANFRAGE_UNGUELTIG} ohne Bezug zum Feld, ebenso {@code { wert: null }} beim Betrag.
- * Der Betrag ist der erste Preis, die Liste folgt ({@code preise[i]} der Feldfehler).
+ * Der Betrag ist der erste Preis und gilt ab Vertragsbeginn, die Liste folgt ({@code preise[i]} der
+ * Feldfehler).
  */
 export function anfrageAus(
   w: VertragWerte,
@@ -319,7 +329,7 @@ export function anfrageAus(
     kategorieId: textOderNull(w.kategorieId),
     vertragsnummer: textOderNull(w.vertragsnummer),
     preise: [
-      preisEingabe(w.gueltigSeit, w.betrag, waehrung),
+      preisEingabe(w.beginn, w.betrag, waehrung),
       ...w.preise.map((preis) => preisEingabe(preis.gueltigAb, preis.betrag, waehrung)),
     ],
     zahlweise: w.zahlweise || null,
@@ -361,23 +371,23 @@ function steigerungFuerVorschau(
 
 /**
  * Das ganze Formular für die Vorschau. Preise, Einmalkosten, ein Anteil und eine Erhöhung, die das
- * Backend sicher ablehnt (ohne Betrag, Betrag nicht größer 0, ein zweiter Preis ohne Datum; Anteil
- * nicht wie „33,3“, Prozent nicht wie „2,75“ oder über 100), fehlen, damit die übrigen Werte beim
- * Tippen bleiben. Unvollständige Einmalkosten und Regeln ignoriert die Vorschau selbst.
+ * Backend sicher ablehnt (ohne Betrag, Betrag nicht größer 0, ein Preis vor dem Beginn; Anteil nicht
+ * wie „33,3“, Prozent nicht wie „2,75“ oder über 100), fehlen, damit die übrigen Werte beim Tippen
+ * bleiben. Fehlt der erste Preis, fehlen alle: Sonst wäre ein späterer der früheste und verstieße
+ * gegen {@code ErsterPreisAbBeginn}. Unvollständige Zeilen (auch ohne Datum) und Regeln ignoriert die
+ * Vorschau selbst.
  */
 export function vorschauAus(
   w: VertragWerte,
   gespeichert: VertragAntwort | null = null,
 ): VertragVorschauAnfrage {
   const a = anfrageAus(w, gespeichert);
-  let ohneDatum = false;
-  const preise = a.preise.filter(({ betrag, gueltigAb }) => {
-    if (!betrag || betrag.wert <= 0 || (!gueltigAb && ohneDatum)) {
-      return false;
-    }
-    ohneDatum ||= !gueltigAb;
-    return true;
-  });
+  const brauchbar = ({ betrag }: PreisEingabe) => !!betrag && betrag.wert > 0;
+  const preise = brauchbar(a.preise[0])
+    ? a.preise.filter(
+        (preis) => brauchbar(preis) && !(preis.gueltigAb && a.beginn && preis.gueltigAb < a.beginn),
+      )
+    : [];
   return {
     kuendbar: !w.nichtKuendbar,
     preise,
@@ -426,8 +436,8 @@ const PREIS_MUSTER = /^preise\[(\d+)\]\.(gueltigAb|betrag)\b/;
 const EINMALKOSTEN_MUSTER = /^einmalkosten\[(\d+)\]\.(bezeichnung|betrag|faelligAm)\b/;
 
 /**
- * {@code preise[0]} ist der Betrag, {@code preise[i]} sonst die Zeile i − 1 der Liste;
- * {@code einmalkosten[i]} ist die Zeile i.
+ * {@code preise[0]} ist der Betrag, sein Datum der Vertragsbeginn; {@code preise[i]} sonst die Zeile
+ * i − 1 der Liste. {@code einmalkosten[i]} ist die Zeile i.
  */
 function formularFeld(apiFeld: string): VertragFeld | undefined {
   const einmal = EINMALKOSTEN_MUSTER.exec(apiFeld);
@@ -443,7 +453,7 @@ function formularFeld(apiFeld: string): VertragFeld | undefined {
   if (index > 0) {
     return preisFeld(index - 1, teil);
   }
-  return teil === 'betrag' ? 'betrag' : 'gueltigSeit';
+  return teil === 'betrag' ? 'betrag' : 'beginn';
 }
 
 function istBetrag(feld: VertragFeld): boolean {
@@ -479,6 +489,9 @@ function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: F
       if (istBetrag(feld)) {
         return PFLICHT_TEXT.betrag;
       }
+      if (feld.endsWith('.gueltigAb')) {
+        return GUELTIG_AB_TEXT;
+      }
       return feld in PFLICHT_TEXT
         ? PFLICHT_TEXT[feld as keyof typeof PFLICHT_TEXT]
         : 'Bitte fülle dieses Feld aus.';
@@ -489,8 +502,8 @@ function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: F
       return apiFeld === 'einmalkosten'
         ? `Höchstens ${parameter['max']} Einmalkosten.`
         : `Höchstens ${parameter['max']} Zeichen.`;
-    case 'GueltigAbPflicht':
-      return feld === 'gueltigSeit' ? GUELTIG_SEIT_TEXT : GUELTIG_AB_TEXT;
+    case 'ErsterPreisAbBeginn':
+      return ERSTER_PREIS_TEXT;
     case 'GueltigAbEindeutig':
       return 'Für dieses Datum gibt es schon einen Preis.';
     case 'PreisNichtVorBeginn':

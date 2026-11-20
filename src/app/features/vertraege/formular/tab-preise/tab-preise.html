@@ -1,6 +1,9 @@
 <fieldset>
   <legend>Preisentwicklung</legend>
   <app-vertrag-preisliste
+    [betrag]="werte().betrag"
+    [beginn]="werte().beginn"
+    (betragGeaendert)="betragGeaendert.emit($event)"
     [zeilen]="preise()"
     [waehrung]="waehrung()"
     [verlauf]="verlauf()"

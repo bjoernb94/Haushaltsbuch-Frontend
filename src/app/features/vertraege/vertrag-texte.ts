@@ -153,10 +153,9 @@ const PREISZEILE_ZUSATZ: Record<Preiszeilenart, string> = {
   NACH_ENDE: ' · nach Vertragsende',
 };
 
-/** „ab 01.01.2026: 586,80 € · aktuell“; ohne Datum gilt der Preis ab Vertragsbeginn. */
+/** „ab 01.01.2026: 586,80 € · aktuell“. */
 export function preisText({ gueltigAb, betrag, art }: VertragPreisAntwort, locale: string): string {
-  const ab = gueltigAb ? `ab ${datumText(gueltigAb)}` : 'ab Vertragsbeginn';
-  return `${ab}: ${betragText(betrag, locale)}${PREISZEILE_ZUSATZ[art]}`;
+  return `ab ${datumText(gueltigAb)}: ${betragText(betrag, locale)}${PREISZEILE_ZUSATZ[art]}`;
 }
 
 /** „ab 01.01.2027: 601,47 € · Prognose“. */

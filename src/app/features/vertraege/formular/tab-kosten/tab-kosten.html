@@ -2,7 +2,7 @@
   <legend>Kosten</legend>
   <div class="raster">
     <div class="feld">
-      <label [for]="id('betrag')">Betrag in {{ waehrung() }} *</label>
+      <label [for]="id('betrag')">Betrag ab Vertragsbeginn in {{ waehrung() }} *</label>
       <input
         [id]="id('betrag')"
         type="text"
@@ -10,11 +10,17 @@
         placeholder="0,00"
         formControlName="betrag"
         [attr.aria-invalid]="!!fehlerText('betrag')"
-        [attr.aria-describedby]="beschreibung('betrag')"
+        [attr.aria-describedby]="beschreibung('betrag', id('betrag') + '-hinweis')"
       />
       @if (fehlerText('betrag'); as text) {
         <p class="feldfehler" [id]="id('betrag') + '-fehler'">{{ text }}</p>
       }
+      <span class="feldhinweis" [id]="id('betrag') + '-hinweis'">
+        @if (aktuell(); as text) {
+          <b>{{ text }}</b><br />
+        }
+        Spätere Preise trägst du unter „Preisverlauf“ ein.
+      </span>
     </div>
     <div class="feld">
       <label [for]="id('zahlweise')">Zahlweise *</label>
@@ -61,24 +67,6 @@
       </select>
       @if (fehlerText('zahlungsweg'); as text) {
         <p class="feldfehler" [id]="id('zahlungsweg') + '-fehler'">{{ text }}</p>
-      }
-    </div>
-    <div class="feld">
-      <label [for]="id('gueltigSeit')"
-        >Betrag gilt seit <span class="optional">(optional)</span></label
-      >
-      <input
-        [id]="id('gueltigSeit')"
-        type="date"
-        formControlName="gueltigSeit"
-        [attr.aria-invalid]="!!fehlerText('gueltigSeit')"
-        [attr.aria-describedby]="beschreibung('gueltigSeit', id('gueltigSeit') + '-hinweis')"
-      />
-      <span class="feldhinweis" [id]="id('gueltigSeit') + '-hinweis'"
-        >Leer = ab Vertragsbeginn.</span
-      >
-      @if (fehlerText('gueltigSeit'); as text) {
-        <p class="feldfehler" [id]="id('gueltigSeit') + '-fehler'">{{ text }}</p>
       }
     </div>
     <div class="feld">

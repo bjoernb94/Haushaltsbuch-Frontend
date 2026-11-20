@@ -47,6 +47,8 @@ export class VertragTabPreise extends VertragTab {
   readonly werte = input.required<VertragWerte>();
   readonly vorschau = input.required<VertragVorschauAntwort | null>();
 
+  /** Eingabe in der ersten Zeile der Preisliste, dem Betrag aus dem Tab Kosten. */
+  readonly betragGeaendert = output<string>();
   readonly hinzufuegen = output();
   readonly entfernen = output<number>();
   readonly geaendert = output<{ index: number; feld: keyof PreisWerte }>();

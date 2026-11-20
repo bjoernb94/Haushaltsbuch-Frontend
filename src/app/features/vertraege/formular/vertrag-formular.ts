@@ -261,7 +261,6 @@ export class VertragFormular implements OnInit {
   protected preisHinzufuegen(): void {
     const preise = this.formular.controls.preise;
     preise.push(preisZeile(this.fb));
-    this.fehlerEntfernen('gueltigSeit');
     const id = this.id(preisFeld(preise.length - 1, 'gueltigAb'));
     afterNextRender(() => document.getElementById(id)?.focus(), { injector: this.injector });
   }
@@ -269,11 +268,7 @@ export class VertragFormular implements OnInit {
   protected preisEntfernen(index: number): void {
     this.formular.controls.preise.removeAt(index);
     this.allgemeinerFehler.set(false);
-    this.feldFehler.update((fehler) => {
-      const neu = ohneZeile(fehler, 'preise', index);
-      neu.delete('gueltigSeit');
-      return neu;
-    });
+    this.feldFehler.update((fehler) => ohneZeile(fehler, 'preise', index));
     // Der Fokus ginge mit dem Knopf verloren: zur nächsten Zeile, sonst zu „Preis hinzufügen“.
     const preise = this.formular.controls.preise;
     const ziel =
