@@ -44,6 +44,9 @@ function betrag(wert: number): Betrag {
 }
 
 const VERTRAG_LEER = {
+  betragErrechnet: false,
+  // Wie zuletzt heute gespeichert: Keine Stufe ist seitdem fällig geworden (ADR 0022).
+  preissteigerungBetrachtetBis: new Date().toISOString().slice(0, 10) as string | null,
   bezeichnung: null,
   vertragsnummer: null,
   zahlungsweg: null,
@@ -63,7 +66,7 @@ const VERTRAG_LEER = {
 
 /** Ein Preis seit Vertragsbeginn, wie bei den meisten Verträgen. */
 function einPreis(wert: number, beginn: string): VertragPreisAntwort[] {
-  return [{ gueltigAb: beginn, betrag: betrag(wert), art: 'AKTUELL' }];
+  return [{ gueltigAb: beginn, betrag: betrag(wert), art: 'AKTUELL', automatisch: false }];
 }
 
 const BERECHNET_LEER: Pick<
@@ -124,9 +127,9 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
     kategorie: kategorie('MITGLIEDSCHAFTEN'),
     betrag: betrag(34.9),
     preise: [
-      { gueltigAb: '2025-05-01', betrag: betrag(29.9), art: 'FRUEHER' },
-      { gueltigAb: '2026-01-01', betrag: betrag(34.9), art: 'AKTUELL' },
-      { gueltigAb: '2027-03-01', betrag: betrag(39.9), art: 'ANGEKUENDIGT' },
+      { gueltigAb: '2025-05-01', betrag: betrag(29.9), art: 'FRUEHER', automatisch: false },
+      { gueltigAb: '2026-01-01', betrag: betrag(34.9), art: 'AKTUELL', automatisch: false },
+      { gueltigAb: '2027-03-01', betrag: betrag(39.9), art: 'ANGEKUENDIGT', automatisch: false },
     ],
     zahlweise: 'MONATLICH',
     beginn: '2025-05-01',
@@ -412,19 +415,32 @@ const MONATE_JE_ZAHLUNG = { MONATLICH: 1, VIERTELJAEHRLICH: 3, HALBJAEHRLICH: 6,
 interface PreisAnfrage {
   gueltigAb?: string | null;
   betrag?: Betrag | null;
+  automatisch?: boolean | null;
 }
 
+type VorschauPreis = VertragVorschauAntwort['preise'][number];
+
 /** Ohne Datum oder Betrag ignoriert das Backend die Zeile (Vorschau); beim Speichern ist ein Fehler. */
-function vollstaendig(p: PreisAnfrage): p is { gueltigAb: string; betrag: Betrag } {
+function vollstaendig<T extends PreisAnfrage>(
+  p: T,
+): p is T & { gueltigAb: string; betrag: Betrag } {
   return !!p.betrag && !!p.gueltigAb;
 }
 
-/** Sortiert wie das Backend, „heute“ ist der Tag des Browsers. */
-function preiseMitArt(preise: PreisAnfrage[]): VertragPreisAntwort[] {
+/**
+ * Sortiert wie das Backend, „heute“ ist der Tag des Browsers. `neu` sind die Stufen, die erst das
+ * Speichern anlegt.
+ */
+function preiseMitArt(preise: (PreisAnfrage & { neu?: boolean })[]): VorschauPreis[] {
   const heute = new Date().toISOString().slice(0, 10);
   const sortiert = preise
     .filter(vollstaendig)
-    .map(({ gueltigAb, betrag }) => ({ gueltigAb, betrag }))
+    .map(({ gueltigAb, betrag, automatisch, neu }) => ({
+      gueltigAb,
+      betrag,
+      automatisch: !!automatisch,
+      neu: !!neu,
+    }))
     .sort((a, b) => a.gueltigAb.localeCompare(b.gueltigAb));
   const aktuell = Math.max(
     0,
@@ -478,13 +494,61 @@ function plusMonate(iso: string, monate: number): string {
   return new Date(Date.UTC(jahr, monat - 1 + monate, tag)).toISOString().slice(0, 10);
 }
 
+/** Beginn plus ein Rhythmus, wie `vorschlagNaechsteAm` des Backends (ohne dessen Monatsende-Regel). */
+function vorschlagFuer(anfrage: VertragVorschauAnfrage): string | null {
+  const rhythmus = anfrage.preissteigerung?.rhythmus;
+  return anfrage.beginn && rhythmus ? plusMonate(anfrage.beginn, RHYTHMUS_MONATE[rhythmus]) : null;
+}
+
+/**
+ * Grob wie das Backend (ADR 0022): die bis heute fälligen Stufen ab dem letzten Preis bis heute,
+ * nach `betrachtetBis` und der Garantie, nicht nach `gekuendigtZum`; jeder Schritt auf Cent gerundet.
+ */
+function faelligeStufen(
+  anfrage: VertragVorschauAnfrage,
+  preise: PreisAnfrage[],
+  betrachtetBis: string | null,
+): { gueltigAb: string; betrag: Betrag }[] {
+  const regel = anfrage.preissteigerung;
+  const wert = regel?.art === 'PROZENT' ? regel.prozent : regel?.betrag?.wert;
+  const heute = new Date().toISOString().slice(0, 10);
+  const ausgang = preise
+    .filter(vollstaendig)
+    .filter((p) => p.gueltigAb <= heute)
+    .sort((a, b) => a.gueltigAb.localeCompare(b.gueltigAb))
+    .at(-1);
+  if (!regel?.art || !regel.rhythmus || !regel.naechsteAm || !wert || !ausgang) {
+    return [];
+  }
+  const grenze = [ausgang.gueltigAb, betrachtetBis ?? '', anfrage.preisgarantieBis ?? '']
+    .sort()
+    .at(-1)!;
+  const bis =
+    anfrage.gekuendigtZum && anfrage.gekuendigtZum < heute ? anfrage.gekuendigtZum : heute;
+  const stufen: { gueltigAb: string; betrag: Betrag }[] = [];
+  let preis = ausgang.betrag.wert;
+  for (let i = 0; i < 1200; i++) {
+    const ab = plusMonate(regel.naechsteAm, i * RHYTHMUS_MONATE[regel.rhythmus]);
+    if (ab > bis) {
+      break;
+    }
+    if (ab <= grenze) {
+      continue;
+    }
+    preis =
+      Math.round((regel.art === 'PROZENT' ? preis * (1 + wert / 100) : preis + wert) * 100) / 100;
+    stufen.push({ gueltigAb: ab, betrag: { ...ausgang.betrag, wert: preis } });
+  }
+  return stufen;
+}
+
 /**
  * Grob wie das Backend: ab dem letzten Preis im Rhythmus, nicht vor heute (Browser), nicht in der
  * Garantie und nicht nach `gekuendigtZum`; jeder Schritt auf Cent gerundet. Unvollständig: keine.
  */
 function prognoseFuer(
   anfrage: VertragVorschauAnfrage,
-  preise: VertragPreisAntwort[],
+  preise: Pick<VertragPreisAntwort, 'gueltigAb' | 'betrag'>[],
 ): Prognosepreis[] {
   const regel = anfrage.preissteigerung;
   const letzter = preise.at(-1);
@@ -517,7 +581,10 @@ function prognoseFuer(
   return prognose;
 }
 
-function preisverlaufFuer(preise: VertragPreisAntwort[], prognose: Prognosepreis[]): Preispunkt[] {
+function preisverlaufFuer(
+  preise: Pick<VertragPreisAntwort, 'gueltigAb' | 'betrag' | 'art'>[],
+  prognose: Prognosepreis[],
+): Preispunkt[] {
   return [
     ...preise
       .filter(({ art }) => art !== 'NACH_ENDE')
@@ -530,9 +597,19 @@ function preisverlaufFuer(preise: VertragPreisAntwort[], prognose: Prognosepreis
   ];
 }
 
-/** Ohne Beginn ohne Preise: Der erste gilt ab dem Beginn. */
+/**
+ * Ohne Beginn ohne Preise: Der erste gilt ab dem Beginn. Die Preise wie nach dem Speichern, die
+ * fälligen Stufen mit `neu`.
+ */
 function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwort {
-  const preise = anfrage.beginn ? preiseMitArt(anfrage.preise ?? []) : [];
+  const eingegeben = anfrage.preise ?? [];
+  const stufen = faelligeStufen(anfrage, eingegeben, anfrage.preissteigerungBetrachtetBis ?? null);
+  const preise = anfrage.beginn
+    ? preiseMitArt([
+        ...eingegeben,
+        ...stufen.map((stufe) => ({ ...stufe, automatisch: true, neu: true })),
+      ])
+    : [];
   const aktuell = preise.find((p) => p.art === 'AKTUELL')?.betrag ?? null;
   const angekuendigt = preise.find((p) => p.art === 'ANGEKUENDIGT');
   const prognose = prognoseFuer(anfrage, preise);
@@ -563,6 +640,7 @@ function vorschauAntwort(anfrage: VertragVorschauAnfrage): VertragVorschauAntwor
         : null,
     prognose,
     kuendigung: vorschau(anfrage),
+    vorschlagNaechsteAm: vorschlagFuer(anfrage),
   };
 }
 
@@ -587,19 +665,43 @@ function vertragsendeFuer(anfrage: VertragAnfrage): string | null {
   return enden.sort()[0] ?? null;
 }
 
+/**
+ * Gespeichert wie im Backend: Ein Preis bleibt nur automatisch, wenn er so gespeichert war; die
+ * fälligen Stufen nach `preissteigerungBetrachtetBis` des gespeicherten Stands kommen dazu.
+ */
 function ausAnfrage(
   anfrage: VertragAnfrage | VertragAenderung,
   id: string,
   version: number,
+  bisher: VertragAntwort | null = null,
 ): VertragAntwort {
   const { kategorieId, ...felder } = anfrage;
+  const geprueft = anfrage.preise.map((p) => ({
+    ...p,
+    automatisch:
+      !!p.automatisch &&
+      !!bisher?.preise.some(
+        (b) => b.automatisch && b.gueltigAb === p.gueltigAb && b.betrag.wert === p.betrag.wert,
+      ),
+  }));
+  const heute = new Date().toISOString().slice(0, 10);
   const {
     betrag: aktuell,
-    preise,
+    preise: vorschauPreise,
     naechstePreisaenderung,
     eigenerAnteil,
     prognose,
-  } = vorschauAntwort(anfrage);
+  } = vorschauAntwort({
+    ...anfrage,
+    preise: geprueft,
+    preissteigerungBetrachtetBis: bisher?.preissteigerungBetrachtetBis ?? null,
+  });
+  const preise: VertragPreisAntwort[] = vorschauPreise.map((preis) => ({
+    gueltigAb: preis.gueltigAb,
+    betrag: preis.betrag,
+    art: preis.art,
+    automatisch: preis.automatisch,
+  }));
   const { wert, waehrung } = aktuell!;
   const proJahr = Math.round((wert * 1200) / MONATE_JE_ZAHLUNG[anfrage.zahlweise]) / 100;
   const prozent = anfrage.anteilProzent ?? 100;
@@ -611,6 +713,9 @@ function ausAnfrage(
     version,
     betrag: aktuell!,
     preise,
+    preissteigerungBetrachtetBis: anfrage.preissteigerung
+      ? heute
+      : (bisher?.preissteigerungBetrachtetBis ?? null),
     einmalkosten,
     preissteigerung: anfrage.preissteigerung
       ? {
@@ -813,7 +918,7 @@ export async function vertraegeSimulieren(
       return problem(route, 409, 'KONFLIKT', 'Contract was changed in the meantime.');
     }
     if (aenderung) {
-      const geaendert = ausAnfrage(aenderung, pfad, version + 1);
+      const geaendert = ausAnfrage(aenderung, pfad, version + 1, vorhanden);
       vertraege = vertraege.map((v) => (v.id === pfad ? geaendert : v));
       return route.fulfill({ json: geaendert });
     }

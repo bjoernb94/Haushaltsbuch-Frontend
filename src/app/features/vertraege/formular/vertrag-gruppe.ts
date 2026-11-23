@@ -42,7 +42,7 @@ export function vertragGruppe(fb: NonNullableFormBuilder) {
 }
 
 export function preisZeile(fb: NonNullableFormBuilder): PreisZeile {
-  return fb.group({ gueltigAb: [''], betrag: [''] });
+  return fb.group({ gueltigAb: [''], betrag: [''], automatisch: [false] });
 }
 
 export function einmalkostenZeile(fb: NonNullableFormBuilder): EinmalkostenZeile {

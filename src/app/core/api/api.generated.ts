@@ -241,7 +241,7 @@ export interface components {
             betrag: components["schemas"]["Betrag"];
         };
         /** @enum {string} */
-        Preispunktart: "GEZAHLT" | "ANGEKUENDIGT" | "PROGNOSE";
+        Preispunktart: "GEZAHLT" | "ERRECHNET" | "ANGEKUENDIGT" | "PROGNOSE";
         /** @enum {string} */
         Preiszeilenart: "FRUEHER" | "AKTUELL" | "ANGEKUENDIGT" | "NACH_ENDE";
         Problem: {
@@ -341,6 +341,7 @@ export interface components {
             beginn: string;
             berechnet: components["schemas"]["VertragBerechnet"];
             betrag: components["schemas"]["Betrag"];
+            betragErrechnet: boolean;
             bezeichnung: string | null;
             einmalkosten: components["schemas"]["VertragEinmalkostenAntwort"][];
             erinnerungSonderkuendigung: boolean;
@@ -359,6 +360,8 @@ export interface components {
             /** Format: date */
             preisgarantieBis: string | null;
             preissteigerung: components["schemas"]["VertragPreissteigerungAntwort"] | null;
+            /** Format: date */
+            preissteigerungBetrachtetBis: string | null;
             verlaengerung: components["schemas"]["Verlaengerung"] | null;
             /** Format: int64 */
             version: number;
@@ -408,12 +411,14 @@ export interface components {
         /** @enum {string} */
         VertragKategorieSchluessel: "STREAMING_ABOS" | "SOFTWARE_APPS" | "VERSICHERUNG" | "MOBILFUNK_INTERNET" | "MITGLIEDSCHAFTEN" | "GEBUEHREN_BEITRAEGE" | "SONSTIGES";
         VertragPreisAnfrage: {
+            automatisch?: boolean | null;
             betrag: components["schemas"]["Betrag"];
             /** Format: date */
             gueltigAb: string;
         };
         VertragPreisAntwort: {
             art: components["schemas"]["Preiszeilenart"];
+            automatisch: boolean;
             betrag: components["schemas"]["Betrag"];
             /** Format: date */
             gueltigAb: string;
@@ -450,6 +455,8 @@ export interface components {
             /** Format: date */
             preisgarantieBis?: string | null;
             preissteigerung?: components["schemas"]["VertragVorschauPreissteigerung"] | null;
+            /** Format: date */
+            preissteigerungBetrachtetBis?: string | null;
             verlaengerung?: components["schemas"]["Verlaengerung"] | null;
             zahlweise?: components["schemas"]["Zahlweise"] | null;
         };
@@ -460,8 +467,10 @@ export interface components {
             kostenProMonat: components["schemas"]["Betrag"] | null;
             kuendigung: components["schemas"]["Kuendigung"];
             naechstePreisaenderung: components["schemas"]["Preisaenderung"] | null;
-            preise: components["schemas"]["VertragPreisAntwort"][];
+            preise: components["schemas"]["VertragVorschauPreisAntwort"][];
             prognose: components["schemas"]["Prognosepreis"][];
+            /** Format: date */
+            vorschlagNaechsteAm: string | null;
         };
         VertragVorschauEigenerAnteil: {
             betrag: components["schemas"]["Betrag"];
@@ -474,9 +483,18 @@ export interface components {
             faelligAm?: string | null;
         };
         VertragVorschauPreis: {
+            automatisch?: boolean | null;
             betrag?: components["schemas"]["Betrag"] | null;
             /** Format: date */
             gueltigAb?: string | null;
+        };
+        VertragVorschauPreisAntwort: {
+            art: components["schemas"]["Preiszeilenart"];
+            automatisch: boolean;
+            betrag: components["schemas"]["Betrag"];
+            /** Format: date */
+            gueltigAb: string;
+            neu: boolean;
         };
         VertragVorschauPreissteigerung: {
             art?: components["schemas"]["Steigerungsart"] | null;

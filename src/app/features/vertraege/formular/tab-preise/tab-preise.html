@@ -5,8 +5,10 @@
     [beginn]="werte().beginn"
     (betragGeaendert)="betragGeaendert.emit($event)"
     [zeilen]="preise()"
+    [werte]="werte().preise"
+    [geladen]="geladen()"
     [waehrung]="waehrung()"
-    [verlauf]="verlauf()"
+    [vorschau]="vorschau()?.preise ?? []"
     [fehler]="fehler()"
     [idPrefix]="idPrefix()"
     (hinzufuegen)="hinzufuegen.emit()"
@@ -22,5 +24,8 @@
     [art]="werte().steigerungsart"
     [prognose]="prognose()"
     [erinnerung]="erinnerung()"
+    [terminVorschlag]="terminVorschlag()"
+    [regelGeaendert]="regelGeaendert()"
+    (vorschlagUebernehmen)="vorschlagUebernehmen.emit($event)"
   />
 </fieldset>

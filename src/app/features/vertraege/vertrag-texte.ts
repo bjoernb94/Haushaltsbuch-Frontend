@@ -153,9 +153,41 @@ const PREISZEILE_ZUSATZ: Record<Preiszeilenart, string> = {
   NACH_ENDE: ' · nach Vertragsende',
 };
 
-/** „ab 01.01.2026: 586,80 € · aktuell“. */
-export function preisText({ gueltigAb, betrag, art }: VertragPreisAntwort, locale: string): string {
-  return `ab ${datumText(gueltigAb)}: ${betragText(betrag, locale)}${PREISZEILE_ZUSATZ[art]}`;
+/** Kennzeichen eines vom Backend aus der Preissteigerung angelegten Preises (ADR 0022). */
+export const AUTOMATISCH_TEXT = 'automatisch';
+
+/** Etikett einer Zeile der Preisliste im Formular nach ihrer Art in der Vorschau. */
+export const PREISZEILE_ETIKETT: Record<Preiszeilenart, string | null> = {
+  FRUEHER: null,
+  AKTUELL: 'aktuell',
+  ANGEKUENDIGT: 'angekündigt',
+  NACH_ENDE: 'nach Vertragsende',
+};
+
+/** Kennzeichen einer seit dem letzten Speichern fälligen, nur errechneten Stufe. */
+export const ERRECHNET_TEXT = 'errechnet';
+
+/** „ab 01.01.2026: 586,80 € · aktuell“, dazu „· automatisch“. */
+export function preisText(
+  {
+    gueltigAb,
+    betrag,
+    art,
+    automatisch,
+  }: Pick<VertragPreisAntwort, 'gueltigAb' | 'betrag' | 'art'> & { automatisch?: boolean },
+  locale: string,
+): string {
+  const kennzeichen = automatisch ? ` · ${AUTOMATISCH_TEXT}` : '';
+  return `ab ${datumText(gueltigAb)}: ${betragText(betrag, locale)}${PREISZEILE_ZUSATZ[art]}${kennzeichen}`;
+}
+
+/** „ab 12.11.2026: 110,40 € · aktuell · errechnet“ für einen Punkt {@code ERRECHNET} des Verlaufs. */
+export function errechnetText(
+  { ab, betrag }: Prognosepreis,
+  aktuell: boolean,
+  locale: string,
+): string {
+  return `ab ${datumText(ab)}: ${betragText(betrag, locale)}${aktuell ? ' · aktuell' : ''} · ${ERRECHNET_TEXT}`;
 }
 
 /** „ab 01.01.2027: 601,47 € · Prognose“. */

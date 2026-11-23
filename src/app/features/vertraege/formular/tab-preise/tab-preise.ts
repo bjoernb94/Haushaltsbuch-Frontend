@@ -11,23 +11,22 @@ import { FormArray } from '@angular/forms';
 import { VertragVorschauAntwort } from '../../../../core/api/api';
 import { betragText } from '../../../../shared/format/betrag.pipe';
 import { datumText } from '../../../../shared/format/datum.pipe';
-import { preisText } from '../../vertrag-texte';
 import { PreisZeile, VertragPreisliste } from '../vertrag-preisliste/vertrag-preisliste';
 import {
   PrognoseAnzeige,
   VertragPreissteigerung,
 } from '../vertrag-preissteigerung/vertrag-preissteigerung';
-import { PreisWerte, VertragWerte } from '../vertrag-pruefung';
+import { PreisEingabeFeld, VertragWerte } from '../vertrag-pruefung';
 import { VertragTab } from '../vertrag-tabs';
 
 const PROGNOSE_UNVOLLSTAENDIG =
-  'Gib Wert und Datum der nächsten Erhöhung ein, dann zeigen wir hier die nächsten drei Preise.';
+  'Gib Wert und Datum der ersten Erhöhung ein, dann zeigen wir hier die nächsten drei Preise.';
 
 const PROGNOSE_KEINE = 'Bis zum Vertragsende ist keine Erhöhung zu erwarten.';
 
 /**
- * Tab Preisverlauf des Vertragsformulars: Preisliste und Preissteigerung, Verlauf und Prognose aus der
- * Vorschau des Formulars. Die Zeilen der Preisliste fügt das Formular hinzu und entfernt sie.
+ * Tab Preisverlauf des Vertragsformulars: Preisliste (mit Etiketten und neuen Stufen aus der Vorschau)
+ * und Preissteigerung mit Prognose aus der Vorschau. Die Zeilen der Preisliste fügt das Formular hinzu und entfernt sie.
  */
 @Component({
   selector: 'app-vertrag-tab-preise',
@@ -46,22 +45,19 @@ export class VertragTabPreise extends VertragTab {
   readonly waehrungName = input.required<string>();
   readonly werte = input.required<VertragWerte>();
   readonly vorschau = input.required<VertragVorschauAntwort | null>();
+  /** Die automatischen Preise des gespeicherten Stands (Kennzeichen in der Liste). */
+  readonly geladen = input<ReadonlySet<string>>(new Set());
+  /** Vorgeschlagener Termin, wenn der Beginn geändert wurde und das Feld nicht mehr folgt. */
+  readonly terminVorschlag = input<string | null>(null);
+  /** Die Regel weicht vom gespeicherten Stand ab, und es gibt schon automatische Preise. */
+  readonly regelGeaendert = input(false);
 
   /** Eingabe in der ersten Zeile der Preisliste, dem Betrag aus dem Tab Kosten. */
   readonly betragGeaendert = output<string>();
   readonly hinzufuegen = output();
   readonly entfernen = output<number>();
-  readonly geaendert = output<{ index: number; feld: keyof PreisWerte }>();
-
-  /** Alle Preise mit „aktuell“ und „angekündigt“ aus der Vorschau, sobald es weitere Preise gibt. */
-  protected readonly verlauf = computed(() =>
-    this.werte().preise.length
-      ? (this.vorschau()?.preise ?? []).map((preis) => ({
-          text: preisText(preis, this.locale),
-          aktuell: preis.art === 'AKTUELL',
-        }))
-      : [],
-  );
+  readonly geaendert = output<{ index: number; feld: PreisEingabeFeld }>();
+  readonly vorschlagUebernehmen = output<string>();
 
   /**
    * Die nächsten drei Preise der Vorschau. Ohne Prognose ein Hinweis: Fehlen Wert oder Datum, dazu; sonst

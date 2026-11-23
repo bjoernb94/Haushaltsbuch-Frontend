@@ -24,6 +24,7 @@ import { VertragPreise } from './vertrag-preise/vertrag-preise';
 import { VertraegeSeite } from '../liste/vertraege-seite';
 import { VertragNavigation } from '../liste/vertrag-navigation';
 import {
+  ERRECHNET_TEXT,
   fristDauerText,
   INFO_RUNDUNG_DETAILS,
   kategorieText,
@@ -244,7 +245,9 @@ export class VertragDetails {
     return [
       {
         label: 'Aktueller Betrag',
-        wert: `${betragText(v.betrag, this.locale)} ${ZAHLWEISE_TEXT[v.zahlweise]}`,
+        wert:
+          `${betragText(v.betrag, this.locale)} ${ZAHLWEISE_TEXT[v.zahlweise]}` +
+          (v.betragErrechnet ? ` · ${ERRECHNET_TEXT}` : ''),
       },
       { label: 'Pro Monat', wert: betragText(kostenProMonat, this.locale) },
       {

@@ -96,4 +96,24 @@ describe('VertragPreisverlauf', () => {
     const punkte = [...el.querySelectorAll('.punkt')];
     expect(links(el.querySelector('.heute-text')!)).toBe(links(punkte[1]));
   });
+
+  it('errechnete Stufen liegen auf der durchgezogenen Linie, mit offenem Punkt und Legende', async () => {
+    const { el, text, pfad } = await zeichnen([
+      { ab: '2024-11-12', betrag: EUR(100), art: 'GEZAHLT' },
+      { ab: '2025-11-12', betrag: EUR(102), art: 'ERRECHNET' },
+      { ab: '2027-11-12', betrag: EUR(104.04), art: 'PROGNOSE' },
+    ]);
+    const label = el.querySelector('[role="img"]')?.getAttribute('aria-label');
+    expect(label?.replace(/\s/g, ' ')).toContain('ab 12.11.2025 102,00 € (errechnet)');
+    // Die Stufe von 2025 gehört zum durchgezogenen Teil.
+    expect(pfad('linie:not(.zukunft)').split(' L')).toHaveLength(4);
+    const punkte = [...el.querySelectorAll('.punkt')];
+    expect(punkte.map((p) => p.classList.contains('gezahlt'))).toEqual([true, false, false]);
+    expect(text('figcaption > span').at(-1)).toBe('Errechnet, noch nicht gespeichert');
+  });
+
+  it('ohne errechnete Stufen keine Legende dafür', async () => {
+    const { text } = await zeichnen(ZWEI);
+    expect(text('figcaption > span')).toEqual(['Gezahlt', 'Angekündigt oder Prognose']);
+  });
 });
