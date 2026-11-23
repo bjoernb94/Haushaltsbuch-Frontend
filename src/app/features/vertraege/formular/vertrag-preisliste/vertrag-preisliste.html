@@ -8,7 +8,12 @@
 <div class="preise">
   <div class="preis erster">
     <div class="feld">
-      <label [for]="erstId('gueltigAb')">Gilt ab</label>
+      <label [for]="erstId('gueltigAb')"
+        >Gilt ab
+        @if (etikett(beginn()); as e) {
+          <span [class]="'etikett ' + e.klasse">{{ e.text }}</span>
+        }
+      </label>
       <input
         [id]="erstId('gueltigAb')"
         type="text"
@@ -38,61 +43,45 @@
       <p class="feldfehler" [id]="erstId('fehler')">{{ text }}</p>
     }
   </div>
-  @for (zeile of zeilen().controls; track zeile; let i = $index) {
-    <div class="preis" [formGroup]="zeile">
-      <div class="feld">
-        <label [for]="id(i, 'gueltigAb')">Gilt ab *</label>
-        <input
-          [id]="id(i, 'gueltigAb')"
-          type="date"
-          formControlName="gueltigAb"
-          [attr.aria-invalid]="!!fehlerText(i, 'gueltigAb')"
-          [attr.aria-describedby]="zeilenFehler(i) ? id(i, 'gueltigAb') + '-fehler' : null"
-          (input)="geaendert.emit({ index: i, feld: 'gueltigAb' })"
-        />
-      </div>
-      <div class="feld">
-        <label [for]="id(i, 'betrag')">Betrag in {{ waehrung() }} *</label>
-        <input
-          [id]="id(i, 'betrag')"
-          type="text"
-          inputmode="decimal"
-          placeholder="0,00"
-          formControlName="betrag"
-          [attr.aria-invalid]="!!fehlerText(i, 'betrag')"
-          [attr.aria-describedby]="zeilenFehler(i) ? id(i, 'gueltigAb') + '-fehler' : null"
-          (input)="geaendert.emit({ index: i, feld: 'betrag' })"
-        />
-      </div>
-      <button
-        type="button"
-        class="entfernen"
-        [attr.aria-label]="entfernenLabel(i)"
-        (click)="entfernen.emit(i)"
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+  @for (abschnitt of abschnitte(); track spur(abschnitt)) {
+    @if ($index === neuStelle()) {
+      <ng-container *ngTemplateOutlet="neuVorlage" />
+    }
+    @if (abschnitt.art === 'einzeln') {
+      <ng-container *ngTemplateOutlet="zeileVorlage; context: { $implicit: abschnitt.index }" />
+    } @else {
+      <div class="gruppe">
+        <button
+          type="button"
+          class="gruppe-umschalten"
+          [attr.aria-expanded]="offen(abschnitt)"
+          (click)="umschalten(abschnitt.schluessel)"
         >
-          <path d="M4 7h16"></path>
-          <path d="M9 7V4h6v3"></path>
-          <path d="M6 7l1 13h10l1-13"></path>
-        </svg>
-        Entfernen
-      </button>
-      @if (zeilenFehler(i); as text) {
-        <p class="feldfehler" [id]="id(i, 'gueltigAb') + '-fehler'">
-          {{ text }}
-        </p>
-      }
-    </div>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 6l6 6-6 6"></path>
+          </svg>
+          {{ gruppenText(abschnitt) }}
+        </button>
+        @if (offen(abschnitt)) {
+          @for (e of abschnitt.eintraege; track zeilen().at(e.index)) {
+            <ng-container *ngTemplateOutlet="zeileVorlage; context: { $implicit: e.index }" />
+          }
+        }
+      </div>
+    }
+  }
+  @if (neuStelle() === abschnitte().length) {
+    <ng-container *ngTemplateOutlet="neuVorlage" />
   }
 </div>
 <button
@@ -116,11 +105,108 @@
   </svg>
   Preis hinzufügen
 </button>
-@if (verlauf().length) {
-  <div class="verlauf" role="status">
-    <b>Preisverlauf</b>
-    @for (eintrag of verlauf(); track $index) {
-      <span [class.aktuell]="eintrag.aktuell">{{ eintrag.text }}</span>
+
+<!-- Die Stufen, die erst das Speichern anlegt: Hinweis, darunter die aktuelle als feste Zeile. -->
+<ng-template #neuVorlage>
+  <p class="neu-hinweis" [id]="idPrefix() + '-preise-neu-hinweis'">{{ neuHinweis() }}</p>
+  @if (neuAktuell(); as preis) {
+    <div class="preis-vorschau">
+      <div class="feld">
+        <label [for]="idPrefix() + '-preise-neu-gueltigAb'"
+          >Gilt ab
+          <span class="etikett aktuell">aktuell</span>
+          <span class="etikett">{{ automatischText }}</span>
+        </label>
+        <input
+          [id]="idPrefix() + '-preise-neu-gueltigAb'"
+          type="text"
+          readonly
+          [value]="preis.gueltigAb"
+          [attr.aria-describedby]="idPrefix() + '-preise-neu-hinweis'"
+        />
+      </div>
+      <div class="feld">
+        <label [for]="idPrefix() + '-preise-neu-betrag'">Betrag in {{ waehrung() }}</label>
+        <input
+          [id]="idPrefix() + '-preise-neu-betrag'"
+          type="text"
+          readonly
+          [value]="preis.betrag"
+          [attr.aria-describedby]="idPrefix() + '-preise-neu-hinweis'"
+        />
+      </div>
+      <!-- Hält die Spalte von „Entfernen“ frei, wie in der ersten Zeile. -->
+      <span aria-hidden="true"></span>
+    </div>
+  }
+</ng-template>
+
+<ng-template #zeileVorlage let-i>
+  <div class="preis" [formGroup]="zeilen().at(i)">
+    <div class="feld">
+      <label [for]="id(i, 'gueltigAb')"
+        >Gilt ab *
+        @if (etikett(werte()[i]?.gueltigAb); as e) {
+          <span [class]="'etikett ' + e.klasse">{{ e.text }}</span>
+        }
+        @if (unveraendertAutomatisch(i)) {
+          <span class="etikett">{{ automatischText }}</span>
+        }
+      </label>
+      <input
+        [id]="id(i, 'gueltigAb')"
+        type="date"
+        formControlName="gueltigAb"
+        [attr.aria-invalid]="!!fehlerText(i, 'gueltigAb')"
+        [attr.aria-describedby]="beschreibung(i)"
+        (input)="geaendert.emit({ index: i, feld: 'gueltigAb' })"
+      />
+    </div>
+    <div class="feld">
+      <label [for]="id(i, 'betrag')">Betrag in {{ waehrung() }} *</label>
+      <input
+        [id]="id(i, 'betrag')"
+        type="text"
+        inputmode="decimal"
+        placeholder="0,00"
+        formControlName="betrag"
+        [attr.aria-invalid]="!!fehlerText(i, 'betrag')"
+        [attr.aria-describedby]="beschreibung(i)"
+        (input)="geaendert.emit({ index: i, feld: 'betrag' })"
+      />
+    </div>
+    <button
+      type="button"
+      class="entfernen"
+      [attr.aria-label]="entfernenLabel(i)"
+      (click)="entfernen.emit(i)"
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 7h16"></path>
+        <path d="M9 7V4h6v3"></path>
+        <path d="M6 7l1 13h10l1-13"></path>
+      </svg>
+      Entfernen
+    </button>
+    @if (spaetereBleiben(i)) {
+      <p class="feldhinweis" [id]="id(i, 'hinweis')">
+        Spätere automatische Preise bleiben unverändert.
+      </p>
+    }
+    @if (zeilenFehler(i); as text) {
+      <p class="feldfehler" [id]="id(i, 'gueltigAb') + '-fehler'">
+        {{ text }}
+      </p>
     }
   </div>
-}
+</ng-template>

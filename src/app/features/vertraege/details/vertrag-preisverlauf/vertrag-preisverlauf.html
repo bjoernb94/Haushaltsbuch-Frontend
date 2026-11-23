@@ -40,5 +40,11 @@
         <path class="zukunft" d="M1 4H25"></path></svg
       >Angekündigt oder Prognose</span
     >
+    @if (zeichnung().mitErrechneten) {
+      <span
+        ><span class="punkt-legende" aria-hidden="true"></span>Errechnet, noch nicht
+        gespeichert</span
+      >
+    }
   </figcaption>
 </figure>

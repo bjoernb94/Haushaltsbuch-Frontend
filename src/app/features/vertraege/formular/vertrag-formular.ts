@@ -44,13 +44,14 @@ import {
   einmalkostenFeld,
   EinzelFeld,
   feldfehlerTexte,
-  PreisWerte,
+  PreisEingabeFeld,
   preisFeld,
   VertragFeld,
   vertragPruefen,
   vorschauAus,
   werteAus,
 } from './vertrag-pruefung';
+import { PreissteigerungZustand } from './preissteigerung-zustand';
 import { TabKey, TABS, tabVon } from './vertrag-tabs';
 import {
   uebersichtAus,
@@ -161,6 +162,18 @@ export class VertragFormular implements OnInit {
   });
 
   protected readonly vorschau = signal<VertragVorschauAntwort | null>(null);
+
+  /** Kennzeichen, Hinweise und Vorbelegung des Termins der Preissteigerung. */
+  protected readonly steigerung = new PreissteigerungZustand(
+    this.formular.controls,
+    this.werte,
+    computed(() => {
+      const vertrag = this.vertrag();
+      return vertrag ? werteAus(vertrag) : null;
+    }),
+    this.vorschau,
+  );
+
   protected readonly feldFehler = linkedSignal<ReadonlyMap<VertragFeld, string>>(() =>
     feldfehlerTexte(problemFelder(this.fehlerAntwort())),
   );
@@ -228,8 +241,9 @@ export class VertragFormular implements OnInit {
       return;
     }
     const werte = werteAus(vertrag);
+    this.steigerung.geladenAus(werte);
     if (this.neuerPreis()) {
-      werte.preise.push({ gueltigAb: '', betrag: '' });
+      werte.preise.push({ gueltigAb: '', betrag: '', automatisch: false });
       this.tab.set('preise');
     }
     const preise = this.formular.controls.preise;
@@ -276,7 +290,7 @@ export class VertragFormular implements OnInit {
     afterNextRender(() => document.getElementById(ziel)?.focus(), { injector: this.injector });
   }
 
-  protected preisGeaendert(index: number, feld: keyof PreisWerte): void {
+  protected preisGeaendert(index: number, feld: PreisEingabeFeld): void {
     this.fehlerEntfernen(preisFeld(index, feld));
   }
 
@@ -322,7 +336,10 @@ export class VertragFormular implements OnInit {
         ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((vorschau) => this.vorschau.set(vorschau));
+      .subscribe((vorschau) => {
+        this.vorschau.set(vorschau);
+        this.steigerung.anwenden(vorschau);
+      });
   }
 
   protected tabWaehlen(tab: string): void {
