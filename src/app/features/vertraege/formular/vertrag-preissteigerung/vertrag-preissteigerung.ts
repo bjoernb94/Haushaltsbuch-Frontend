@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ControlContainer, FormGroupDirective, ReactiveFormsModule } from '@angular/forms';
 import { Erhoehungsrhythmus, Steigerungsart } from '../../../../core/api/api';
+import { datumText } from '../../../../shared/format/datum.pipe';
 import { InfoKnopf } from '../../../../shared/info-knopf/info-knopf';
 import { VertragFeld } from '../vertrag-pruefung';
 import { INFO_RUNDUNG_PROGNOSE, RHYTHMUS_TEXT } from '../../vertrag-texte';
@@ -40,6 +41,20 @@ export class VertragPreissteigerung {
   readonly art = input.required<Steigerungsart>();
   readonly prognose = input.required<PrognoseAnzeige>();
   readonly erinnerung = input.required<boolean>();
+  /**
+   * Der vom Backend vorgeschlagene Termin, wenn sich der Beginn geändert hat und das Feld ihm nicht
+   * mehr folgt; dann steht ein Hinweis mit „Vorschlag übernehmen“ am Feld.
+   */
+  readonly terminVorschlag = input<string | null>(null);
+  /** Hinweis, dass eine geänderte Regel bereits angelegte Preise nicht ändert. */
+  readonly regelGeaendert = input(false);
+
+  readonly vorschlagUebernehmen = output<string>();
+
+  protected readonly vorschlagText = computed(() => {
+    const vorschlag = this.terminVorschlag();
+    return vorschlag ? datumText(vorschlag) : '';
+  });
 
   protected readonly rhythmen = RHYTHMEN;
 
@@ -62,9 +77,9 @@ export class VertragPreissteigerung {
     return this.fehler().get(feld) ?? null;
   }
 
-  /** Für {@code aria-describedby}: der Fehlertext, wenn es ihn gibt, und ein fester Hinweis. */
-  protected beschreibung(feld: VertragFeld, hinweisId?: string): string | null {
+  /** Für {@code aria-describedby}: der Fehlertext, wenn es ihn gibt, und feste Hinweise. */
+  protected beschreibung(feld: VertragFeld, ...hinweisIds: (string | null)[]): string | null {
     const fehlerId = this.fehlerText(feld) ? `${this.id(feld)}-fehler` : null;
-    return [fehlerId, hinweisId].filter(Boolean).join(' ') || null;
+    return [fehlerId, ...hinweisIds].filter(Boolean).join(' ') || null;
   }
 }

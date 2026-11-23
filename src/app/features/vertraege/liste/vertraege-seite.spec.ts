@@ -24,6 +24,8 @@ import { VertragService } from '../vertrag.service';
 const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
 
 const LEER = {
+  betragErrechnet: false,
+  preissteigerungBetrachtetBis: null,
   bezeichnung: null,
   vertragsnummer: null,
   zahlungsweg: null,
@@ -39,7 +41,7 @@ const LEER = {
   zahlweise: 'MONATLICH',
   betrag: EUR(10),
   preise: [
-    { gueltigAb: '2025-01-01', betrag: EUR(10), art: 'AKTUELL' },
+    { gueltigAb: '2025-01-01', betrag: EUR(10), art: 'AKTUELL', automatisch: false },
   ] as VertragAntwort['preise'],
   anteilProzent: null,
   einmalkosten: [] as VertragAntwort['einmalkosten'],
@@ -85,7 +87,7 @@ const JAEHRLICH: VertragAntwort = {
   notiz: 'Wichtig',
   zahlweise: 'JAEHRLICH',
   betrag: EUR(586.8),
-  preise: [{ gueltigAb: '2023-01-01', betrag: EUR(586.8), art: 'AKTUELL' }],
+  preise: [{ gueltigAb: '2023-01-01', betrag: EUR(586.8), art: 'AKTUELL', automatisch: false }],
   berechnet: {
     ...BERECHNET,
     status: 'AKTIV',
@@ -171,10 +173,10 @@ const MIT_PREISEN: VertragAntwort = {
   bezeichnung: 'Strom',
   betrag: EUR(600),
   preise: [
-    { gueltigAb: '2023-01-01', betrag: EUR(549), art: 'FRUEHER' },
-    { gueltigAb: '2026-01-01', betrag: EUR(600), art: 'AKTUELL' },
-    { gueltigAb: '2027-01-01', betrag: EUR(620), art: 'ANGEKUENDIGT' },
-    { gueltigAb: '2031-01-01', betrag: EUR(700), art: 'NACH_ENDE' },
+    { gueltigAb: '2023-01-01', betrag: EUR(549), art: 'FRUEHER', automatisch: false },
+    { gueltigAb: '2026-01-01', betrag: EUR(600), art: 'AKTUELL', automatisch: false },
+    { gueltigAb: '2027-01-01', betrag: EUR(620), art: 'ANGEKUENDIGT', automatisch: false },
+    { gueltigAb: '2031-01-01', betrag: EUR(700), art: 'NACH_ENDE', automatisch: false },
   ],
   berechnet: {
     ...JAEHRLICH.berechnet,
@@ -739,6 +741,64 @@ describe('VertraegeSeite', () => {
         'Preis ↓ ab 01.01.2027',
         'Preis ↑ ab 01.01.2028 (Prognose)',
       ]);
+    });
+
+    it('Tab Preisverlauf: automatische Preise zusammengeklappt, errechnete Stufe als aktuell', async () => {
+      const stufe = (jahr: number, wert: number) => ({
+        gueltigAb: `${jahr}-11-12`,
+        betrag: EUR(wert),
+        art: 'FRUEHER' as const,
+        automatisch: true,
+      });
+      const automatisch: VertragAntwort = {
+        ...JAEHRLICH,
+        id: 'auto',
+        bezeichnung: 'Automatisch',
+        betrag: EUR(110.4),
+        betragErrechnet: true,
+        preise: [
+          { gueltigAb: '2020-11-12', betrag: EUR(100), art: 'FRUEHER', automatisch: false },
+          stufe(2021, 102),
+          stufe(2022, 104.04),
+          stufe(2023, 106.12),
+          stufe(2024, 108.24),
+          { ...stufe(2025, 108.24), art: 'AKTUELL' },
+        ],
+        berechnet: {
+          ...JAEHRLICH.berechnet,
+          preisverlauf: [
+            { ab: '2020-11-12', betrag: EUR(100), art: 'GEZAHLT' },
+            { ab: '2026-11-12', betrag: EUR(110.4), art: 'ERRECHNET' },
+          ],
+          prognose: [{ ab: '2027-11-12', betrag: EUR(112.61) }],
+        },
+      };
+      auflisten.mockReturnValue(of([automatisch]));
+      const { element, stabil } = await seite('/vertraege/auto?tab=preise');
+      const liste = () =>
+        [...element.querySelectorAll('app-vertrag-preise .preise > ul > li')].map(text);
+      expect(liste()).toEqual([
+        'ab 12.11.2020: 100,00 €',
+        '5 automatische Preise, 2021–2025',
+        'ab 12.11.2026: 110,40 € · aktuell · errechnet',
+        'ab 12.11.2027: 112,61 € · Prognose',
+      ]);
+      const knopf = element.querySelector<HTMLButtonElement>('app-vertrag-preise .gruppe button')!;
+      expect(knopf.getAttribute('aria-expanded')).toBe('false');
+      knopf.click();
+      await stabil();
+      expect(knopf.getAttribute('aria-expanded')).toBe('true');
+      expect([...element.querySelectorAll('app-vertrag-preise .gruppe li')].map(text)).toEqual([
+        'ab 12.11.2021: 102,00 € · automatisch',
+        'ab 12.11.2022: 104,04 € · automatisch',
+        'ab 12.11.2023: 106,12 € · automatisch',
+        'ab 12.11.2024: 108,24 € · automatisch',
+        'ab 12.11.2025: 108,24 € · automatisch',
+      ]);
+
+      element.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1].click();
+      await stabil();
+      expect(eintraege(element)['Aktueller Betrag']).toBe('110,40 € jährlich · errechnet');
     });
 
     it('Tab Preisverlauf ohne Änderungen: „Preis hinzufügen“ öffnet Bearbeiten im Tab Preisverlauf', async () => {

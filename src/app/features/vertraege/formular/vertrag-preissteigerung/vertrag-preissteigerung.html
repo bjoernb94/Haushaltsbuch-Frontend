@@ -32,8 +32,8 @@
   <div>
     <label [for]="id('steigt')">Preis steigt regelmäßig</label>
     <span class="feldhinweis" [id]="id('steigt') + '-hinweis'"
-      >Zum Beispiel jährlich um 2,5 %. Das ist eine Prognose: Kommt der echte neue Preis, trägst du
-      ihn oben als Preis ein, und die Prognose rechnet ab dort weiter.</span
+      >Zum Beispiel jährlich um 2,5 %. Vergangene Erhöhungen legen wir beim Speichern als Preise an,
+      künftige zeigt die Prognose. Weicht ein echter Preis ab, änderst du ihn oben.</span
     >
   </div>
 </div>
@@ -87,19 +87,43 @@
       }
     </div>
     <div class="feld">
-      <label [for]="id('naechsteErhoehungAm')">Nächste Erhöhung am *</label>
+      <label [for]="id('naechsteErhoehungAm')">Erste Erhöhung am *</label>
       <input
         [id]="id('naechsteErhoehungAm')"
         type="date"
         formControlName="naechsteErhoehungAm"
         [attr.aria-invalid]="!!fehlerText('naechsteErhoehungAm')"
-        [attr.aria-describedby]="beschreibung('naechsteErhoehungAm')"
+        [attr.aria-describedby]="
+          beschreibung(
+            'naechsteErhoehungAm',
+            id('naechsteErhoehungAm') + '-hinweis',
+            terminVorschlag() ? id('naechsteErhoehungAm') + '-beginn' : null
+          )
+        "
       />
+      <span class="feldhinweis" [id]="id('naechsteErhoehungAm') + '-hinweis'"
+        >Danach im gewählten Rhythmus.</span
+      >
       @if (fehlerText('naechsteErhoehungAm'); as text) {
         <p class="feldfehler" [id]="id('naechsteErhoehungAm') + '-fehler'">{{ text }}</p>
       }
     </div>
   </div>
+  @if (terminVorschlag(); as vorschlag) {
+    <div class="termin-hinweis">
+      <span [id]="id('naechsteErhoehungAm') + '-beginn'"
+        >Der Vertragsbeginn hat sich geändert. Prüfe, ob die erste Erhöhung noch stimmt.</span
+      >
+      <button type="button" (click)="vorschlagUebernehmen.emit(vorschlag)">
+        Vorschlag übernehmen ({{ vorschlagText() }})
+      </button>
+    </div>
+  }
+  @if (regelGeaendert()) {
+    <p class="feldhinweis regel-hinweis">
+      Gilt für künftige Erhöhungen. Bereits angelegte Preise bleiben unverändert.
+    </p>
+  }
   <!-- Der Info-Knopf steht außerhalb der Live-Region, sonst wird er bei jeder Eingabe mit vorgelesen. -->
   <div class="prognose">
     <span><b>Prognose</b><app-info-knopf beschriftung="Prognose" [saetze]="infoPrognose()" /></span>

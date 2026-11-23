@@ -123,8 +123,8 @@ describe('vertragPruefen', () => {
       const fehler = vertragPruefen({
         ...MIT_BEGINN,
         preise: [
-          { gueltigAb: '', betrag: '' },
-          { gueltigAb: '2026-06-01', betrag: '12.50' },
+          { gueltigAb: '', betrag: '', automatisch: false },
+          { gueltigAb: '2026-06-01', betrag: '12.50', automatisch: false },
         ],
       });
       expect([...fehler.entries()]).toEqual([
@@ -135,7 +135,7 @@ describe('vertragPruefen', () => {
     });
 
     it('der Betrag braucht kein Datum, er gilt ab Vertragsbeginn', () => {
-      const preise = [{ gueltigAb: '2027-01-01', betrag: '25' }];
+      const preise = [{ gueltigAb: '2027-01-01', betrag: '25', automatisch: false }];
       expect(vertragPruefen({ ...MIT_BEGINN, preise }).size).toBe(0);
     });
   });
@@ -145,7 +145,7 @@ describe('vertragPruefen', () => {
       expect(vertragPruefen(PFLICHT).size).toBe(0);
       expect([...vertragPruefen({ ...PFLICHT, steigt: true }).entries()]).toEqual([
         ['steigerungswert', 'Bitte gib an, um wie viel der Preis steigt.'],
-        ['naechsteErhoehungAm', 'Bitte gib an, wann der Preis das nächste Mal steigt.'],
+        ['naechsteErhoehungAm', 'Bitte gib an, wann der Preis zum ersten Mal steigt.'],
       ]);
       const regel = { steigerungswert: '2,5', naechsteErhoehungAm: '2027-01-01' };
       expect(vertragPruefen({ ...PFLICHT, steigt: true, ...regel }).size).toBe(0);
@@ -237,8 +237,8 @@ describe('anfrageAus', () => {
       ...PFLICHT,
       beginn: '2026-01-01',
       preise: [
-        { gueltigAb: '2027-01-01', betrag: '24,99' },
-        { gueltigAb: '2025-01-01', betrag: '' },
+        { gueltigAb: '2027-01-01', betrag: '24,99', automatisch: false },
+        { gueltigAb: '2025-01-01', betrag: '', automatisch: false },
       ],
     });
     expect(anfrage.preise).toEqual([
@@ -492,7 +492,7 @@ describe('feldfehlerTexte', () => {
       'NotNull',
       {},
       'naechsteErhoehungAm',
-      'Bitte gib an, wann der Preis das nächste Mal steigt.',
+      'Bitte gib an, wann der Preis zum ersten Mal steigt.',
     ],
     [
       'preisgarantieBis',
@@ -581,6 +581,8 @@ describe('feldfehlerTexte', () => {
 
 describe('Bearbeiten', () => {
   const VERTRAG: VertragAntwort = {
+    betragErrechnet: false,
+    preissteigerungBetrachtetBis: null,
     id: 'v1',
     version: 4,
     anbieter: 'Anbieter',
@@ -588,7 +590,14 @@ describe('Bearbeiten', () => {
     kategorie: { id: 'k1', schluessel: 'VERSICHERUNG', name: null },
     vertragsnummer: null,
     betrag: { wert: 586.8, waehrung: 'USD' },
-    preise: [{ gueltigAb: '2026-01-31', betrag: { wert: 586.8, waehrung: 'USD' }, art: 'AKTUELL' }],
+    preise: [
+      {
+        gueltigAb: '2026-01-31',
+        betrag: { wert: 586.8, waehrung: 'USD' },
+        art: 'AKTUELL',
+        automatisch: false,
+      },
+    ],
     anteilProzent: null,
     einmalkosten: [],
     preissteigerung: null,
@@ -644,16 +653,16 @@ describe('Bearbeiten', () => {
         ...VERTRAG,
         betrag: usd(20),
         preise: [
-          { gueltigAb: '2026-01-31', betrag: usd(10), art: 'FRUEHER' },
-          { gueltigAb: '2026-01-01', betrag: usd(20), art: 'AKTUELL' },
-          { gueltigAb: '2027-01-01', betrag: usd(25.5), art: 'ANGEKUENDIGT' },
+          { gueltigAb: '2026-01-31', betrag: usd(10), art: 'FRUEHER', automatisch: false },
+          { gueltigAb: '2026-01-01', betrag: usd(20), art: 'AKTUELL', automatisch: false },
+          { gueltigAb: '2027-01-01', betrag: usd(25.5), art: 'ANGEKUENDIGT', automatisch: false },
         ],
       });
       expect(werte).toMatchObject({
         betrag: '10,00',
         preise: [
-          { gueltigAb: '2026-01-01', betrag: '20,00' },
-          { gueltigAb: '2027-01-01', betrag: '25,50' },
+          { gueltigAb: '2026-01-01', betrag: '20,00', automatisch: false },
+          { gueltigAb: '2027-01-01', betrag: '25,50', automatisch: false },
         ],
       });
     });
@@ -751,6 +760,7 @@ describe('Bearbeiten', () => {
         verlaengerung: null,
         kuendigungsfristMonate: null,
         gekuendigtZum: null,
+        preissteigerungBetrachtetBis: null,
       });
     });
 
@@ -775,11 +785,11 @@ describe('Bearbeiten', () => {
       const anfrage = vorschauAus({
         ...PFLICHT,
         preise: [
-          { gueltigAb: '2027-06-01', betrag: '25' },
-          { gueltigAb: '', betrag: '30' },
-          { gueltigAb: '2028-01-01', betrag: '' },
-          { gueltigAb: '2028-01-01', betrag: '-1' },
-          { gueltigAb: '2026-12-31', betrag: '15' },
+          { gueltigAb: '2027-06-01', betrag: '25', automatisch: false },
+          { gueltigAb: '', betrag: '30', automatisch: false },
+          { gueltigAb: '2028-01-01', betrag: '', automatisch: false },
+          { gueltigAb: '2028-01-01', betrag: '-1', automatisch: false },
+          { gueltigAb: '2026-12-31', betrag: '15', automatisch: false },
         ],
       });
       expect(anfrage.preise).toEqual([
@@ -792,7 +802,7 @@ describe('Bearbeiten', () => {
     it.each(['', '0', '12.50'])(
       'schickt ohne brauchbaren ersten Preis („%s“) keine Preise',
       (betrag) => {
-        const preise = [{ gueltigAb: '2027-06-01', betrag: '25' }];
+        const preise = [{ gueltigAb: '2027-06-01', betrag: '25', automatisch: false }];
         expect(vorschauAus({ ...PFLICHT, betrag, preise }).preise).toEqual([]);
       },
     );

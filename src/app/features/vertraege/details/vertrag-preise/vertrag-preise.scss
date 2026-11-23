@@ -43,6 +43,45 @@
   .prognose {
     font-style: italic;
   }
+
+  .gruppe {
+    display: flex;
+    flex-direction: column;
+    gap: $abstand-1;
+
+    > button {
+      // Wie ein Eintrag der Liste, aber bedienbar; 44 px Zielfläche (Barrierefreiheit).
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      gap: $abstand-2;
+      align-self: flex-start;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--app-gruen);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+
+      svg {
+        transition: transform 0.15s;
+      }
+
+      &[aria-expanded='true'] svg {
+        transform: rotate(90deg);
+      }
+
+      &:focus-visible {
+        outline: 3px solid var(--app-gruen-fokus-rand);
+        outline-offset: 2px;
+      }
+    }
+
+    ul {
+      padding-left: $abstand-6;
+    }
+  }
 }
 
 .keine-preise {

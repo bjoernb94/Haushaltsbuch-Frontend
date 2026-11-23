@@ -20,7 +20,15 @@ import {
 export interface PreisWerte {
   gueltigAb: string;
   betrag: string;
+  /**
+   * Vom Backend aus der Preissteigerung angelegt; geht unverändert zurück, ob es bleibt, entscheidet
+   * das Backend (ADR 0022).
+   */
+  automatisch: boolean;
 }
+
+/** Die Eingabefelder einer Preiszeile, an denen Fehler stehen können. */
+export type PreisEingabeFeld = Exclude<keyof PreisWerte, 'automatisch'>;
 
 /** Eine Zeile der Einmalkosten. */
 export interface EinmalkostenWerte {
@@ -68,14 +76,14 @@ export interface VertragWerte {
 export type EinzelFeld = Exclude<keyof VertragWerte, 'preise'>;
 
 /** Feld einer Zeile der Preisliste, z. B. {@code preise.0.gueltigAb}. */
-export type PreisFeld = `preise.${number}.${keyof PreisWerte}`;
+export type PreisFeld = `preise.${number}.${PreisEingabeFeld}`;
 
 /** Feld einer Zeile der Einmalkosten, z. B. {@code einmalkosten.0.faelligAm}. */
 export type EinmalkostenFeld = `einmalkosten.${number}.${keyof EinmalkostenWerte}`;
 
 export type VertragFeld = EinzelFeld | PreisFeld | EinmalkostenFeld;
 
-export function preisFeld(index: number, feld: keyof PreisWerte): PreisFeld {
+export function preisFeld(index: number, feld: PreisEingabeFeld): PreisFeld {
   return `preise.${index}.${feld}`;
 }
 
@@ -144,7 +152,7 @@ const EINMALKOSTEN_PFLICHT_TEXT: Readonly<Record<keyof EinmalkostenWerte, string
 
 const STEIGERUNG_PFLICHT_TEXT = {
   steigerungswert: 'Bitte gib an, um wie viel der Preis steigt.',
-  naechsteErhoehungAm: 'Bitte gib an, wann der Preis das nächste Mal steigt.',
+  naechsteErhoehungAm: 'Bitte gib an, wann der Preis zum ersten Mal steigt.',
 } as const;
 
 const GUELTIG_AB_TEXT = 'Bitte gib an, ab wann dieser Preis gilt.';
@@ -205,7 +213,7 @@ export function vertragPruefen(w: VertragWerte): ReadonlyMap<VertragFeld, string
 }
 
 /** Wie das Backend ihn speichert, mit Komma und zwei Stellen. */
-function betragEingabe({ wert }: Betrag): string {
+export function betragEingabe({ wert }: Betrag): string {
   return wert.toFixed(2).replace('.', ',');
 }
 
@@ -228,6 +236,7 @@ export function werteAus(v: VertragAntwort): VertragWerte {
     preise: spaetere.map((preis) => ({
       gueltigAb: preis.gueltigAb,
       betrag: betragEingabe(preis.betrag),
+      automatisch: preis.automatisch,
     })),
     anteilProzent: v.anteilProzent?.toString().replace('.', ',') ?? '',
     zahlweise: v.zahlweise,
@@ -283,9 +292,19 @@ function steigerungWerte(regel: VertragAntwort['preissteigerung']): SteigerungWe
   };
 }
 
-function preisEingabe(gueltigAb: string, betrag: string, waehrung: string): PreisEingabe {
+function preisEingabe(
+  gueltigAb: string,
+  betrag: string,
+  waehrung: string,
+  automatisch = false,
+): PreisEingabe {
   const wert = betragLesen(betrag);
-  return { gueltigAb: gueltigAb || null, betrag: wert === null ? null : { wert, waehrung } };
+  return {
+    gueltigAb: gueltigAb || null,
+    betrag: wert === null ? null : { wert, waehrung },
+    // Nur gesetzt, wenn die Antwort es so lieferte; fehlt es, zählt es als eingetragen.
+    ...(automatisch && { automatisch }),
+  };
 }
 
 function einmalkostenEingabe(zeile: EinmalkostenWerte, waehrung: string): EinmalkostenEingabe {
@@ -330,7 +349,9 @@ export function anfrageAus(
     vertragsnummer: textOderNull(w.vertragsnummer),
     preise: [
       preisEingabe(w.beginn, w.betrag, waehrung),
-      ...w.preise.map((preis) => preisEingabe(preis.gueltigAb, preis.betrag, waehrung)),
+      ...w.preise.map((preis) =>
+        preisEingabe(preis.gueltigAb, preis.betrag, waehrung, preis.automatisch),
+      ),
     ],
     zahlweise: w.zahlweise || null,
     beginn: w.beginn || null,
@@ -401,6 +422,8 @@ export function vorschauAus(
     verlaengerung: a.verlaengerung,
     kuendigungsfristMonate: a.kuendigungsfristMonate,
     gekuendigtZum: a.gekuendigtZum,
+    // Unverändert aus der Antwort, damit gelöschte Stufen in der Vorschau nicht wieder entstehen.
+    preissteigerungBetrachtetBis: gespeichert?.preissteigerungBetrachtetBis ?? null,
   };
 }
 
@@ -449,7 +472,7 @@ function formularFeld(apiFeld: string): VertragFeld | undefined {
     return FELD_ZUM_API_FELD[apiFeld];
   }
   const index = Number(preis[1]);
-  const teil = preis[2] as keyof PreisWerte;
+  const teil = preis[2] as PreisEingabeFeld;
   if (index > 0) {
     return preisFeld(index - 1, teil);
   }

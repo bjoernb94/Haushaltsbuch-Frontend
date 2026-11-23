@@ -72,6 +72,17 @@ figcaption path {
   }
 }
 
+// Offener Punkt wie im Diagramm, für die Legende der errechneten Stufen.
+.punkt-legende {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 2px solid var(--app-gruen);
+  border-radius: 50%;
+  background: var(--app-flaeche);
+}
+
 .achse,
 .jahr,
 .heute-text {
