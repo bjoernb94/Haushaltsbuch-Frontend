@@ -28,6 +28,22 @@ const KATEGORIEN: VertragKategorieAntwort[] = [
 ];
 
 /** Vorschau, in der nur die Kündigung und ggf. die Preise zählen. */
+function vorschauPreis(
+  gueltigAb: string,
+  wert: number,
+  art: VertragVorschauAntwort['preise'][number]['art'],
+  mehr: { automatisch?: boolean; neu?: boolean } = {},
+): VertragVorschauAntwort['preise'][number] {
+  return {
+    gueltigAb,
+    betrag: { wert, waehrung: 'EUR' },
+    art,
+    automatisch: false,
+    neu: false,
+    ...mehr,
+  };
+}
+
 function vorschauAntwort(
   kuendigung: Kuendigung,
   mehr: Partial<VertragVorschauAntwort> = {},
@@ -41,6 +57,7 @@ function vorschauAntwort(
     preise: [],
     prognose: [],
     kuendigung,
+    vorschlagNaechsteAm: null,
     ...mehr,
   };
 }
@@ -175,6 +192,7 @@ describe('VertragFormular', () => {
       verlaengerung: null,
       kuendigungsfristMonate: null,
       gekuendigtZum: null,
+      preissteigerungBetrachtetBis: null,
     };
     const fehler400 = () => validierung(['laufzeitende', 'LaufzeitendeNachBeginn']);
 
@@ -378,8 +396,20 @@ describe('VertragFormular', () => {
       anfragen.at(-1)!.next(
         vorschauAntwort(ERGEBNIS, {
           preise: [
-            { gueltigAb: '2013-01-01', betrag: EUR(55.2), art: 'FRUEHER' },
-            { gueltigAb: '2021-07-01', betrag: EUR(52.2), art: 'AKTUELL' },
+            {
+              gueltigAb: '2013-01-01',
+              betrag: EUR(55.2),
+              art: 'FRUEHER',
+              automatisch: false,
+              neu: false,
+            },
+            {
+              gueltigAb: '2021-07-01',
+              betrag: EUR(52.2),
+              art: 'AKTUELL',
+              automatisch: false,
+              neu: false,
+            },
           ],
         }),
       );
@@ -391,7 +421,15 @@ describe('VertragFormular', () => {
       vi.advanceTimersByTime(400);
       anfragen.at(-1)!.next(
         vorschauAntwort(ERGEBNIS, {
-          preise: [{ gueltigAb: '2013-01-01', betrag: EUR(55.21), art: 'AKTUELL' }],
+          preise: [
+            {
+              gueltigAb: '2013-01-01',
+              betrag: EUR(55.21),
+              art: 'AKTUELL',
+              automatisch: false,
+              neu: false,
+            },
+          ],
         }),
       );
       expect(hinweis()).toBe('Spätere Preise trägst du unter „Preisverlauf“ ein.');
@@ -947,31 +985,123 @@ describe('VertragFormular', () => {
       expect(document.activeElement).toBe(el.querySelector('.preis input[type="date"]'));
     });
 
-    it('zeigt den Preisverlauf der Vorschau, sobald es weitere Preise gibt', async () => {
+    it('kennzeichnet die Zeilen nach der Vorschau, ohne Infobox „Preisverlauf“', async () => {
       TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
-      // Die erste Anfrage startet erst nach timer(0); die Antwort darf nicht vorher verloren gehen.
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+      onTestFinished(() => {
+        vi.useRealTimers();
+      });
       const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
       vorschau.mockReturnValue(antwort);
-      const { el, fixture, hinzufuegen } = await imTabPreise();
-      const verlauf = () =>
-        [...el.querySelectorAll('.verlauf span')].map((s) => [
-          s.textContent?.replace(/\s/g, ' '),
-          s.className,
+      const { el, fixture, setzen, hinzufuegen, eingeben, erste, zeile } = await imTabPreise();
+      const etiketten = (z: HTMLElement) =>
+        [...z.querySelectorAll('.etikett')].map((s) => [
+          s.textContent?.trim(),
+          [...s.classList].filter((k) => k !== 'etikett'),
         ]);
-      const preise: VertragVorschauAntwort['preise'] = [
-        { gueltigAb: '2026-01-01', betrag: { wert: 19.99, waehrung: 'EUR' }, art: 'AKTUELL' },
-        { gueltigAb: '2027-01-01', betrag: { wert: 24.99, waehrung: 'EUR' }, art: 'ANGEKUENDIGT' },
-      ];
-      antwort.next(vorschauAntwort(KEINE, { preise }));
-      await fixture.whenStable();
-      expect(el.querySelector('.verlauf')).toBeNull();
-
+      setzen('beginn', '2026-01-01');
       await hinzufuegen();
-      expect(el.querySelector('.verlauf')?.getAttribute('role')).toBe('status');
-      expect(verlauf()).toEqual([
-        ['ab 01.01.2026: 19,99 € · aktuell', 'aktuell'],
-        ['ab 01.01.2027: 24,99 € · angekündigt', ''],
+      await eingeben(0, 'gueltigAb', '2027-01-01');
+      await eingeben(0, 'betrag', '21,99');
+      vi.advanceTimersByTime(1000);
+
+      // Ein einzelner Preis ist immer der aktuelle: kein Etikett.
+      antwort.next(
+        vorschauAntwort(KEINE, { preise: [vorschauPreis('2026-01-01', 19.99, 'AKTUELL')] }),
+      );
+      TestBed.tick();
+      await fixture.whenStable();
+      expect(etiketten(erste())).toEqual([]);
+
+      antwort.next(
+        vorschauAntwort(KEINE, {
+          preise: [
+            vorschauPreis('2026-01-01', 19.99, 'AKTUELL'),
+            vorschauPreis('2027-01-01', 21.99, 'ANGEKUENDIGT'),
+          ],
+        }),
+      );
+      TestBed.tick();
+      await fixture.whenStable();
+      expect(etiketten(erste())).toEqual([['aktuell', ['aktuell']]]);
+      expect(etiketten(zeile(0))).toEqual([['angekündigt', ['angekuendigt']]]);
+      expect(el.querySelector('.verlauf')).toBeNull();
+      expect(el.querySelector('app-vertrag-preisliste')?.textContent).not.toContain('Preisverlauf');
+      expect(el.querySelector('.neu-hinweis')).toBeNull();
+    });
+
+    it('nennt die Stufen, die erst das Speichern anlegt, die aktuelle als feste Zeile', async () => {
+      TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+      onTestFinished(() => {
+        vi.useRealTimers();
+      });
+      const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
+      vorschau.mockReturnValue(antwort);
+      const { el, fixture, setzen, hinzufuegen, eingeben } = await imTabPreise();
+      setzen('beginn', '2021-03-01');
+      await hinzufuegen();
+      await eingeben(0, 'gueltigAb', '2027-01-01');
+      await eingeben(0, 'betrag', '120');
+      vi.advanceTimersByTime(1000);
+      const neu = { automatisch: true, neu: true };
+      antwort.next(
+        vorschauAntwort(KEINE, {
+          preise: [
+            vorschauPreis('2021-03-01', 100, 'FRUEHER'),
+            vorschauPreis('2022-03-01', 102, 'FRUEHER', neu),
+            vorschauPreis('2023-03-01', 104.04, 'FRUEHER', neu),
+            vorschauPreis('2024-03-01', 106.12, 'FRUEHER', neu),
+            vorschauPreis('2025-03-01', 108.24, 'FRUEHER', neu),
+            vorschauPreis('2026-03-01', 110.4, 'AKTUELL', neu),
+            vorschauPreis('2027-01-01', 120, 'ANGEKUENDIGT'),
+          ],
+        }),
+      );
+      TestBed.tick();
+      await fixture.whenStable();
+
+      // Zwischen der ersten Zeile und dem eingetragenen Preis von 2027, nicht als Zeilen des Formulars.
+      const liste = [...el.querySelector('.preise')!.children].map((k) => k.className);
+      expect(liste.map((k) => k.split(' ')[0])).toEqual([
+        'preis',
+        'neu-hinweis',
+        'preis-vorschau',
+        'preis',
       ]);
+      expect(el.querySelectorAll('.preis:not(.erster)')).toHaveLength(1);
+      expect(el.querySelector('.neu-hinweis')?.textContent?.trim()).toBe(
+        'Beim Speichern werden 5 automatische Preise angelegt (2022–2026)',
+      );
+      const fest = el.querySelector<HTMLElement>('.preis-vorschau')!;
+      const [datum, betrag] = fest.querySelectorAll('input');
+      expect([datum.value, betrag.value]).toEqual(['01.03.2026', '110,40']);
+      expect(datum.readOnly && betrag.readOnly).toBe(true);
+      expect(el.querySelector(`[id="${datum.getAttribute('aria-describedby')}"]`)).toBe(
+        el.querySelector('.neu-hinweis'),
+      );
+      expect([...fest.querySelectorAll('.etikett')].map((s) => s.textContent?.trim())).toEqual([
+        'aktuell',
+        'automatisch',
+      ]);
+      expect(fest.querySelector('button')).toBeNull();
+
+      // Ist keine der neuen Stufen aktuell, bleibt es beim Hinweis.
+      antwort.next(
+        vorschauAntwort(KEINE, {
+          preise: [
+            vorschauPreis('2021-03-01', 100, 'FRUEHER'),
+            vorschauPreis('2022-03-01', 102, 'FRUEHER', neu),
+            vorschauPreis('2022-06-01', 90, 'AKTUELL'),
+          ],
+        }),
+      );
+      TestBed.tick();
+      await fixture.whenStable();
+      expect(el.querySelector('.neu-hinweis')?.textContent?.trim()).toBe(
+        'Beim Speichern wird 1 automatischer Preis angelegt (2022)',
+      );
+      expect(el.querySelector('.preis-vorschau')).toBeNull();
     });
   });
 
@@ -1067,7 +1197,7 @@ describe('VertragFormular', () => {
       expect(rundung()).toBeNull();
       expect(prognose()).toEqual([
         'Prognose',
-        'Gib Wert und Datum der nächsten Erhöhung ein, dann zeigen wir hier die nächsten drei Preise.',
+        'Gib Wert und Datum der ersten Erhöhung ein, dann zeigen wir hier die nächsten drei Preise.',
       ]);
 
       antwort.next(
@@ -1111,7 +1241,13 @@ describe('VertragFormular', () => {
       antwort.next(
         vorschauAntwort(KEINE, {
           preise: [
-            { gueltigAb: '2027-01-01', betrag: { wert: 25, waehrung: 'EUR' }, art: 'ANGEKUENDIGT' },
+            {
+              gueltigAb: '2027-01-01',
+              betrag: { wert: 25, waehrung: 'EUR' },
+              art: 'ANGEKUENDIGT',
+              automatisch: false,
+              neu: false,
+            },
           ],
         }),
       );
@@ -1296,6 +1432,8 @@ describe('VertragFormular', () => {
 
   describe('zum Bearbeiten', () => {
     const VERTRAG: VertragAntwort = {
+      betragErrechnet: false,
+      preissteigerungBetrachtetBis: null,
       id: 'v1',
       version: 4,
       anbieter: 'Anbieter',
@@ -1304,7 +1442,12 @@ describe('VertragFormular', () => {
       vertragsnummer: null,
       betrag: { wert: 586.8, waehrung: 'USD' },
       preise: [
-        { gueltigAb: '2026-01-31', betrag: { wert: 586.8, waehrung: 'USD' }, art: 'AKTUELL' },
+        {
+          gueltigAb: '2026-01-31',
+          betrag: { wert: 586.8, waehrung: 'USD' },
+          art: 'AKTUELL',
+          automatisch: false,
+        },
       ],
       anteilProzent: null,
       einmalkosten: [],
@@ -1489,9 +1632,9 @@ describe('VertragFormular', () => {
         ...VERTRAG,
         betrag: USD(20),
         preise: [
-          { gueltigAb: '2026-01-31', betrag: USD(10), art: 'FRUEHER' },
-          { gueltigAb: '2026-06-01', betrag: USD(20), art: 'AKTUELL' },
-          { gueltigAb: '2027-01-01', betrag: USD(25), art: 'ANGEKUENDIGT' },
+          { gueltigAb: '2026-01-31', betrag: USD(10), art: 'FRUEHER', automatisch: false },
+          { gueltigAb: '2026-06-01', betrag: USD(20), art: 'AKTUELL', automatisch: false },
+          { gueltigAb: '2027-01-01', betrag: USD(25), art: 'ANGEKUENDIGT', automatisch: false },
         ],
       };
       const zeilen = (el: HTMLElement) =>

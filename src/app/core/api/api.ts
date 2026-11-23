@@ -33,6 +33,7 @@ export type Vertragsstatus = Schemas['Vertragsstatus'];
 export type VertragsuebersichtAntwort = Schemas['VertragsuebersichtAntwort'];
 export type VertragVorschauAnfrage = Schemas['VertragVorschauAnfrage'];
 export type VertragVorschauAntwort = Schemas['VertragVorschauAntwort'];
+export type VertragVorschauPreisAntwort = Schemas['VertragVorschauPreisAntwort'];
 export type Zahlungsweg = Schemas['Zahlungsweg'];
 export type Zahlweise = Schemas['Zahlweise'];
 

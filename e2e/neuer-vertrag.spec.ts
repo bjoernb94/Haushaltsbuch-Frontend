@@ -567,9 +567,7 @@ test.describe('Neuer Vertrag', () => {
     const zeile = page.locator('.preis:not(.erster)');
     await zeile.getByLabel('Gilt ab *').fill('2026-07-01');
     await zeile.getByLabel('Betrag in € *').fill('19,99');
-    const verlauf = page.getByRole('status').filter({ hasText: 'Preisverlauf' });
-    await expect(verlauf).toContainText('ab 01.01.2026: 9,99 €');
-    await expect(verlauf).toContainText('ab 01.07.2026: 19,99 €');
+    await expect(zeile.getByLabel('Gilt ab *')).toHaveValue('2026-07-01');
     await tab(page, 'Kosten');
     await expect(page.getByLabel('Betrag ab Vertragsbeginn in € *')).toHaveValue('9,99');
     await expect(page.getByText(/Aktuell: 19,99\s€ seit 01\.07\.2026/)).toBeVisible();
@@ -577,6 +575,51 @@ test.describe('Neuer Vertrag', () => {
       { gueltigAb: '2026-01-01', betrag: { wert: 9.99, waehrung: 'EUR' } },
       { gueltigAb: '2026-07-01', betrag: { wert: 19.99, waehrung: 'EUR' } },
     ]);
+  });
+
+  test('Preissteigerung seit Jahren: Termin vorbelegt, Stufen erst beim Speichern, danach automatisch', async ({
+    page,
+  }) => {
+    const jahr = new Date().getFullYear();
+    await backendSimulieren(page, { angemeldet: true });
+    await page.goto('/vertraege/neu');
+    await pflichtfelderFuellen(page);
+    await page.getByLabel('Betrag ab Vertragsbeginn in € *').fill('100');
+    await page.getByLabel('Vertragsbeginn *').fill(`${jahr - 5}-01-01`);
+    await tab(page, 'Preisverlauf');
+    await page.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
+    const termin = page.getByLabel('Erste Erhöhung am *');
+    await expect(termin).toHaveValue(`${jahr - 4}-01-01`);
+    await expect(termin).toHaveAccessibleDescription('Danach im gewählten Rhythmus.');
+    await page.getByLabel('Erhöhung in % *').fill('2');
+
+    // Die Stufen legt erst das Speichern an: ein Hinweis, die aktuelle als feste Zeile, keine Infobox.
+    const hinweis = `Beim Speichern werden 5 automatische Preise angelegt (${jahr - 4}–${jahr})`;
+    await expect(page.locator('.neu-hinweis')).toHaveText(hinweis);
+    const fest = page.locator('.preis-vorschau');
+    await expect(fest.getByLabel(/^Gilt ab/)).toHaveValue(`01.01.${jahr}`);
+    await expect(fest.getByLabel(/^Gilt ab/)).toHaveAccessibleDescription(hinweis);
+    await expect(fest.locator('.etikett')).toHaveText(['aktuell', 'automatisch']);
+    await expect(fest.getByLabel('Betrag in €')).toHaveValue('110,40');
+    await expect(fest.getByLabel('Betrag in €')).not.toBeEditable();
+    await expect(fest.getByRole('button')).toHaveCount(0);
+    await expect(page.getByRole('status').filter({ hasText: 'Preisverlauf' })).toHaveCount(0);
+    await expect(page.locator('.preis:not(.erster)')).toHaveCount(0);
+
+    const anfrage = await speichernUndAnfrageLesen(page);
+    expect(anfrage.preise).toEqual([
+      { gueltigAb: `${jahr - 5}-01-01`, betrag: { wert: 100, waehrung: 'EUR' } },
+    ]);
+    expect(anfrage.preissteigerung).toMatchObject({ naechsteAm: `${jahr - 4}-01-01` });
+
+    await expect(page).toHaveURL(/\/vertraege$/);
+    await page.goto('/vertraege/neu-1?tab=preise');
+    const gruppe = page.getByRole('button', { name: `5 automatische Preise, ${jahr - 4}–${jahr}` });
+    await expect(gruppe).toHaveAttribute('aria-expanded', 'false');
+    await gruppe.click();
+    await expect(page.locator('app-vertrag-preise .gruppe li').first()).toHaveText(
+      `ab 01.01.${jahr - 4}: 102,00 € · automatisch`,
+    );
   });
 
   test('Anteil: Statuszeile aus der Vorschau, Anfrage mit Zahl, Feldfehler am Feld', async ({
@@ -676,7 +719,7 @@ test.describe('Neuer Vertrag', () => {
       await tab(page, 'Preisverlauf');
       await page.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
       await page.getByLabel('Erhöhung in % *').fill('10');
-      await page.getByLabel('Nächste Erhöhung am *').fill('2027-06-01');
+      await page.getByLabel('Erste Erhöhung am *').fill('2027-06-01');
       await expect(zusammenfassung).toContainText(
         'Nächste Preisänderungab 01.06.2027: 21,99 € (Prognose)',
       );

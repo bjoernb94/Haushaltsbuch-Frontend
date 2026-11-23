@@ -21,31 +21,93 @@
 
 .preis {
   @include zeilen.zeile;
+
+  > .feldhinweis {
+    grid-column: 1 / -1;
+  }
 }
 
-.verlauf {
+// Kennzeichen eines automatischen Preises, in der Bezeichnung des Datums.
+.etikett {
+  margin-left: $abstand-2;
+  padding: 2px $abstand-2; // 2px: schmaler als die kleinste Stufe, damit die Zeile nicht wächst
+  border-radius: $radius-pille;
+  background: var(--app-info-grund);
+  color: var(--app-info-text);
+  font-size: $schrift-klein;
+  font-weight: 700;
+
+  // Art aus der Vorschau, vor „automatisch“.
+  &.aktuell {
+    background: var(--app-gruen-hell);
+    color: var(--app-gruen);
+  }
+
+  &.angekuendigt,
+  &.nach-ende {
+    background: var(--app-hinweis-grund);
+    color: var(--app-hinweis-text);
+  }
+}
+
+.gruppe {
   display: flex;
   flex-direction: column;
+  gap: $abstand-4;
+}
+
+.gruppe-umschalten {
+  // 44 px Zielfläche (Barrierefreiheit).
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   gap: $abstand-2;
-  padding: $abstand-3 $abstand-4;
+  align-self: flex-start;
+  padding: 0 $abstand-3;
   border: 1px solid var(--app-trenner-innen);
   border-radius: $radius-feld;
   background: var(--app-details-grund);
+  color: var(--app-text);
+  font: inherit;
   font-size: $schrift-beschriftung;
-  line-height: 1.45;
+  font-weight: 700;
+  cursor: pointer;
 
-  span {
-    color: var(--app-text-gedaempft);
+  svg {
+    color: var(--app-gruen);
+    transition: transform 0.15s;
   }
 
-  .aktuell {
-    font-weight: 700;
-    color: var(--app-text);
+  &[aria-expanded='true'] svg {
+    transform: rotate(90deg);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
   }
 }
 
-// Das Datum der ersten Zeile ist der Vertragsbeginn; geändert wird er im Tab Kosten.
-.erster input[readonly] {
+// Die Stufen, die erst das Speichern anlegt.
+.neu-hinweis {
+  margin: 0;
+  padding: $abstand-3 $abstand-4;
+  border: 1px dashed var(--app-trenner);
+  border-radius: $radius-feld;
+  font-size: $schrift-beschriftung;
+  line-height: 1.45; // Zeilenhöhe wie die übrigen Hinweise
+  color: var(--app-text-gedaempft);
+}
+
+// Die aktuelle von ihnen: wie die erste Zeile, nicht änderbar.
+.preis-vorschau {
+  @include zeilen.zeile;
+}
+
+// Das Datum der ersten Zeile ist der Vertragsbeginn; geändert wird er im Tab Kosten. Die aktuelle der
+// neuen Stufen legt erst das Speichern an.
+.erster input[readonly],
+.preis-vorschau input[readonly] {
   border-color: var(--app-trenner);
   background: transparent;
   color: var(--app-text-gedaempft);
