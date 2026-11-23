@@ -101,6 +101,38 @@
   }
 }
 
+// Beginn geändert: Termin prüfen, mit „Vorschlag übernehmen“.
+.termin-hinweis {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $abstand-3;
+  padding: $abstand-3 $abstand-4;
+  border-radius: $radius-feld;
+  background: var(--app-hinweis-grund);
+  color: var(--app-hinweis-text);
+  font-size: $schrift-beschriftung;
+  line-height: 1.45;
+
+  button {
+    min-height: 44px;
+    padding: 0 $abstand-4;
+    border: 1.5px solid currentColor;
+    border-radius: $radius-feld;
+    background: var(--app-flaeche);
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid var(--app-gruen-fokus-rand);
+      outline-offset: 2px;
+    }
+  }
+}
+
 // Unter der Preisliste, abgesetzt wie im Design.
 :host {
   padding-top: $abstand-4;

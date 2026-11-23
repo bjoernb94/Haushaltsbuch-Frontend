@@ -7,6 +7,8 @@ import {
   LOCALE_ID,
 } from '@angular/core';
 import { Preispunkt } from '../../../../core/api/api';
+
+type Preispunktart = Preispunkt['art'];
 import { betragText } from '../../../../shared/format/betrag.pipe';
 import { datumText } from '../../../../shared/format/datum.pipe';
 
@@ -39,20 +41,33 @@ function plusMonate(zeit: number, monate: number): number {
 
 const runden = (n: number) => Math.round(n * 100) / 100;
 
+/** Bis heute: gezahlt oder errechnet; die Linie ist dort durchgezogen. */
+const bisHeute = (art: Preispunktart) => art === 'GEZAHLT' || art === 'ERRECHNET';
+
+const ZUSATZ: Record<Preispunktart, string> = {
+  GEZAHLT: '',
+  ERRECHNET: ' (errechnet)',
+  ANGEKUENDIGT: ' (angekündigt)',
+  PROGNOSE: ' (Prognose)',
+};
+
 interface Zeichnung {
   gitter: string;
   heute: string;
   heuteX: number;
   gezahlt: string;
   zukunft: string;
-  punkte: { x: number; y: number; gezahlt: boolean }[];
+  punkte: { x: number; y: number; gezahlt: boolean; errechnet: boolean }[];
+  /** Ob es Punkte {@code ERRECHNET} gibt; dann erklärt die Legende sie. */
+  mitErrechneten: boolean;
   jahre: { x: number; text: string }[];
   achse: { y: number; text: string }[];
 }
 
 /**
  * Preisverlauf als Treppe (Details, Tab Preisverlauf): bis heute durchgezogen, danach angekündigt und
- * Prognose gestrichelt. Die Punkte und ihre Art kommen vom Backend (ADR 0010), hier wird nur
+ * Prognose gestrichelt. Errechnete Stufen (seit dem letzten Speichern fällig) liegen auf der
+ * durchgezogenen Linie, ihr Punkt ist offen. Die Punkte und ihre Art kommen vom Backend (ADR 0010), hier wird nur
  * gezeichnet. Die Linie „heute“ steht nach dem Datum des Browsers, liegt aber nie vor dem letzten
  * gezahlten oder hinter dem ersten künftigen Punkt.
  */
@@ -78,8 +93,7 @@ export class VertragPreisverlauf {
       this.punkte()
         .map(
           ({ ab, betrag, art }) =>
-            `ab ${datumText(ab)} ${betragText(betrag, this.locale)}` +
-            (art === 'PROGNOSE' ? ' (Prognose)' : art === 'ANGEKUENDIGT' ? ' (angekündigt)' : ''),
+            `ab ${datumText(ab)} ${betragText(betrag, this.locale)}` + ZUSATZ[art],
         )
         .join(', '),
   );
@@ -102,8 +116,8 @@ export class VertragPreisverlauf {
     const y = (wert: number) => runden(UNTEN - ((wert - min) / (max - min || 1)) * (UNTEN - OBEN));
 
     // Grenze zwischen durchgezogen und gestrichelt: heute, aber passend zur Art der Punkte.
-    const letzterGezahlt = punkte.filter(({ art }) => art === 'GEZAHLT').at(-1)?.zeit ?? t0;
-    const ersterKuenftig = punkte.find(({ art }) => art !== 'GEZAHLT')?.zeit ?? t1;
+    const letzterGezahlt = punkte.filter(({ art }) => bisHeute(art)).at(-1)?.zeit ?? t0;
+    const ersterKuenftig = punkte.find(({ art }) => !bisHeute(art))?.zeit ?? t1;
     const grenze = Math.min(Math.max(heute, letzterGezahlt), ersterKuenftig);
 
     const preisAm = (zeit: number) =>
@@ -145,7 +159,9 @@ export class VertragPreisverlauf {
         x: x(p.zeit),
         y: y(p.betrag.wert),
         gezahlt: p.art === 'GEZAHLT',
+        errechnet: p.art === 'ERRECHNET',
       })),
+      mitErrechneten: punkte.some(({ art }) => art === 'ERRECHNET'),
       jahre,
       achse: [max, min].map((wert) => ({
         y: runden(RAND + y(wert)),

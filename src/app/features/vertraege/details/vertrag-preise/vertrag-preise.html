@@ -1,12 +1,44 @@
-@if (preise().length) {
+@if (abschnitte().length) {
   @if (vertrag().berechnet.preisverlauf.length > 1) {
     <app-vertrag-preisverlauf [punkte]="vertrag().berechnet.preisverlauf" />
   }
   <div class="preise">
     <h3>Preise<app-info-knopf beschriftung="Preise" [saetze]="info()" /></h3>
     <ul>
-      @for (preis of preise(); track $index) {
-        <li [class]="preis.art">{{ preis.text }}</li>
+      @for (abschnitt of abschnitte(); track $index) {
+        @if (abschnitt.art === 'einzeln') {
+          <li [class]="abschnitt.eintrag.art">{{ abschnitt.eintrag.text }}</li>
+        } @else {
+          <li class="gruppe">
+            <button
+              type="button"
+              [attr.aria-expanded]="istAufgeklappt(abschnitt.schluessel)"
+              (click)="umschalten(abschnitt.schluessel)"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M9 6l6 6-6 6"></path>
+              </svg>
+              {{ gruppenText(abschnitt.eintraege) }}
+            </button>
+            @if (istAufgeklappt(abschnitt.schluessel)) {
+              <ul>
+                @for (e of abschnitt.eintraege; track e.index) {
+                  <li [class]="e.eintrag.art">{{ e.eintrag.text }}</li>
+                }
+              </ul>
+            }
+          </li>
+        }
       }
     </ul>
   </div>

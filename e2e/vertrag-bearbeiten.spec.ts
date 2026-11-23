@@ -1,4 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
+import { VertragAntwort } from '../src/app/core/api/api';
 import { backendSimulieren, BEISPIEL_VERTRAEGE, tabsEinzeilig } from './backend-mock';
 
 const KFZ = 'Kfz-Versicherung';
@@ -53,10 +54,11 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(zeilen.nth(0).getByLabel('Gilt ab *')).toHaveValue('2026-01-01');
     await expect(zeilen.nth(0).getByLabel('Betrag in € *')).toHaveValue('34,90');
     await expect(zeilen.nth(1).getByLabel('Gilt ab *')).toHaveValue('2027-03-01');
-    const verlauf = formular.getByRole('status').filter({ hasText: 'Preisverlauf' });
-    await expect(verlauf).toContainText('ab 01.05.2025: 29,90 €');
-    await expect(verlauf).toContainText('ab 01.01.2026: 34,90 € · aktuell');
-    await expect(verlauf).toContainText('ab 01.03.2027: 39,90 € · angekündigt');
+    // „aktuell“ und „angekündigt“ an der Zeile, keine Infobox „Preisverlauf“.
+    await expect(erste.locator('.etikett')).toHaveCount(0);
+    await expect(zeilen.nth(0).locator('.etikett')).toHaveText('aktuell');
+    await expect(zeilen.nth(1).locator('.etikett')).toHaveText('angekündigt');
+    await expect(formular.getByRole('status').filter({ hasText: 'Preisverlauf' })).toHaveCount(0);
 
     await formular.getByRole('button', { name: 'Preis ab 01.03.2027 entfernen' }).click();
     await expect(zeilen).toHaveCount(1);
@@ -64,7 +66,7 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(zeilen.nth(1).getByLabel('Gilt ab *')).toBeFocused();
     await zeilen.nth(1).getByLabel('Gilt ab *').fill('2027-06-01');
     await zeilen.nth(1).getByLabel('Betrag in € *').fill('42');
-    await expect(verlauf).toContainText('ab 01.06.2027: 42,00 € · angekündigt');
+    await expect(zeilen.nth(1).locator('.etikett')).toHaveText('angekündigt');
 
     expect((await speichernUndAnfrageLesen(page)).preise).toEqual([
       { gueltigAb: '2025-05-01', betrag: { wert: 29.9, waehrung: 'EUR' } },
@@ -154,7 +156,7 @@ test.describe('Vertrag bearbeiten', () => {
     await formular.getByLabel('Erhöhung in', { exact: true }).selectOption('PROZENT');
     await formular.getByLabel('Erhöhung in % *').fill('10');
     await formular.getByLabel('Rhythmus').selectOption({ label: 'alle 2 Jahre' });
-    await formular.getByLabel('Nächste Erhöhung am *').fill('2027-01-01');
+    await formular.getByLabel('Erste Erhöhung am *').fill('2027-01-01');
     await expect(prognose).toContainText(/ab 01\.01\.2029 voraussichtlich 6,05\s€/);
     await formular.getByLabel('Preisgarantie bis').fill('2028-12-31');
     await expect(prognose).not.toContainText('01.01.2027');
@@ -592,5 +594,103 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(details(page, KFZ).locator('.meldung').getByRole('status')).toContainText(
       'wurde gespeichert',
     );
+  });
+});
+
+test.describe('Vertrag mit automatischen Preisen bearbeiten', () => {
+  const jahr = new Date().getFullYear();
+  const heute = new Date().toISOString().slice(0, 10);
+  const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
+  const stufe = (j: number, wert: number) => ({
+    gueltigAb: `${j}-01-01`,
+    betrag: EUR(wert),
+    art: 'FRUEHER' as const,
+    automatisch: true,
+  });
+  const vorlage = BEISPIEL_VERTRAEGE[0];
+  const AUTOMATISCH: VertragAntwort = {
+    ...vorlage,
+    id: 'auto',
+    anbieter: 'Automatisch AG',
+    bezeichnung: null,
+    beginn: `${jahr - 5}-01-01`,
+    zahlweise: 'MONATLICH',
+    betrag: EUR(110.4),
+    preise: [
+      { gueltigAb: `${jahr - 5}-01-01`, betrag: EUR(100), art: 'FRUEHER', automatisch: false },
+      stufe(jahr - 4, 102),
+      stufe(jahr - 3, 104.04),
+      stufe(jahr - 2, 106.12),
+      stufe(jahr - 1, 108.24),
+      { ...stufe(jahr, 110.4), art: 'AKTUELL' },
+    ],
+    preissteigerung: {
+      art: 'PROZENT',
+      prozent: 2,
+      betrag: null,
+      rhythmus: 'JAEHRLICH',
+      naechsteAm: `${jahr - 4}-01-01`,
+    },
+    preissteigerungBetrachtetBis: heute,
+  };
+
+  test.beforeEach(async ({ page }) => {
+    await backendSimulieren(page, { angemeldet: true, vertraege: [AUTOMATISCH] });
+    await page.goto('/vertraege');
+  });
+
+  test('Beginn geändert: Hinweis am Termin, „Vorschlag übernehmen“ setzt ihn', async ({ page }) => {
+    const formular = await bearbeiten(page, 'Automatisch AG');
+    await tab(page, 'Kosten');
+    await formular.getByLabel('Vertragsbeginn *').fill(`${jahr - 5}-02-01`);
+    await tab(page, 'Preisverlauf');
+    const termin = formular.getByLabel('Erste Erhöhung am *');
+    await expect(termin).toHaveValue(`${jahr - 4}-01-01`);
+    await expect(
+      formular.getByText(
+        'Der Vertragsbeginn hat sich geändert. Prüfe, ob die erste Erhöhung noch stimmt.',
+      ),
+    ).toBeVisible();
+    await formular
+      .getByRole('button', { name: `Vorschlag übernehmen (01.02.${jahr - 4})` })
+      .click();
+    await expect(termin).toHaveValue(`${jahr - 4}-02-01`);
+    await expect(formular.locator('.termin-hinweis')).toHaveCount(0);
+    await expect(
+      formular.getByText(
+        'Gilt für künftige Erhöhungen. Bereits angelegte Preise bleiben unverändert.',
+      ),
+    ).toBeVisible();
+  });
+
+  test('geänderter automatischer Preis: Kennzeichen weg, Hinweis, gespeichert als eingetragener', async ({
+    page,
+  }) => {
+    const formular = await bearbeiten(page, 'Automatisch AG');
+    await tab(page, 'Preisverlauf');
+    const gruppe = formular.getByRole('button', {
+      name: `5 automatische Preise, ${jahr - 4}–${jahr}`,
+    });
+    await gruppe.click();
+    await expect(formular.locator('.preis .etikett', { hasText: 'automatisch' })).toHaveCount(5);
+    const zweite = formular.locator('.preis:not(.erster)').nth(1);
+    await zweite.getByLabel('Betrag in € *').fill('105,00');
+    await expect(formular.locator('.preis .etikett', { hasText: 'automatisch' })).toHaveCount(4);
+    await expect(
+      zweite.getByText('Spätere automatische Preise bleiben unverändert.'),
+    ).toBeVisible();
+
+    const anfrage = await speichernUndAnfrageLesen(page);
+    expect(anfrage.preise[2]).toEqual({
+      gueltigAb: `${jahr - 3}-01-01`,
+      betrag: EUR(105),
+      automatisch: true,
+    });
+
+    // Gespeichert: Die geänderte Stufe ist eingetragen, der Rest zu kurz für eine Gruppe.
+    const wieder = await bearbeiten(page, 'Automatisch AG');
+    await tab(page, 'Preisverlauf');
+    await expect(wieder.getByRole('button', { name: /automatische Preise/ })).toHaveCount(0);
+    await expect(wieder.locator('.preis .etikett', { hasText: 'automatisch' })).toHaveCount(4);
   });
 });
