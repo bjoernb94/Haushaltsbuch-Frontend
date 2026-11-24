@@ -1,0 +1,60 @@
+@use '../../../../shared/formular/formular';
+@use '../zeilen';
+@use 'masse' as *;
+
+@include zeilen.feldtexte;
+@include formular.knoepfe;
+
+.felder {
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-4;
+}
+
+.hinweis:focus {
+  outline: none;
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: $abstand-4 0 0;
+  border: 0;
+  border-top: 1px solid var(--app-trenner-innen);
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-4;
+}
+
+legend {
+  float: left;
+  width: 100%;
+  margin-bottom: $abstand-1;
+  padding: 0;
+  font-size: $schrift-text;
+  font-weight: 800;
+}
+
+.raster {
+  display: grid;
+  // Zwei Spalten, sobald beide Felder 180 px haben (Layoutmaß wie im Design).
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  align-items: start;
+  gap: $abstand-4;
+}
+
+// Schmal wie im Design (Layoutmaß).
+.betrag input {
+  max-width: 240px;
+}
+
+.aktionen {
+  padding-top: $abstand-2;
+}
+
+// Bis 900 px stehen die Knöpfe in der Leiste des Dialogs.
+@media (max-width: 900px) {
+  .aktionen {
+    display: none;
+  }
+}

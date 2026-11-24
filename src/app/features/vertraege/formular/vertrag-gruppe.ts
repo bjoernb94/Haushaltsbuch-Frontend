@@ -38,6 +38,7 @@ export function vertragGruppe(fb: NonNullableFormBuilder) {
     rhythmus: fb.control<Erhoehungsrhythmus>('JAEHRLICH'),
     naechsteErhoehungAm: [''],
     erinnerungSonderkuendigung: [true],
+    entfernteUnterbrechungen: fb.control<string[]>([]),
   });
 }
 

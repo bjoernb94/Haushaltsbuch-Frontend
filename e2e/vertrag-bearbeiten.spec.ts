@@ -294,6 +294,7 @@ test.describe('Vertrag bearbeiten', () => {
       preissteigerung: null,
       preisgarantieBis: null,
       erinnerungSonderkuendigung: true,
+      unterbrechungIds: [],
     });
 
     // Aus der Liste geöffnet, geht es zur Liste zurück.

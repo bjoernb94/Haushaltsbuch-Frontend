@@ -32,7 +32,7 @@ import { waehrungZeichen } from '../../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
 import { vertragName } from '../vertrag-texte';
-import { VertragEingabe, VertragService } from '../vertrag.service';
+import { VertragService } from '../vertrag.service';
 import { VertragTabAllgemein } from './tab-allgemein/tab-allgemein';
 import { VertragTabKosten } from './tab-kosten/tab-kosten';
 import { VertragTabLaufzeit } from './tab-laufzeit/tab-laufzeit';
@@ -48,6 +48,7 @@ import {
   preisFeld,
   VertragFeld,
   vertragPruefen,
+  VertragSpeichern,
   vorschauAus,
   werteAus,
 } from './vertrag-pruefung';
@@ -125,7 +126,7 @@ export class VertragFormular implements OnInit {
   /** Beim Öffnen im Tab Preisverlauf mit einer leeren Zeile („Preis hinzufügen“ in den Details). */
   readonly neuerPreis = input(false);
 
-  readonly speichern = output<Required<VertragEingabe>>();
+  readonly speichern = output<VertragSpeichern>();
   readonly abbrechen = output<void>();
 
   /** Eindeutige Feld-IDs, auch bei zwei Formularen auf einer Seite. */
@@ -172,7 +173,7 @@ export class VertragFormular implements OnInit {
   );
 
   protected readonly feldFehler = linkedSignal<ReadonlyMap<VertragFeld, string>>(() =>
-    feldfehlerTexte(problemFelder(this.fehlerAntwort())),
+    feldfehlerTexte(problemFelder(this.fehlerAntwort()), this.vertrag(), untracked(this.werte)),
   );
 
   /** Fehler, der sich keinem Feld zuordnen lässt, z. B. Serverfehler oder keine Verbindung. */

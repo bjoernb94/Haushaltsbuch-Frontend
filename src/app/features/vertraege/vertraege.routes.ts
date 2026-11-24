@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { ungespeichertGuard } from '../../core/ungespeichert/ungespeichert.guard';
 import { NeuerVertragSeite } from './formular/neuer-vertrag/neuer-vertrag-seite';
 import { VertragBearbeiten } from './formular/vertrag-bearbeiten/vertrag-bearbeiten';
+import { VertragWiederaufnehmen } from './formular/wiederaufnahme/vertrag-wiederaufnehmen';
 import { VertragDetails } from './details/vertrag-details';
 import { VertraegeSeite } from './liste/vertraege-seite';
 
@@ -28,6 +29,12 @@ export const VERTRAEGE_ROUTES: Routes = [
             component: VertragBearbeiten,
             canDeactivate: [ungespeichertGuard],
             title: 'Vertrag bearbeiten – Haushaltsbuch',
+          },
+          {
+            path: 'wiederaufnehmen',
+            component: VertragWiederaufnehmen,
+            canDeactivate: [ungespeichertGuard],
+            title: 'Vertrag wieder aufnehmen – Haushaltsbuch',
           },
         ],
       },

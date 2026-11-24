@@ -1,0 +1,55 @@
+<dialog
+  #dialog
+  class="sheet"
+  aria-labelledby="wieder-titel"
+  [attr.aria-describedby]="vertrag() ? 'wieder-text' : null"
+  (cancel)="esc($event)"
+  (close)="geschlossen()"
+>
+  <div class="rahmen">
+    <div class="leiste">
+      <button type="button" class="leiste-knopf" (click)="abbrechen()">Abbrechen</button>
+      <span class="leiste-titel" aria-hidden="true">Wieder aufnehmen</span>
+      <button
+        type="submit"
+        [attr.form]="formularId"
+        class="leiste-knopf sichern"
+        [disabled]="!vertrag() || sendet()"
+        [attr.aria-busy]="sendet()"
+      >
+        Sichern
+      </button>
+    </div>
+
+    <div class="inhalt">
+      <div class="kopf">
+        <h2 id="wieder-titel" class="titel">„{{ name() }}“ wieder aufnehmen</h2>
+        <p class="name" aria-hidden="true">{{ name() }}</p>
+        @if (vertrag()) {
+          <p id="wieder-text" class="text">{{ text() }}</p>
+        }
+      </div>
+
+      @if (seite.fehler()) {
+        <div class="fehler">
+          <app-hinweis-box text="Der Vertrag konnte nicht geladen werden." />
+          <button type="button" class="knopf-sekundaer" (click)="seite.laden(true)">
+            Erneut versuchen
+          </button>
+        </div>
+      } @else if (vertrag(); as v) {
+        <app-wiederaufnahme-felder
+          [formular]="formular"
+          [vertrag]="v"
+          [fehler]="fehler()"
+          [allgemeinerFehler]="allgemeinerFehler()"
+          [sendet]="sendet()"
+          (absenden)="absenden()"
+          (abbrechen)="abbrechen()"
+        />
+      } @else {
+        <p class="laedt" role="status">Wird geladen …</p>
+      }
+    </div>
+  </div>
+</dialog>

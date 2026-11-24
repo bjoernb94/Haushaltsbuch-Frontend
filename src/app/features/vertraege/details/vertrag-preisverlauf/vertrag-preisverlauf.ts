@@ -6,11 +6,11 @@ import {
   input,
   LOCALE_ID,
 } from '@angular/core';
-import { Preispunkt } from '../../../../core/api/api';
-
-type Preispunktart = Preispunkt['art'];
+import { Preispunkt, VertragUnterbrechungAntwort } from '../../../../core/api/api';
 import { betragText } from '../../../../shared/format/betrag.pipe';
 import { datumText } from '../../../../shared/format/datum.pipe';
+
+type Preispunktart = Preispunkt['art'];
 
 /** Höhe der Zeichenfläche in px; die Breite folgt dem Platz (viewBox 0–100). */
 const HOEHE = 150;
@@ -39,6 +39,9 @@ function plusMonate(zeit: number, monate: number): number {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + monate, d.getUTCDate());
 }
 
+/** Ein Tag in ms; die Fläche einer Unterbrechung reicht bis zum Ende ihres letzten Tages. */
+const TAG = 24 * 60 * 60 * 1000;
+
 const runden = (n: number) => Math.round(n * 100) / 100;
 
 /** Bis heute: gezahlt oder errechnet; die Linie ist dort durchgezogen. */
@@ -60,6 +63,8 @@ interface Zeichnung {
   punkte: { x: number; y: number; gezahlt: boolean; errechnet: boolean }[];
   /** Ob es Punkte {@code ERRECHNET} gibt; dann erklärt die Legende sie. */
   mitErrechneten: boolean;
+  /** Unterbrechungen als Fläche, Lage und Breite in Prozent der Breite. */
+  pausen: { x: number; breite: number }[];
   jahre: { x: number; text: string }[];
   achse: { y: number; text: string }[];
 }
@@ -69,7 +74,8 @@ interface Zeichnung {
  * Prognose gestrichelt. Errechnete Stufen (seit dem letzten Speichern fällig) liegen auf der
  * durchgezogenen Linie, ihr Punkt ist offen. Die Punkte und ihre Art kommen vom Backend (ADR 0010), hier wird nur
  * gezeichnet. Die Linie „heute“ steht nach dem Datum des Browsers, liegt aber nie vor dem letzten
- * gezahlten oder hinter dem ersten künftigen Punkt.
+ * gezahlten oder hinter dem ersten künftigen Punkt. Unterbrechungen liegen als schraffierte Fläche
+ * darüber; die Linie läuft durch, denn Preise gelten nach Kalender weiter.
  */
 @Component({
   selector: 'app-vertrag-preisverlauf',
@@ -83,6 +89,7 @@ export class VertragPreisverlauf {
   /** Mindestens zwei, sortiert nach {@code ab}. */
   readonly punkte = input.required<Preispunkt[]>();
   readonly heute = input<string>(heuteIso());
+  readonly unterbrechungen = input<Pick<VertragUnterbrechungAntwort, 'von' | 'bis'>[]>([]);
 
   protected readonly hoehe = HOEHE;
 
@@ -148,6 +155,12 @@ export class VertragPreisverlauf {
       }
     }
 
+    const pausen = this.unterbrechungen().map(({ von, bis }) => {
+      const links = x(tag(von));
+      // Mindestens ein halbes Prozent, damit auch eine kurze sichtbar bleibt.
+      return { x: links, breite: runden(Math.max(x(tag(bis) + TAG) - links, 0.5)) };
+    });
+
     const heuteX = x(grenze);
     return {
       gitter: `M0 ${y(min)} H100 M0 ${y(max)} H100`,
@@ -162,6 +175,7 @@ export class VertragPreisverlauf {
         errechnet: p.art === 'ERRECHNET',
       })),
       mitErrechneten: punkte.some(({ art }) => art === 'ERRECHNET'),
+      pausen,
       jahre,
       achse: [max, min].map((wert) => ({
         y: runden(RAND + y(wert)),

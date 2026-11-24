@@ -42,7 +42,7 @@ describe('VertragService', () => {
   });
 
   it('ändert mit der Version im Body', () => {
-    const aenderung = { ...ANFRAGE, version: 3 };
+    const aenderung = { ...ANFRAGE, version: 3, unterbrechungIds: [] };
     service.aendern('v1', aenderung).subscribe();
     const req = http.expectOne({ method: 'PUT', url: '/api/vertraege/v1' });
     expect(req.request.body).toEqual(aenderung);
