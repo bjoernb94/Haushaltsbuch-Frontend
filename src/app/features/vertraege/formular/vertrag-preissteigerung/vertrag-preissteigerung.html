@@ -1,29 +1,7 @@
-<div class="raster">
-  <div class="feld">
-    <label [for]="id('preisgarantieBis')"
-      >Preisgarantie bis <span class="optional">(optional)</span></label
-    >
-    <input
-      [id]="id('preisgarantieBis')"
-      type="date"
-      formControlName="preisgarantieBis"
-      [attr.aria-invalid]="!!fehlerText('preisgarantieBis')"
-      [attr.aria-describedby]="
-        beschreibung('preisgarantieBis', id('preisgarantieBis') + '-hinweis')
-      "
-    />
-    <span class="feldhinweis" [id]="id('preisgarantieBis') + '-hinweis'"
-      >Vor diesem Datum rechnet die Prognose keine Erhöhung ein.</span
-    >
-    @if (fehlerText('preisgarantieBis'); as text) {
-      <p class="feldfehler" [id]="id('preisgarantieBis') + '-fehler'">{{ text }}</p>
-    }
-  </div>
-</div>
-
 <div class="ankreuzen">
   <input
     [id]="id('steigt')"
+    class="schalter"
     type="checkbox"
     role="switch"
     formControlName="steigt"
@@ -32,42 +10,42 @@
   <div>
     <label [for]="id('steigt')">Preis steigt regelmäßig</label>
     <span class="feldhinweis" [id]="id('steigt') + '-hinweis'"
-      >Zum Beispiel jährlich um 2,5 %. Vergangene Erhöhungen legen wir beim Speichern als Preise an,
-      künftige zeigt die Prognose. Weicht ein echter Preis ab, änderst du ihn oben.</span
+      >Zum Beispiel jährlich um 2,5 %. Vergangene Erhöhungen werden beim Speichern zu Preisen.</span
     >
   </div>
 </div>
 
-@if (steigt()) {
-  <div class="raster">
+<!-- auto-fill statt auto-fit: Die Preisgarantie allein bleibt halb breit. -->
+<div class="raster">
+  @if (steigt()) {
     <div class="feld">
-      <label [for]="id('steigerungsart')">Erhöhung in</label>
-      <select
-        [id]="id('steigerungsart')"
-        formControlName="steigerungsart"
-        [attr.aria-invalid]="!!fehlerText('steigerungsart')"
-        [attr.aria-describedby]="beschreibung('steigerungsart')"
-      >
-        <option value="PROZENT">Prozent</option>
-        <option value="BETRAG">{{ waehrungName() }}</option>
-      </select>
-      @if (fehlerText('steigerungsart'); as text) {
-        <p class="feldfehler" [id]="id('steigerungsart') + '-fehler'">{{ text }}</p>
-      }
-    </div>
-    <div class="feld">
-      <label [for]="id('steigerungswert')">{{ wertLabel() }}</label>
-      <input
-        [id]="id('steigerungswert')"
-        type="text"
-        inputmode="decimal"
-        [placeholder]="wertPlatzhalter()"
-        formControlName="steigerungswert"
-        [attr.aria-invalid]="!!fehlerText('steigerungswert')"
-        [attr.aria-describedby]="beschreibung('steigerungswert')"
-      />
+      <label [for]="id('steigerungswert')">Erhöhung um *</label>
+      <div class="wert-und-einheit">
+        <input
+          [id]="id('steigerungswert')"
+          type="text"
+          inputmode="decimal"
+          [placeholder]="wertPlatzhalter()"
+          formControlName="steigerungswert"
+          [attr.aria-invalid]="!!fehlerText('steigerungswert')"
+          [attr.aria-describedby]="beschreibung('steigerungswert')"
+        />
+        <select
+          [id]="id('steigerungsart')"
+          formControlName="steigerungsart"
+          aria-label="Einheit der Erhöhung"
+          [attr.aria-invalid]="!!fehlerText('steigerungsart')"
+          [attr.aria-describedby]="beschreibung('steigerungsart')"
+        >
+          <option value="PROZENT">%</option>
+          <option value="BETRAG">{{ waehrung() }}</option>
+        </select>
+      </div>
       @if (fehlerText('steigerungswert'); as text) {
         <p class="feldfehler" [id]="id('steigerungswert') + '-fehler'">{{ text }}</p>
+      }
+      @if (fehlerText('steigerungsart'); as text) {
+        <p class="feldfehler" [id]="id('steigerungsart') + '-fehler'">{{ text }}</p>
       }
     </div>
     <div class="feld">
@@ -108,7 +86,30 @@
         <p class="feldfehler" [id]="id('naechsteErhoehungAm') + '-fehler'">{{ text }}</p>
       }
     </div>
+  }
+  <div class="feld">
+    <label [for]="id('preisgarantieBis')"
+      >Preisgarantie bis <span class="optional">(optional)</span></label
+    >
+    <input
+      [id]="id('preisgarantieBis')"
+      type="date"
+      formControlName="preisgarantieBis"
+      [attr.aria-invalid]="!!fehlerText('preisgarantieBis')"
+      [attr.aria-describedby]="
+        beschreibung('preisgarantieBis', id('preisgarantieBis') + '-hinweis')
+      "
+    />
+    <span class="feldhinweis" [id]="id('preisgarantieBis') + '-hinweis'"
+      >Bis dahin keine Erhöhung.</span
+    >
+    @if (fehlerText('preisgarantieBis'); as text) {
+      <p class="feldfehler" [id]="id('preisgarantieBis') + '-fehler'">{{ text }}</p>
+    }
   </div>
+</div>
+
+@if (steigt()) {
   @if (terminVorschlag(); as vorschlag) {
     <div class="termin-hinweis">
       <span [id]="id('naechsteErhoehungAm') + '-beginn'"
@@ -134,44 +135,6 @@
       @if (prognose().hinweis; as hinweis) {
         <span class="leer">{{ hinweis }}</span>
       }
-    </div>
-  </div>
-}
-
-@if (erinnerung()) {
-  <div class="erinnerung">
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="9"></circle>
-      <path d="M12 11v5"></path>
-      <path d="M12 8h.01"></path>
-    </svg>
-    <div>
-      <span [id]="id('erinnerungSonderkuendigung') + '-hinweis'"
-        >Bei einer Preiserhöhung hast du oft ein Sonderkündigungsrecht. Ob es gilt, hängt vom
-        Vertrag ab, steht meist im Ankündigungsschreiben.</span
-      >
-      <div class="ankreuzen">
-        <input
-          [id]="id('erinnerungSonderkuendigung')"
-          type="checkbox"
-          role="switch"
-          formControlName="erinnerungSonderkuendigung"
-          [attr.aria-describedby]="id('erinnerungSonderkuendigung') + '-hinweis'"
-        />
-        <label [for]="id('erinnerungSonderkuendigung')"
-          >Vor jeder Preiserhöhung daran erinnern</label
-        >
-      </div>
     </div>
   </div>
 }

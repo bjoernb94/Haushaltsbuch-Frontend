@@ -540,7 +540,7 @@ describe('VertraegeSeite', () => {
       expect(document.activeElement).toBe(tippen);
     });
 
-    it('zeigt Kacheln und die Tabs Allgemein, Kosten, Laufzeit und Preisverlauf', async () => {
+    it('zeigt Kacheln und die Tabs Allgemein, Kosten, Preisverlauf und Laufzeit', async () => {
       const { element, stabil, url, info } = await seite('/vertraege/kfz');
       expect([...element.querySelectorAll('.kachel')].map(text)).toEqual([
         'Pro Monat48,90 €',
@@ -551,7 +551,7 @@ describe('VertraegeSeite', () => {
       expect(element.querySelectorAll('.kachel button[aria-label^="Info zu"]')).toHaveLength(1);
       expect(await info('Pro Monat')).toEqual([INFO_RUNDUNG_DETAILS]);
       const tabs = [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-      expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
+      expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Preisverlauf', 'Laufzeit']);
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
       expect(element.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
         tabs[0].id,
@@ -576,6 +576,10 @@ describe('VertraegeSeite', () => {
 
       tabs[2].click();
       await stabil();
+      expect(url()).toBe('/vertraege/kfz?tab=preise');
+
+      tabs[3].click();
+      await stabil();
       expect(url()).toBe('/vertraege/kfz?tab=laufzeit');
       expect(eintraege(element)).toEqual({
         Vertragsbeginn: '01.01.2023',
@@ -596,7 +600,7 @@ describe('VertraegeSeite', () => {
       const tabs = () => [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
       tabs()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
       await stabil();
-      expect(url()).toBe('/vertraege/kfz?tab=preise');
+      expect(url()).toBe('/vertraege/kfz?tab=laufzeit');
       expect(document.activeElement).toBe(tabs()[3]);
       expect(tabs().map((t) => t.tabIndex)).toEqual([-1, -1, -1, 0]);
     });

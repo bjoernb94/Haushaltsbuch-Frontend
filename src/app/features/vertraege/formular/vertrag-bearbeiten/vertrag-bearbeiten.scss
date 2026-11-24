@@ -124,7 +124,11 @@
 @media (min-width: 901px) {
   .sheet {
     inset: 4vh max(24px, calc(50% - 400px)) auto;
-    height: 92vh;
+    // So hoch wie der Inhalt, höchstens 92vh (dann scrollt das Formular, die Leiste bleibt stehen). Die
+    // Mindesthöhe (Layoutmaß) hält das Sheet beim Wechsel der Tabs ruhig.
+    height: auto;
+    max-height: 92vh;
+    min-height: min(600px, 92vh);
     overflow: hidden;
     border-radius: $radius-karte;
     box-shadow: 0 24px 64px var(--app-schatten-sheet);

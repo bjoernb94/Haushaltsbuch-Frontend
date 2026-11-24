@@ -4,8 +4,8 @@ import { EinzelFeld, VertragFeld } from './vertrag-pruefung';
 export const TABS = [
   { key: 'allgemein', label: 'Allgemein' },
   { key: 'kosten', label: 'Kosten' },
-  { key: 'laufzeit', label: 'Laufzeit' },
   { key: 'preise', label: 'Preisverlauf' },
+  { key: 'laufzeit', label: 'Laufzeit' },
 ] as const;
 
 export type TabKey = (typeof TABS)[number]['key'];
@@ -28,13 +28,13 @@ const TAB_VON: Record<EinzelFeld, TabKey> = {
   kuendigungsfristMonate: 'laufzeit',
   gekuendigt: 'laufzeit',
   gekuendigtZum: 'laufzeit',
+  erinnerungSonderkuendigung: 'laufzeit',
   preisgarantieBis: 'preise',
   steigt: 'preise',
   steigerungsart: 'preise',
   steigerungswert: 'preise',
   rhythmus: 'preise',
   naechsteErhoehungAm: 'preise',
-  erinnerungSonderkuendigung: 'preise',
 };
 
 /** Der Tab, in dem ein Feld steht; dort zählt und zeigt das Formular seinen Fehler. */

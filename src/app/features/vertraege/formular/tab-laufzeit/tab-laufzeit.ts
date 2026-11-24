@@ -22,7 +22,8 @@ function fristenMit(gespeichert: number | null | undefined) {
 
 /**
  * Tab Laufzeit des Vertragsformulars: Laufzeit, Verlängerung und Frist mit dem nächsten
- * Kündigungstermin aus der Vorschau, dazu der Status „Gekündigt“.
+ * Kündigungstermin aus der Vorschau und der Erinnerung ans Sonderkündigungsrecht, dazu der Status
+ * „Gekündigt“.
  */
 @Component({
   selector: 'app-vertrag-tab-laufzeit',
@@ -37,6 +38,8 @@ export class VertragTabLaufzeit extends VertragTab {
   readonly gespeicherteFrist = input<number | null>();
   readonly nichtKuendbar = input.required<boolean>();
   readonly gekuendigt = input.required<boolean>();
+  /** „Preis steigt regelmäßig“ aus dem Tab Preisverlauf; davon hängt die Erinnerung ab. */
+  readonly steigt = input.required<boolean>();
   readonly vorschau = input.required<VertragVorschauAntwort | null>();
 
   protected readonly verlaengerungen = optionen<Verlaengerung>({
@@ -44,6 +47,16 @@ export class VertragTabLaufzeit extends VertragTab {
     KEINE: 'Keine – Vertrag endet zum Laufzeitende',
   });
   protected readonly fristen = computed(() => fristenMit(this.gespeicherteFrist()));
+
+  /**
+   * Wie im Design: die Erinnerung ans Sonderkündigungsrecht bei kündbaren Verträgen mit Regel oder
+   * angekündigtem Preis (laut Vorschau).
+   */
+  protected readonly erinnerung = computed(
+    () =>
+      !this.nichtKuendbar() &&
+      (this.steigt() || !!this.vorschau()?.preise.some(({ art }) => art === 'ANGEKUENDIGT')),
+  );
 
   /** „–“ ohne Termin, z. B. bei Werten, die das Backend ablehnt. */
   protected readonly vorschauText = computed(() => {

@@ -28,7 +28,7 @@ import {
 } from '../../../core/api/api';
 import { problemFelder } from '../../../core/fehler/problem';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
-import { waehrungName, waehrungZeichen } from '../../../shared/format/betrag.pipe';
+import { waehrungZeichen } from '../../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
 import { vertragName } from '../vertrag-texte';
@@ -75,7 +75,7 @@ const VORSCHAU_VERZOEGERUNG_MS = 400;
 let letztesFormular = 0;
 
 /**
- * Felder eines Vertrags in den Tabs Allgemein, Kosten, Laufzeit und Preisverlauf (je eine Komponente);
+ * Felder eines Vertrags in den Tabs Allgemein, Kosten, Preisverlauf und Laufzeit (je eine Komponente);
  * das Formular hält Werte, Fehler und Vorschau. Jeder Tab zählt seine Fehler, und Fehler beim Speichern
  * führen zum ersten Tab mit Fehler. Prüft nur Pflichtfelder und meldet dann
  * {@link speichern}; das Speichern und die Antwort darauf liegen bei der Seite, die Fehler zurückgibt
@@ -136,9 +136,6 @@ export class VertragFormular implements OnInit {
 
   protected readonly waehrung = computed(() =>
     waehrungZeichen(this.vertrag()?.betrag.waehrung ?? 'EUR', this.locale),
-  );
-  protected readonly waehrungName = computed(() =>
-    waehrungName(this.vertrag()?.betrag.waehrung ?? 'EUR', this.locale),
   );
   protected readonly name = computed(() => {
     const vertrag = this.vertrag();

@@ -606,9 +606,9 @@ describe('VertragFormular', () => {
       !el.querySelector(`[formcontrolname="${name}"]`)!.closest('[hidden]');
     const text = (e: Element) => e.textContent?.replace(/\s+/g, ' ').trim();
 
-    it('zeigt Allgemein, Kosten, Laufzeit und Preisverlauf, je Tab nur seine Felder', async () => {
+    it('zeigt Allgemein, Kosten, Preisverlauf und Laufzeit, je Tab nur seine Felder', async () => {
       const { el, fixture } = await erstellen();
-      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
+      expect(tabs(el).map(text)).toEqual(['Allgemein', 'Kosten', 'Preisverlauf', 'Laufzeit']);
       expect(tabs(el)[0].getAttribute('aria-selected')).toBe('true');
       expect(sichtbar(el, 'anbieter')).toBe(true);
       expect(sichtbar(el, 'notiz')).toBe(true);
@@ -625,25 +625,31 @@ describe('VertragFormular', () => {
 
       tabs(el)[2].click();
       await fixture.whenStable();
-      expect(sichtbar(el, 'laufzeitende')).toBe(true);
+      expect(sichtbar(el, 'preisgarantieBis')).toBe(true);
+      expect(sichtbar(el, 'steigt')).toBe(true);
       expect(sichtbar(el, 'beginn')).toBe(false);
+
+      tabs(el)[3].click();
+      await fixture.whenStable();
+      expect(sichtbar(el, 'laufzeitende')).toBe(true);
+      expect(sichtbar(el, 'preisgarantieBis')).toBe(false);
       expect(sichtbar(el, 'gekuendigt')).toBe(true);
-      expect(tabs(el)[2].getAttribute('aria-selected')).toBe('true');
+      expect(tabs(el)[3].getAttribute('aria-selected')).toBe('true');
     });
 
     it('zählt die Fehler je Tab und springt zum ersten Tab mit Fehler', async () => {
       const { el, fixture, absenden, setzen } = await erstellen();
       setzen('anbieter', 'Anbieter');
       setzen('kategorieId', 'k1');
-      tabs(el)[2].click();
+      tabs(el)[3].click();
       await fixture.whenStable();
       await absenden();
 
       expect(tabs(el).map(text)).toEqual([
         'Allgemein',
         'Kosten 3, 3 Fehler',
-        'Laufzeit',
         'Preisverlauf',
+        'Laufzeit',
       ]);
       expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
       expect(document.activeElement).toBe(el.querySelector('[formcontrolname="betrag"]'));
@@ -657,8 +663,8 @@ describe('VertragFormular', () => {
       const { el, fixture, host } = await erstellen();
       host.fehler.set(validierung(['laufzeitende', 'LaufzeitendeNachBeginn']));
       await fixture.whenStable();
-      expect(tabs(el)[2].getAttribute('aria-selected')).toBe('true');
-      expect(text(tabs(el)[2])).toBe('Laufzeit 1, 1 Fehler');
+      expect(tabs(el)[3].getAttribute('aria-selected')).toBe('true');
+      expect(text(tabs(el)[3])).toBe('Laufzeit 1, 1 Fehler');
       expect(document.activeElement).toBe(el.querySelector('[formcontrolname="laufzeitende"]'));
     });
 
@@ -866,7 +872,7 @@ describe('VertragFormular', () => {
     async function imTabPreise() {
       const hilfen = await erstellen();
       const { el, fixture } = hilfen;
-      el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[3].click();
+      el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[2].click();
       await fixture.whenStable();
       const hinzufuegen = async () => {
         [...el.querySelectorAll<HTMLButtonElement>('button')]
@@ -910,7 +916,7 @@ describe('VertragFormular', () => {
       const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
         t.textContent?.replace(/\s+/g, ' ').trim(),
       );
-      expect(tabs[3]).toBe('Preisverlauf');
+      expect(tabs[2]).toBe('Preisverlauf');
       const betrag = erste().querySelectorAll('input')[1];
       expect(betrag.getAttribute('aria-invalid')).toBe('true');
       const fehler = document.getElementById(betrag.getAttribute('aria-describedby')!);
@@ -941,7 +947,7 @@ describe('VertragFormular', () => {
       const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
         t.textContent?.replace(/\s+/g, ' ').trim(),
       );
-      expect(tabs).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf 2, 2 Fehler']);
+      expect(tabs).toEqual(['Allgemein', 'Kosten', 'Preisverlauf 2, 2 Fehler', 'Laufzeit']);
       expect(zeilenFehler(0)).toBe('Bitte gib an, ab wann dieser Preis gilt.');
       const datum = zeile(0).querySelector('input[type="date"]')!;
       expect(datum.getAttribute('aria-invalid')).toBe('true');
@@ -1109,7 +1115,7 @@ describe('VertragFormular', () => {
     async function imTabPreise() {
       const hilfen = await erstellen();
       const { el, fixture } = hilfen;
-      el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[3].click();
+      el.querySelectorAll<HTMLButtonElement>('[role="tab"]')[2].click();
       await fixture.whenStable();
       const einschalten = async () => {
         hilfen.feld('steigt').click();
@@ -1123,22 +1129,57 @@ describe('VertragFormular', () => {
       return { ...hilfen, einschalten, prognose };
     }
 
-    it('blendet die Felder mit dem Schalter ein; Bezeichnung folgt der Art', async () => {
-      const { el, feld, setzen, einschalten, fixture } = await imTabPreise();
-      expect(feld('steigt').getAttribute('role')).toBe('switch');
-      expect(feld('steigerungswert')).toBeNull();
-      await einschalten();
-      const label = () =>
-        el.querySelector(`label[for="${feld('steigerungswert').id}"]`)?.textContent;
-      expect(label()).toBe('Erhöhung in % *');
-      expect(feld<HTMLSelectElement>('rhythmus').value).toBe('JAEHRLICH');
-      expect([...feld<HTMLSelectElement>('steigerungsart').options].map((o) => o.text)).toEqual([
-        'Prozent',
-        'Euro',
+    it('zeigt Preise und Künftige Erhöhungen als eigene Abschnitte', async () => {
+      const { el } = await imTabPreise();
+      const tab = el.querySelector('app-vertrag-tab-preise')!;
+      expect([...tab.querySelectorAll('legend')].map((l) => l.textContent?.trim())).toEqual([
+        'Preise',
+        'Künftige Erhöhungen',
       ]);
+      expect(tab.querySelector('fieldset')?.textContent).toContain(
+        'Jeder Preis gilt ab seinem Datum bis zum nächsten, so auch Aktionspreise.',
+      );
+    });
+
+    it('zeigt die Preisgarantie auch ohne Erhöhung, die übrigen Felder mit dem Schalter', async () => {
+      const { feld, einschalten } = await imTabPreise();
+      expect(feld('steigt').getAttribute('role')).toBe('switch');
+      expect(feld('steigt').classList).toContain('schalter');
+      expect(feld('preisgarantieBis')).not.toBeNull();
+      expect(feld('steigerungswert')).toBeNull();
+      expect(feld('steigerungsart')).toBeNull();
+      await einschalten();
+      expect(feld('preisgarantieBis')).not.toBeNull();
+      expect(feld<HTMLSelectElement>('rhythmus').value).toBe('JAEHRLICH');
+    });
+
+    it('Einheit im Feld „Erhöhung um“: % oder das Zeichen der Währung', async () => {
+      const { el, feld, setzen, einschalten, fixture } = await imTabPreise();
+      await einschalten();
+      const wert = feld('steigerungswert');
+      const art = feld<HTMLSelectElement>('steigerungsart');
+      expect(el.querySelector(`label[for="${wert.id}"]`)?.textContent).toBe('Erhöhung um *');
+      expect(art.getAttribute('aria-label')).toBe('Einheit der Erhöhung');
+      expect(art.parentElement).toBe(wert.parentElement);
+      expect([...art.options].map((o) => o.text)).toEqual(['%', '€']);
+      expect(wert.placeholder).toBe('z. B. 2,5');
       setzen('steigerungsart', 'BETRAG');
       await fixture.whenStable();
-      expect(label()).toBe('Erhöhung in € *');
+      expect(wert.placeholder).toBe('z. B. 1,00');
+    });
+
+    it('zeigt einen Fehler zur Einheit unter „Erhöhung um“', async () => {
+      const { el, host, fixture, feld, einschalten } = await imTabPreise();
+      await einschalten();
+      host.fehler.set(validierung(['preissteigerung.art', 'NotNull']));
+      await fixture.whenStable();
+      const art = feld<HTMLSelectElement>('steigerungsart');
+      expect(art.getAttribute('aria-invalid')).toBe('true');
+      const fehler = el.querySelector(`#${art.id}-fehler`)!;
+      expect(art.getAttribute('aria-describedby')).toBe(fehler.id);
+      expect(fehler.closest('.feld')).toBe(feld('steigerungswert').closest('.feld'));
+      const tabs = [...el.querySelectorAll('[role="tab"]')];
+      expect(tabs[2].getAttribute('aria-selected')).toBe('true');
     });
 
     it('verlangt Wert und Datum, zählt sie im Tab Preisverlauf und schickt die Regel', async () => {
@@ -1151,7 +1192,7 @@ describe('VertragFormular', () => {
       const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
         t.textContent?.replace(/\s+/g, ' ').trim(),
       );
-      expect(tabs.at(-1)).toBe('Preisverlauf 2, 2 Fehler');
+      expect(tabs[2]).toBe('Preisverlauf 2, 2 Fehler');
       expect(fehlerText('steigerungswert')).toBe('Bitte gib an, um wie viel der Preis steigt.');
 
       setzen('steigerungswert', '2,5');
@@ -1230,13 +1271,17 @@ describe('VertragFormular', () => {
       expect(rundung()).toBeNull();
     });
 
-    it('Erinnerung: bei Regel oder angekündigtem Preis, nicht bei „Nicht kündbar“', async () => {
+    it('Erinnerung im Tab Laufzeit: bei Regel oder angekündigtem Preis, nicht bei „Nicht kündbar“', async () => {
       const antwort = new ReplaySubject<VertragVorschauAntwort>(1);
       vorschau.mockReturnValue(antwort);
       const { el, host, einschalten, ankreuzen, absenden, pflichtfelderFuellen, feld, fixture } =
         await imTabPreise();
-      const erinnerung = () => el.querySelector('.erinnerung');
-      expect(erinnerung()).toBeNull();
+      const erinnerung = () =>
+        el.querySelector('[formcontrolname="erinnerungSonderkuendigung"]')?.closest('.ankreuzen');
+      expect(erinnerung()).toBeFalsy();
+      expect(el.querySelector('app-vertrag-tab-preise')?.textContent).not.toContain(
+        'Sonderkündigungsrecht',
+      );
 
       antwort.next(
         vorschauAntwort(KEINE, {
@@ -1253,17 +1298,22 @@ describe('VertragFormular', () => {
       );
       await new Promise((fertig) => setTimeout(fertig, 5));
       await fixture.whenStable();
-      expect(erinnerung()?.textContent).toContain('Vor jeder Preiserhöhung daran erinnern');
+      expect(erinnerung()?.closest('app-vertrag-tab-laufzeit')).not.toBeNull();
+      expect(erinnerung()?.textContent).toContain('An das Sonderkündigungsrecht erinnern');
+      expect(erinnerung()?.textContent).toContain(
+        'Vor jeder Preiserhöhung. Ob es gilt, steht meist im Ankündigungsschreiben.',
+      );
+      expect(feld('erinnerungSonderkuendigung').getAttribute('role')).toBe('switch');
 
       antwort.next(vorschauAntwort(KEINE));
       await einschalten();
       await new Promise((fertig) => setTimeout(fertig, 450));
       await fixture.whenStable();
-      expect(erinnerung()).not.toBeNull();
+      expect(erinnerung()).toBeTruthy();
       await ankreuzen('erinnerungSonderkuendigung');
 
       await ankreuzen('nichtKuendbar');
-      expect(erinnerung()).toBeNull();
+      expect(erinnerung()).toBeFalsy();
       // Ausgeblendet bleibt der Wert.
       feld('steigt').click();
       pflichtfelderFuellen();
@@ -1331,7 +1381,7 @@ describe('VertragFormular', () => {
       const tabs = [...el.querySelectorAll('[role="tab"]')].map((t) =>
         t.textContent?.replace(/\s+/g, ' ').trim(),
       );
-      expect(tabs).toEqual(['Allgemein', 'Kosten 3, 3 Fehler', 'Laufzeit', 'Preisverlauf']);
+      expect(tabs).toEqual(['Allgemein', 'Kosten 3, 3 Fehler', 'Preisverlauf', 'Laufzeit']);
       expect(zeilenFehler(0)).toBe('Bitte gib an, wofür die Kosten anfallen.');
       expect(eingabe(0, 'betrag').getAttribute('aria-invalid')).toBe('true');
       expect(document.activeElement).toBe(eingabe(0, 'bezeichnung'));
@@ -1605,7 +1655,7 @@ describe('VertragFormular', () => {
 
     it('belegt Regel und Garantie vor, in der Währung des Vertrags', async () => {
       TestBed.overrideProvider(LOCALE_ID, { useValue: 'de-DE' });
-      const { feld, el } = await offen({
+      const { feld } = await offen({
         ...VERTRAG,
         preisgarantieBis: '2026-12-31',
         preissteigerung: {
@@ -1621,9 +1671,8 @@ describe('VertragFormular', () => {
       expect(feld('rhythmus').value).toBe('HALBJAEHRLICH');
       expect(feld('naechsteErhoehungAm').value).toBe('2027-01-01');
       expect(feld('preisgarantieBis').value).toBe('2026-12-31');
-      expect(el.textContent).toContain('Erhöhung in $ *');
       const art = feld('steigerungsart') as unknown as HTMLSelectElement;
-      expect(art.selectedOptions[0].text).toBe('US-Dollar');
+      expect(art.selectedOptions[0].text).toBe('$');
     });
 
     describe('Preise', () => {

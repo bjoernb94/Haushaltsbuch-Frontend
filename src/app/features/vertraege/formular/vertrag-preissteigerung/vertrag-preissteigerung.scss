@@ -5,40 +5,30 @@
 
 .raster {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  // auto-fill statt auto-fit: Die Preisgarantie allein bleibt halb breit.
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  align-items: start;
   gap: $abstand-4;
 }
 
-// Schalter wie im Design: Ankreuzfeld mit role="switch".
-.ankreuzen {
+// „Erhöhung um“: Wert und daneben schmal die Einheit, wie im Design.
+.wert-und-einheit {
   display: flex;
-  align-items: flex-start;
-  gap: $abstand-3;
+  gap: $abstand-2;
 
   input {
-    flex: none;
-    width: 22px;
-    height: 22px;
-    margin: $abstand-3 0 0;
-    accent-color: var(--app-gruen);
-    cursor: pointer;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
-  > div {
-    display: flex;
-    flex-direction: column;
-    gap: $abstand-halb;
-  }
-
-  label {
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    font-size: $schrift-text;
-    font-weight: 700;
-    cursor: pointer;
+  select {
+    // Layoutmaß des Designs für „%“ oder ein Währungszeichen.
+    flex: 0 0 88px;
+    width: 88px;
   }
 }
+
+@include zeilen.schalterzeile;
 
 .prognose {
   // Die Blase des Info-Knopfs hängt an der Box.
@@ -61,43 +51,6 @@
 
   .leer {
     color: var(--app-text-gedaempft);
-  }
-}
-
-.erinnerung {
-  display: flex;
-  align-items: flex-start;
-  gap: $abstand-3;
-  padding: $abstand-3 $abstand-4;
-  border-radius: $radius-feld;
-  background: var(--app-info-grund);
-  color: var(--app-info-text);
-  font-size: $schrift-beschriftung;
-  line-height: 1.45;
-
-  svg {
-    flex: none;
-    margin-top: 1px;
-  }
-
-  > div {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: $abstand-2;
-  }
-
-  .ankreuzen {
-    gap: $abstand-3;
-
-    input {
-      margin: 1px 0 0;
-    }
-
-    label {
-      min-height: 0;
-      line-height: 1.5;
-    }
   }
 }
 
@@ -131,10 +84,4 @@
       outline-offset: 2px;
     }
   }
-}
-
-// Unter der Preisliste, abgesetzt wie im Design.
-:host {
-  padding-top: $abstand-4;
-  border-top: 1px solid var(--app-trenner-innen);
 }

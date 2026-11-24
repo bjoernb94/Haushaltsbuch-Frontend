@@ -3,18 +3,6 @@
 
 @include zeilen.grundlage;
 
-.abschnitt {
-  display: flex;
-  flex-direction: column;
-  gap: $abstand-1;
-
-  h3 {
-    margin: 0;
-    font-size: $schrift-text;
-    font-weight: 800;
-  }
-}
-
 .preise {
   @include zeilen.liste;
 }

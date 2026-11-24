@@ -71,8 +71,8 @@ function laufzeitKachel(v: VertragAntwort): { wert: string; zusatz: string } {
 const TABS = [
   { key: 'allgemein', label: 'Allgemein' },
   { key: 'kosten', label: 'Kosten' },
-  { key: 'laufzeit', label: 'Laufzeit' },
   { key: 'preise', label: 'Preisverlauf' },
+  { key: 'laufzeit', label: 'Laufzeit' },
 ] as const;
 
 type Tab = (typeof TABS)[number]['key'];
