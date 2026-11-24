@@ -43,6 +43,38 @@
   }
 }
 
+// Schalter mit Beschriftung und Hinweis rechts daneben, wie im Design (Baustein Schalter).
+@mixin schalterzeile {
+  @include formular.schalter;
+
+  .ankreuzen {
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: $abstand-3;
+
+    // Mittig zur ersten Zeile der Beschriftung (44 px hoch, Schalter 31 px).
+    .schalter {
+      margin-top: $abstand-2;
+    }
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: $abstand-halb;
+    }
+
+    label {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      font-size: $schrift-text;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  }
+}
+
 @mixin grundlage {
   @include feldtexte;
 

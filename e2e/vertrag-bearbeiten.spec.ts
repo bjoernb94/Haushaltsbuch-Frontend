@@ -19,7 +19,7 @@ async function bearbeiten(page: Page, name = KFZ) {
   return formular;
 }
 
-async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit' | 'Preisverlauf') {
+async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Preisverlauf' | 'Laufzeit') {
   await sheet(page)
     .getByRole('tab', { name: new RegExp(`^${name}`) })
     .click();
@@ -148,21 +148,22 @@ test.describe('Vertrag bearbeiten', () => {
     const formular = await bearbeiten(page, 'Software GmbH');
     await tab(page, 'Preisverlauf');
     await expect(formular.getByRole('switch', { name: 'Preis steigt regelmäßig' })).toBeChecked();
-    await expect(formular.getByLabel('Erhöhung in', { exact: true })).toHaveValue('BETRAG');
-    await expect(formular.getByLabel('Erhöhung in € *')).toHaveValue('1,00');
+    await expect(formular.getByLabel('Einheit der Erhöhung')).toHaveValue('BETRAG');
+    await expect(formular.getByLabel('Erhöhung um *')).toHaveValue('1,00');
+    await expect(formular.getByLabel('Preisgarantie bis')).toBeVisible();
     const prognose = formular.locator('.prognose > [role="status"]');
     await expect(prognose).toContainText(/ab 01\.01\.2027 voraussichtlich 6,00\s€/);
 
-    await formular.getByLabel('Erhöhung in', { exact: true }).selectOption('PROZENT');
-    await formular.getByLabel('Erhöhung in % *').fill('10');
+    await formular.getByLabel('Einheit der Erhöhung').selectOption({ label: '%' });
+    await formular.getByLabel('Erhöhung um *').fill('10');
     await formular.getByLabel('Rhythmus').selectOption({ label: 'alle 2 Jahre' });
     await formular.getByLabel('Erste Erhöhung am *').fill('2027-01-01');
     await expect(prognose).toContainText(/ab 01\.01\.2029 voraussichtlich 6,05\s€/);
     await formular.getByLabel('Preisgarantie bis').fill('2028-12-31');
     await expect(prognose).not.toContainText('01.01.2027');
-    await formular
-      .getByRole('switch', { name: 'Vor jeder Preiserhöhung daran erinnern' })
-      .uncheck();
+    await expect(formular.getByText('Sonderkündigungsrecht')).toBeHidden();
+    await tab(page, 'Laufzeit');
+    await formular.getByRole('switch', { name: 'An das Sonderkündigungsrecht erinnern' }).uncheck();
 
     expect(await speichernUndAnfrageLesen(page)).toMatchObject({
       preisgarantieBis: '2028-12-31',
@@ -184,14 +185,23 @@ test.describe('Vertrag bearbeiten', () => {
     page,
   }) => {
     const formular = await bearbeiten(page, KFZ);
+    const erinnerung = formular.getByRole('switch', {
+      name: 'An das Sonderkündigungsrecht erinnern',
+    });
+    await tab(page, 'Laufzeit');
+    await expect(erinnerung).toHaveCount(0);
     await tab(page, 'Preisverlauf');
-    await expect(formular.getByText('Vor jeder Preiserhöhung daran erinnern')).toHaveCount(0);
+    await expect(formular.getByLabel('Preisgarantie bis')).toBeVisible();
     await formular.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
-    await expect(formular.getByText('Vor jeder Preiserhöhung daran erinnern')).toBeVisible();
+    await tab(page, 'Laufzeit');
+    await expect(erinnerung).toBeVisible();
+    await expect(erinnerung).toHaveAccessibleDescription(
+      'Vor jeder Preiserhöhung. Ob es gilt, steht meist im Ankündigungsschreiben.',
+    );
     await sheet(page).getByRole('button', { name: 'Sichern' }).click();
     await expect(sheet(page).getByRole('tab', { name: /^Preisverlauf.*2 Fehler$/ })).toBeVisible();
-    await expect(formular.getByLabel('Erhöhung in % *')).toBeFocused();
-    await expect(formular.getByLabel('Erhöhung in % *')).toHaveAccessibleDescription(
+    await expect(formular.getByLabel('Erhöhung um *')).toBeFocused();
+    await expect(formular.getByLabel('Erhöhung um *')).toHaveAccessibleDescription(
       'Bitte gib an, um wie viel der Preis steigt.',
     );
 
@@ -251,7 +261,7 @@ test.describe('Vertrag bearbeiten', () => {
       sheet(page)
         .getByRole('tablist', { name: 'Bereiche des Vertrags bearbeiten' })
         .getByRole('tab'),
-    ).toHaveText(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
+    ).toHaveText(['Allgemein', 'Kosten', 'Preisverlauf', 'Laufzeit']);
     await expect(sheet(page).getByRole('complementary')).toHaveCount(0);
     // Abbrechen und Sichern stehen nur in der Leiste.
     await expect(formular.getByRole('button', { name: 'Speichern' })).toBeHidden();
@@ -574,6 +584,33 @@ test.describe('Vertrag bearbeiten', () => {
       const breite = await page.evaluate(() => document.documentElement.scrollWidth);
       expect(breite).toBeLessThanOrEqual(320);
     });
+  });
+
+  test('am Desktop so hoch wie der Inhalt, mindestens 600 px, lange Tabs scrollen', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    const formular = await bearbeiten(page, 'Software GmbH');
+    const hoehe = async () => (await sheet(page).boundingBox())!.height;
+    // Allgemein ist kurz: so hoch wie der Inhalt statt 92 % des Fensters, nicht unter der Mindesthöhe.
+    const allgemein = await hoehe();
+    expect(allgemein).toBeGreaterThanOrEqual(600);
+    expect(allgemein).toBeLessThan(920);
+    expect(
+      await sheet(page)
+        .locator('.inhalt')
+        .evaluate((e) => e.scrollHeight > e.clientHeight),
+    ).toBe(false);
+
+    // Preisverlauf mit Erhöhung ist länger als das Fenster: höchstens 92vh, das Formular scrollt.
+    await tab(page, 'Preisverlauf');
+    await expect(formular.getByLabel('Erhöhung um *')).toBeVisible();
+    await expect.poll(hoehe).toBe(920);
+    const inhalt = sheet(page).locator('.inhalt');
+    expect(await inhalt.evaluate((e) => e.scrollHeight > e.clientHeight)).toBe(true);
+    await inhalt.evaluate((e) => e.scrollTo(0, e.scrollHeight));
+    await expect(sheet(page).getByRole('button', { name: 'Sichern' })).toBeInViewport();
   });
 
   test('auf dem Handy: Vollbild aus den Details, Sichern in der Leiste', async ({ page }) => {

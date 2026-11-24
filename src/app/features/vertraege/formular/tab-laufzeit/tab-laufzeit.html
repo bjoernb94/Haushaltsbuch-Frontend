@@ -3,7 +3,9 @@
   <div class="ankreuzen">
     <input
       [id]="id('nichtKuendbar')"
+      class="schalter"
       type="checkbox"
+      role="switch"
       formControlName="nichtKuendbar"
       [attr.aria-describedby]="id('nichtKuendbar') + '-hinweis'"
     />
@@ -75,6 +77,26 @@
       <b>Nächster Kündigungstermin:</b>
       <span>{{ vorschauText() }}</span>
     </div>
+    @if (erinnerung()) {
+      <div class="ankreuzen">
+        <input
+          [id]="id('erinnerungSonderkuendigung')"
+          class="schalter"
+          type="checkbox"
+          role="switch"
+          formControlName="erinnerungSonderkuendigung"
+          [attr.aria-describedby]="id('erinnerungSonderkuendigung') + '-hinweis'"
+        />
+        <div>
+          <label [for]="id('erinnerungSonderkuendigung')"
+            >An das Sonderkündigungsrecht erinnern</label
+          >
+          <span class="feldhinweis" [id]="id('erinnerungSonderkuendigung') + '-hinweis'"
+            >Vor jeder Preiserhöhung. Ob es gilt, steht meist im Ankündigungsschreiben.</span
+          >
+        </div>
+      </div>
+    }
   }
 </fieldset>
 
@@ -84,7 +106,9 @@
     <div class="ankreuzen">
       <input
         [id]="id('gekuendigt')"
+        class="schalter"
         type="checkbox"
+        role="switch"
         formControlName="gekuendigt"
         [attr.aria-describedby]="id('gekuendigt') + '-hinweis'"
       />

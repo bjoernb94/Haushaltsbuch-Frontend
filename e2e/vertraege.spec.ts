@@ -322,8 +322,8 @@ test.describe('Seite Verträge', () => {
       await expect(tabs.getByRole('tab')).toHaveText([
         'Allgemein',
         'Kosten',
-        'Laufzeit',
         'Preisverlauf',
+        'Laufzeit',
       ]);
       await tabsEinzeilig(tabs);
     });
@@ -356,6 +356,9 @@ test.describe('Seite Verträge', () => {
       await expect(page).toHaveURL(/\/vertraege\/kfz\?tab=kosten$/);
       await expect(panel.getByRole('tabpanel')).toContainText('Lastschrift');
       await panel.getByRole('tab', { name: 'Kosten' }).press('ArrowRight');
+      await expect(panel.getByRole('tab', { name: 'Preisverlauf' })).toBeFocused();
+      await expect(page).toHaveURL(/\?tab=preise$/);
+      await panel.getByRole('tab', { name: 'Preisverlauf' }).press('ArrowRight');
       await expect(panel.getByRole('tab', { name: 'Laufzeit' })).toBeFocused();
       await expect(page).toHaveURL(/\?tab=laufzeit$/);
       await expect(panel.getByRole('tabpanel')).toContainText('Kündigungsfrist');

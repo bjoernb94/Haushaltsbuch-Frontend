@@ -1,4 +1,4 @@
-// Ein Tab des Vertragsformulars: Abschnitte mit Feldern, Ankreuzfeldern und Vorschau-Zeilen.
+// Ein Tab des Vertragsformulars: Abschnitte mit Feldern, Schaltern und Vorschau-Zeilen.
 @use 'zeilen';
 @use 'masse' as *;
 
@@ -69,33 +69,4 @@ legend {
   }
 }
 
-.ankreuzen {
-  min-width: 0;
-  display: flex;
-  align-items: flex-start;
-  gap: $abstand-3;
-
-  input {
-    flex: none;
-    width: 22px;
-    height: 22px;
-    margin: $abstand-3 0 0;
-    accent-color: var(--app-gruen);
-    cursor: pointer;
-  }
-
-  > div {
-    display: flex;
-    flex-direction: column;
-    gap: $abstand-halb;
-  }
-
-  label {
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    font-size: $schrift-text;
-    font-weight: 700;
-    cursor: pointer;
-  }
-}
+@include zeilen.schalterzeile;
