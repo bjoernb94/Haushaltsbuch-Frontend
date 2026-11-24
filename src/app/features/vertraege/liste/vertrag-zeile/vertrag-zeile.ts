@@ -65,6 +65,7 @@ export class VertragZeile {
 
   readonly details = output();
   readonly bearbeiten = output();
+  readonly wiederaufnehmen = output();
   readonly loeschen = output();
 
   protected readonly menueId = `zeilenmenue-${++letzteZeile}`;
@@ -75,6 +76,7 @@ export class VertragZeile {
 
   protected readonly name = computed(() => vertragName(this.vertrag()));
   protected readonly beendet = computed(() => vorbei(this.vertrag().berechnet));
+  protected readonly wiederaufnehmbar = computed(() => !!this.vertrag().berechnet.wiederaufnahme);
   protected readonly kuendigung = computed(() =>
     kuendigungAnzeige(this.vertrag().berechnet.kuendigung),
   );
@@ -147,7 +149,7 @@ export class VertragZeile {
     }
   }
 
-  protected waehlen(aktion: 'details' | 'bearbeiten' | 'loeschen'): void {
+  protected waehlen(aktion: 'details' | 'bearbeiten' | 'wiederaufnehmen' | 'loeschen'): void {
     this.menueSchliessen();
     this[aktion].emit();
   }

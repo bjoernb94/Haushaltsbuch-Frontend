@@ -1,0 +1,127 @@
+<form
+  [id]="formularId"
+  class="felder"
+  [formGroup]="formular()"
+  (ngSubmit)="absenden.emit()"
+  novalidate
+>
+  @if (allgemeinerFehler()) {
+    <div class="hinweis" tabindex="-1">
+      <app-hinweis-box [text]="fehlerSenden" />
+    </div>
+  }
+
+  <div class="feld">
+    <label for="wieder-datum">Wieder aufgenommen am *</label>
+    <input
+      id="wieder-datum"
+      type="date"
+      formControlName="datum"
+      [attr.aria-invalid]="!!fehlerText('datum')"
+      [attr.aria-describedby]="beschreibung('datum', true)"
+    />
+    @if (fehlerText('datum'); as text) {
+      <p class="feldfehler" id="wieder-datum-fehler">{{ text }}</p>
+    }
+    <span class="feldhinweis" id="wieder-datum-hinweis">Frühestens am {{ fruehestens() }}.</span>
+  </div>
+
+  @if (vertrag().kuendbar) {
+    <fieldset>
+      <legend>Laufzeit ab dann</legend>
+      <div class="feld">
+        <label for="wieder-verlaengerung">Verlängerung *</label>
+        <select
+          id="wieder-verlaengerung"
+          formControlName="verlaengerung"
+          [attr.aria-invalid]="!!fehlerText('verlaengerung')"
+          [attr.aria-describedby]="beschreibung('verlaengerung')"
+        >
+          <option value="">Bitte wählen</option>
+          @for (option of verlaengerungen; track option.wert) {
+            <option [value]="option.wert">{{ option.text }}</option>
+          }
+        </select>
+        @if (fehlerText('verlaengerung'); as text) {
+          <p class="feldfehler" id="wieder-verlaengerung-fehler">{{ text }}</p>
+        }
+      </div>
+      <div class="raster">
+        <div class="feld">
+          <label for="wieder-laufzeitende"
+            >Laufzeitende <span class="optional">(optional)</span></label
+          >
+          <input
+            id="wieder-laufzeitende"
+            type="date"
+            formControlName="laufzeitende"
+            [attr.aria-invalid]="!!fehlerText('laufzeitende')"
+            [attr.aria-describedby]="beschreibung('laufzeitende')"
+          />
+          @if (fehlerText('laufzeitende'); as text) {
+            <p class="feldfehler" id="wieder-laufzeitende-fehler">{{ text }}</p>
+          }
+        </div>
+        <div class="feld">
+          <label for="wieder-kuendigungsfristMonate">Kündigungsfrist</label>
+          <select
+            id="wieder-kuendigungsfristMonate"
+            formControlName="kuendigungsfristMonate"
+            [attr.aria-invalid]="!!fehlerText('kuendigungsfristMonate')"
+            [attr.aria-describedby]="beschreibung('kuendigungsfristMonate')"
+          >
+            <option value="">Bitte wählen</option>
+            @for (option of fristen(); track option.wert) {
+              <option [value]="option.wert">{{ option.text }}</option>
+            }
+          </select>
+          @if (fehlerText('kuendigungsfristMonate'); as text) {
+            <p class="feldfehler" id="wieder-kuendigungsfristMonate-fehler">{{ text }}</p>
+          }
+        </div>
+      </div>
+    </fieldset>
+  }
+
+  <fieldset>
+    <legend>Preis</legend>
+    <div class="feld betrag">
+      <label for="wieder-betrag"
+        >Neuer Betrag in {{ waehrung() }} <span class="optional">(optional)</span></label
+      >
+      <input
+        id="wieder-betrag"
+        type="text"
+        inputmode="decimal"
+        formControlName="betrag"
+        [placeholder]="platzhalter()"
+        [attr.aria-invalid]="!!fehlerText('betrag')"
+        [attr.aria-describedby]="beschreibung('betrag', true)"
+      />
+      @if (fehlerText('betrag'); as text) {
+        <p class="feldfehler" id="wieder-betrag-fehler">{{ text }}</p>
+      }
+      <span class="feldhinweis" id="wieder-betrag-hinweis"
+        >Nur nötig, wenn sich der Preis bei der Wiederaufnahme ändert.</span
+      >
+    </div>
+  </fieldset>
+
+  <div class="aktionen">
+    <button type="button" class="knopf knopf-sekundaer" (click)="abbrechen.emit()">
+      Abbrechen
+    </button>
+    <button
+      type="submit"
+      class="knopf knopf-primaer"
+      [disabled]="sendet()"
+      [attr.aria-busy]="sendet()"
+    >
+      @if (sendet()) {
+        Wird gespeichert …
+      } @else {
+        Wieder aufnehmen
+      }
+    </button>
+  </div>
+</form>

@@ -19,7 +19,8 @@ import { VertragFormular } from '../vertrag-formular';
 import { vertragName } from '../../vertrag-texte';
 import { VertraegeSeite } from '../../liste/vertraege-seite';
 import { VertragNavigation } from '../../liste/vertrag-navigation';
-import { VertragEingabe, VertragService } from '../../vertrag.service';
+import { VertragService } from '../../vertrag.service';
+import { VertragSpeichern } from '../vertrag-pruefung';
 
 /**
  * Bearbeiten als Sheet (Route {@code :id/bearbeiten} unter den Details): am Desktop in der
@@ -110,12 +111,16 @@ export class VertragBearbeiten {
     }
   }
 
-  protected speichern(eingabe: Required<VertragEingabe>): void {
+  protected speichern(eingabe: VertragSpeichern): void {
     const vertrag = this.vertrag();
     if (!vertrag) {
       return;
     }
-    const aenderung = { ...eingabe, version: vertrag.version };
+    const aenderung = {
+      ...eingabe,
+      version: vertrag.version,
+      unterbrechungIds: eingabe.unterbrechungIds ?? [],
+    };
     this.sendet.set(true);
     this.speicherfehler.set(null);
     this.vertraege

@@ -193,6 +193,7 @@ describe('VertragFormular', () => {
       kuendigungsfristMonate: null,
       gekuendigtZum: null,
       preissteigerungBetrachtetBis: null,
+      unterbrechungen: [],
     };
     const fehler400 = () => validierung(['laufzeitende', 'LaufzeitendeNachBeginn']);
 
@@ -1513,7 +1514,10 @@ describe('VertragFormular', () => {
       kuendigungsfristMonate: 4,
       gekuendigtZum: '2027-06-30',
       notiz: null,
+      unterbrechungen: [],
       berechnet: {
+        aktuellerBeginn: '2026-01-31',
+        wiederaufnahme: null,
         status: 'GEKUENDIGT',
         kostenProMonat: { wert: 586.8, waehrung: 'USD' },
         kostenImJahr: { wert: 7041.6, waehrung: 'USD' },

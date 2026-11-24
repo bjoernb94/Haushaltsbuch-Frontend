@@ -29,6 +29,7 @@ const TAB_VON: Record<EinzelFeld, TabKey> = {
   gekuendigt: 'laufzeit',
   gekuendigtZum: 'laufzeit',
   erinnerungSonderkuendigung: 'laufzeit',
+  entfernteUnterbrechungen: 'laufzeit',
   preisgarantieBis: 'preise',
   steigt: 'preise',
   steigerungsart: 'preise',
