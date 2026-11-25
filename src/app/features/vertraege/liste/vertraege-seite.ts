@@ -249,7 +249,7 @@ export class VertraegeSeite {
       event.altKey ||
       event.repeat ||
       event.defaultPrevented ||
-      this.ansicht()?.bearbeiten ||
+      this.ansicht()?.sheet ||
       this.loeschFrage() ||
       this.ungespeichert.frageOffen()
     ) {
@@ -368,7 +368,8 @@ export class VertraegeSeite {
       : { id: vertraege[index - 1]?.id ?? null, abgesetzt: true, unten: true };
   }
 
-  private nachAenderung(meldung: Meldung): void {
+  /** Meldung setzen und neu laden, z. B. nach dem Wiederaufnehmen. */
+  nachAenderung(meldung: Meldung): void {
     this.meldung.set(meldung);
     this.laden(true);
   }

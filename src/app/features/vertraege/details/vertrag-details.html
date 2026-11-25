@@ -64,6 +64,10 @@
         </div>
       }
 
+      @if (ende(); as text) {
+        <app-wiederaufnahme-leiste [text]="text" (wiederaufnehmen)="wiederaufnehmen()" />
+      }
+
       <div class="kacheln">
         @for (kachel of kacheln(); track kachel.label) {
           <div class="kachel">
@@ -108,6 +112,9 @@
             </div>
           }
         </dl>
+        @if (aktiverTab() === 'laufzeit' && vertrag()!.unterbrechungen.length) {
+          <app-vertrag-unterbrechungen [unterbrechungen]="vertrag()!.unterbrechungen" />
+        }
         @if (aktiverTab() === 'kosten') {
           <app-vertrag-einmalkosten [vertrag]="vertrag()!" />
         }

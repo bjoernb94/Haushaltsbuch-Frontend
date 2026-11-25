@@ -1,0 +1,89 @@
+// Unterbrechungen beim Bearbeiten: Liste mit „Entfernen“, darunter die zum Entfernen markierten.
+@use 'masse' as *;
+
+.unterbrechungen {
+  gap: $abstand-3;
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--app-trenner-innen);
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $abstand-3;
+    padding: $abstand-2 0;
+    border-bottom: 1px solid var(--app-trenner-innen);
+    font-size: $schrift-text;
+  }
+}
+
+.angaben {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-halb;
+}
+
+.zeitraum {
+  font-weight: 700;
+}
+
+.art {
+  font-size: $schrift-beschriftung;
+  color: var(--app-text-gedaempft);
+}
+
+.entfernen,
+.rueckgaengig {
+  flex: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: $abstand-2;
+  padding: 0 $abstand-3;
+  font: inherit;
+  font-size: $schrift-beschriftung;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
+  }
+}
+
+.entfernen {
+  border: 1.5px solid var(--app-fehler-rand);
+  border-radius: $radius-feld;
+  background: var(--app-flaeche);
+  color: var(--app-fehler);
+}
+
+.rueckgaengig {
+  border: 0;
+  border-radius: $radius-mittel;
+  background: transparent;
+  color: var(--app-gruen);
+}
+
+.entfernt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $abstand-2 $abstand-3;
+  padding: $abstand-2 $abstand-3 $abstand-2 $abstand-4;
+  border: 1px dashed var(--app-trenner);
+  border-radius: $radius-feld;
+  font-size: $schrift-beschriftung;
+  // Zeilenhöhe wie im Design.
+  line-height: 1.45;
+  color: var(--app-text-gedaempft);
+}

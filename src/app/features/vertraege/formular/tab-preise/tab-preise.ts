@@ -25,8 +25,9 @@ const PROGNOSE_UNVOLLSTAENDIG =
 const PROGNOSE_KEINE = 'Bis zum Vertragsende ist keine Erhöhung zu erwarten.';
 
 /**
- * Tab Preisverlauf des Vertragsformulars: Preisliste (mit Etiketten und neuen Stufen aus der Vorschau)
- * und Preissteigerung mit Prognose aus der Vorschau. Die Zeilen der Preisliste fügt das Formular hinzu und entfernt sie.
+ * Tab Preisverlauf des Vertragsformulars in zwei Abschnitten: „Preise“ (Preisliste mit Etiketten und
+ * neuen Stufen aus der Vorschau) und „Künftige Erhöhungen“ (Preissteigerung mit Prognose aus der
+ * Vorschau). Die Zeilen der Preisliste fügt das Formular hinzu und entfernt sie.
  */
 @Component({
   selector: 'app-vertrag-tab-preise',
@@ -41,8 +42,6 @@ export class VertragTabPreise extends VertragTab {
   readonly preise = input.required<FormArray<PreisZeile>>();
   /** Zeichen der Währung für die Bezeichnungen, z. B. „€“. */
   readonly waehrung = input.required<string>();
-  /** Name der Währung für die Auswahl, z. B. „Euro“. */
-  readonly waehrungName = input.required<string>();
   readonly werte = input.required<VertragWerte>();
   readonly vorschau = input.required<VertragVorschauAntwort | null>();
   /** Die automatischen Preise des gespeicherten Stands (Kennzeichen in der Liste). */
@@ -76,14 +75,5 @@ export class VertragTabPreise extends VertragTab {
       ({ ab, betrag }) => `ab ${datumText(ab)} voraussichtlich ${betragText(betrag, this.locale)}`,
     );
     return { zeilen, hinweis: zeilen.length ? null : PROGNOSE_KEINE };
-  });
-
-  /** Wie im Design: bei kündbaren Verträgen mit Regel oder angekündigtem Preis (laut Vorschau). */
-  protected readonly erinnerung = computed(() => {
-    const w = this.werte();
-    return (
-      !w.nichtKuendbar &&
-      (w.steigt || !!this.vorschau()?.preise.some(({ art }) => art === 'ANGEKUENDIGT'))
-    );
   });
 }

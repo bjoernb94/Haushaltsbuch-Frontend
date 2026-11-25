@@ -5,12 +5,14 @@ import {
   Preisaenderung,
   Preiszeilenart,
   Prognosepreis,
+  Unterbrechungsart,
   Verlaengerung,
   VertragPreissteigerungAntwort,
   VertragAntwort,
   VertragPreisAntwort,
   VertragKategorieAntwort,
   VertragKategorieSchluessel,
+  VertragUnterbrechungAntwort,
   Vertragsstatus,
   Zahlungsweg,
   Zahlweise,
@@ -47,6 +49,7 @@ export const ZAHLUNGSWEG_TEXT: Record<Zahlungsweg, string> = {
   LASTSCHRIFT: 'Lastschrift',
   KREDITKARTE: 'Kreditkarte',
   PAYPAL: 'PayPal',
+  WERO: 'Wero',
   UEBERWEISUNG: 'Überweisung',
   DAUERAUFTRAG: 'Dauerauftrag',
 };
@@ -62,6 +65,7 @@ export const STATUS_TEXT: Record<Vertragsstatus, string> = {
   NICHT_BEGONNEN: 'Noch nicht begonnen',
   AKTIV: 'Aktiv',
   GEKUENDIGT: 'Gekündigt',
+  UNTERBROCHEN: 'Unterbrochen',
   BEENDET: 'Beendet',
   STORNIERT: 'Storniert',
 };
@@ -131,6 +135,11 @@ const KUENDIGUNG_ANZEIGE: Record<Kuendigungsart, (k: Kuendigung) => KuendigungAn
     zusatz: '',
     ton: 'info',
   }),
+  WIEDER_AB: (k) => ({
+    text: `Wieder ab ${datumText(k.zum)}`,
+    zusatz: 'Gekündigt, wird wieder aufgenommen',
+    ton: 'info',
+  }),
   BEENDET: () => ({ text: 'Beendet', zusatz: '', ton: 'neutral' }),
   STORNIERT: () => ({ text: 'Storniert', zusatz: '', ton: 'neutral' }),
 };
@@ -195,24 +204,54 @@ export function prognoseText({ ab, betrag }: Prognosepreis, locale: string): str
   return `ab ${datumText(ab)}: ${betragText(betrag, locale)} · Prognose`;
 }
 
-/** Statt „Beginn – Ende“: Status und Vertragsende kommen vom Backend (ADR 0010). */
+/**
+ * Statt „Beginn – Ende“: Status, Vertragsende, Tag der Wiederaufnahme ({@code kuendigung.zum}) und
+ * aktueller Beginn kommen vom Backend (ADR 0010). Beendete zeigen die ganze Zeit ab {@code beginn}.
+ */
 export function laufzeitZeile({ beginn, berechnet }: VertragAntwort): string {
   switch (berechnet.status) {
     case 'NICHT_BEGONNEN':
       return `Beginnt am ${datumText(beginn)}`;
+    case 'UNTERBROCHEN':
+      return `Gekündigt, wieder ab ${datumText(berechnet.kuendigung.zum)}`;
     case 'BEENDET':
       return `${datumText(beginn)} – ${datumText(berechnet.vertragsende)}`;
     case 'STORNIERT':
       return `Storniert, Beginn wäre ${datumText(beginn)}`;
     default:
-      return `Seit ${datumText(beginn)}`;
+      return berechnet.aktuellerBeginn > beginn
+        ? `Wieder seit ${datumText(berechnet.aktuellerBeginn)}`
+        : `Seit ${datumText(beginn)}`;
   }
 }
 
-/** Beendet oder storniert: in der Liste ausgegraut. */
+/** Beendet, storniert oder unterbrochen: in der Liste ausgegraut. */
 export function vorbei({ status }: VertragAntwort['berechnet']): boolean {
-  return status === 'BEENDET' || status === 'STORNIERT';
+  return status === 'BEENDET' || status === 'STORNIERT' || status === 'UNTERBROCHEN';
 }
+
+/** „Gekündigt zum 31.05.2026.“ bzw. „Beendet am …“ für einen Vertrag, der sich wieder aufnehmen lässt. */
+export function endeText({ status, vertragsende }: VertragAntwort['berechnet']): string {
+  return `${status === 'BEENDET' ? 'Beendet am' : 'Gekündigt zum'} ${datumText(vertragsende)}.`;
+}
+
+export const UNTERBRECHUNG_ART_TEXT: Record<Unterbrechungsart, string> = {
+  KUENDIGUNG: 'Gekündigt, danach wieder aufgenommen',
+};
+
+/** „01.06.2025 – 31.08.2025“. */
+export function zeitraumText({
+  von,
+  bis,
+}: Pick<VertragUnterbrechungAntwort, 'von' | 'bis'>): string {
+  return `${datumText(von)} – ${datumText(bis)}`;
+}
+
+/** Info an „Unterbrechungen“ in den Details. */
+export const INFO_UNTERBRECHUNG = [
+  'In einer Unterbrechung wird nichts abgebucht.',
+  'Preise und Erhöhungen gelten nach Kalender weiter.',
+];
 
 /** Info zu einer Kennzahl, wenn das Backend {@code hatAnteile} meldet. */
 export const INFO_NUR_ANTEIL = 'Bei geteilten Verträgen zählt nur dein Anteil.';

@@ -7,8 +7,12 @@ import { filter, map } from 'rxjs';
 /** Was die Kind-Routen gerade zeigen. */
 export interface Ansicht {
   id: string;
-  bearbeiten: boolean;
+  /** Über den Details liegt ein Sheet: Bearbeiten oder Wieder aufnehmen. */
+  sheet: boolean;
 }
+
+/** Die Kind-Routen der Details, die als Sheet darüber liegen. */
+const SHEETS = ['bearbeiten', 'wiederaufnehmen'];
 
 /**
  * Im Navigations-State: Diese Seite hat den Eintrag selbst geöffnet, der vorige im Verlauf ist also
@@ -20,8 +24,8 @@ const INTERN = 'intern';
 const NEUER_PREIS = 'neuerPreis';
 
 /**
- * Öffnen und Schließen der Kind-Routen der Vertragsliste, Details ({@code :id}) und Bearbeiten
- * ({@code :id/bearbeiten}), sodass die Zurück-Taste schließt und geteilte Links funktionieren. Die
+ * Öffnen und Schließen der Kind-Routen der Vertragsliste, Details ({@code :id}), Bearbeiten
+ * ({@code :id/bearbeiten}) und Wieder aufnehmen ({@code :id/wiederaufnehmen}), sodass die Zurück-Taste schließt und geteilte Links funktionieren. Die
  * Liste stellt sie bereit, ihre Kinder nutzen dieselbe.
  */
 @Injectable()
@@ -37,7 +41,7 @@ export class VertragNavigation {
     { initialValue: this.ansichtDerRoute() },
   );
 
-  /** Details oder Bearbeiten schließen sich gerade; sie sollen bis dahin nichts mehr melden. */
+  /** Details oder ein Sheet schließen sich gerade; sie sollen bis dahin nichts mehr melden. */
   readonly schliesst = signal(false);
 
   constructor() {
@@ -67,6 +71,10 @@ export class VertragNavigation {
     );
   }
 
+  wiederaufnehmen(id: string): void {
+    this.oeffnen(['/vertraege', id, 'wiederaufnehmen'], false);
+  }
+
   /** Für Bearbeiten: Kam es über „Preis hinzufügen“? */
   neuerPreis(): boolean {
     return !!(this.location.getState() as Record<string, unknown> | null)?.[NEUER_PREIS];
@@ -83,7 +91,7 @@ export class VertragNavigation {
   }
 
   /**
-   * Schließt Details oder Bearbeiten: zurück im Verlauf, wenn diese Seite sie geöffnet hat (so führt
+   * Schließt Details oder ein Sheet: zurück im Verlauf, wenn diese Seite sie geöffnet hat (so führt
    * die Zurück-Taste nicht wieder hinein), sonst nach {@code ziel}. Ungespeicherte Eingaben fragt der
    * Guard der Route.
    */
@@ -115,7 +123,7 @@ export class VertragNavigation {
       route = route.firstChild;
       const id = route.paramMap.get('id');
       if (id) {
-        return { id, bearbeiten: route.firstChild?.routeConfig?.path === 'bearbeiten' };
+        return { id, sheet: SHEETS.includes(route.firstChild?.routeConfig?.path ?? '') };
       }
     }
     return null;

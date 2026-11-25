@@ -100,6 +100,11 @@
       <button type="button" class="eintrag" role="menuitem" (click)="waehlen('bearbeiten')">
         Bearbeiten …
       </button>
+      @if (wiederaufnehmbar()) {
+        <button type="button" class="eintrag" role="menuitem" (click)="waehlen('wiederaufnehmen')">
+          Wieder aufnehmen …
+        </button>
+      }
       <div class="trenner" role="separator"></div>
       <button type="button" class="eintrag gefahr" role="menuitem" (click)="waehlen('loeschen')">
         Löschen …

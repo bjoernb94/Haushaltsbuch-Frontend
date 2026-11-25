@@ -48,12 +48,13 @@ const LEER = {
   preissteigerung: null,
   preisgarantieBis: null,
   erinnerungSonderkuendigung: true,
+  unterbrechungen: [] as VertragAntwort['unterbrechungen'],
 } as const;
 
 /** Was in `berechnet` für diese Tests keine Rolle spielt. */
 const BERECHNET: Omit<
   VertragAntwort['berechnet'],
-  'status' | 'kostenProMonat' | 'kostenImJahr' | 'kuendigung'
+  'status' | 'kostenProMonat' | 'kostenImJahr' | 'kuendigung' | 'aktuellerBeginn'
 > = {
   kostenImJahrMitPrognose: false,
   jahr: 2026,
@@ -63,6 +64,7 @@ const BERECHNET: Omit<
   preisverlauf: [],
   prognose: [],
   vertragsende: null,
+  wiederaufnahme: null,
 };
 
 const KEINE_KUENDIGUNG = {
@@ -90,6 +92,7 @@ const JAEHRLICH: VertragAntwort = {
   preise: [{ gueltigAb: '2023-01-01', betrag: EUR(586.8), art: 'AKTUELL', automatisch: false }],
   berechnet: {
     ...BERECHNET,
+    aktuellerBeginn: '2023-01-01',
     status: 'AKTIV',
     kostenProMonat: EUR(48.9),
     kostenImJahr: EUR(586.8),
@@ -109,6 +112,7 @@ const BEENDET: VertragAntwort = {
   anbieter: 'Alt GmbH',
   berechnet: {
     ...BERECHNET,
+    aktuellerBeginn: '2025-01-01',
     status: 'BEENDET',
     kostenProMonat: EUR(10),
     kostenImJahr: EUR(120),
@@ -124,6 +128,7 @@ const PFLICHT: VertragAntwort = {
   kuendbar: false,
   berechnet: {
     ...BERECHNET,
+    aktuellerBeginn: '2025-01-01',
     status: 'AKTIV',
     kostenProMonat: EUR(10),
     kostenImJahr: EUR(120),
@@ -141,6 +146,7 @@ const SPAETER: VertragAntwort = {
   verlaengerung: 'KEINE',
   berechnet: {
     ...BERECHNET,
+    aktuellerBeginn: '2027-03-01',
     status: 'NICHT_BEGONNEN',
     kostenProMonat: EUR(10),
     kostenImJahr: EUR(0),
@@ -158,6 +164,7 @@ const STORNIERT: VertragAntwort = {
   gekuendigtZum: '2027-02-28',
   berechnet: {
     ...BERECHNET,
+    aktuellerBeginn: '2027-03-01',
     status: 'STORNIERT',
     kostenProMonat: EUR(10),
     kostenImJahr: EUR(0),
@@ -540,7 +547,7 @@ describe('VertraegeSeite', () => {
       expect(document.activeElement).toBe(tippen);
     });
 
-    it('zeigt Kacheln und die Tabs Allgemein, Kosten, Laufzeit und Preisverlauf', async () => {
+    it('zeigt Kacheln und die Tabs Allgemein, Kosten, Preisverlauf und Laufzeit', async () => {
       const { element, stabil, url, info } = await seite('/vertraege/kfz');
       expect([...element.querySelectorAll('.kachel')].map(text)).toEqual([
         'Pro Monat48,90 €',
@@ -551,7 +558,7 @@ describe('VertraegeSeite', () => {
       expect(element.querySelectorAll('.kachel button[aria-label^="Info zu"]')).toHaveLength(1);
       expect(await info('Pro Monat')).toEqual([INFO_RUNDUNG_DETAILS]);
       const tabs = [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-      expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
+      expect(tabs.map(text)).toEqual(['Allgemein', 'Kosten', 'Preisverlauf', 'Laufzeit']);
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
       expect(element.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
         tabs[0].id,
@@ -576,6 +583,10 @@ describe('VertraegeSeite', () => {
 
       tabs[2].click();
       await stabil();
+      expect(url()).toBe('/vertraege/kfz?tab=preise');
+
+      tabs[3].click();
+      await stabil();
       expect(url()).toBe('/vertraege/kfz?tab=laufzeit');
       expect(eintraege(element)).toEqual({
         Vertragsbeginn: '01.01.2023',
@@ -596,7 +607,7 @@ describe('VertraegeSeite', () => {
       const tabs = () => [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
       tabs()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
       await stabil();
-      expect(url()).toBe('/vertraege/kfz?tab=preise');
+      expect(url()).toBe('/vertraege/kfz?tab=laufzeit');
       expect(document.activeElement).toBe(tabs()[3]);
       expect(tabs().map((t) => t.tabIndex)).toEqual([-1, -1, -1, 0]);
     });

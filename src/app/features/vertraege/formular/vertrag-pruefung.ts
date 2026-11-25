@@ -3,6 +3,7 @@ import {
   Erhoehungsrhythmus,
   Feldfehler,
   Steigerungsart,
+  VertragAenderung,
   Verlaengerung,
   VertragAntwort,
   VertragVorschauAnfrage,
@@ -15,6 +16,11 @@ import {
   PreissteigerungEingabe,
   VertragEingabe,
 } from '../vertrag.service';
+import {
+  UNTERBRECHUNG_UNBEKANNT_TEXT,
+  unterbrechungFehlerText,
+  verbleibendeUnterbrechungen,
+} from './unterbrechungen';
 
 /** Eine Zeile der Liste „Preise“ nach dem Betrag ab Vertragsbeginn. */
 export interface PreisWerte {
@@ -70,7 +76,15 @@ export interface VertragWerte {
   rhythmus: Erhoehungsrhythmus;
   naechsteErhoehungAm: string;
   erinnerungSonderkuendigung: boolean;
+  /** IDs der Unterbrechungen, die beim Sichern entfernt werden (nur beim Bearbeiten). */
+  entfernteUnterbrechungen: string[];
 }
+
+/**
+ * Was das Formular zum Speichern meldet; beim Bearbeiten mit den IDs der Unterbrechungen, die bleiben.
+ */
+export type VertragSpeichern = Required<VertragEingabe> &
+  Partial<Pick<VertragAenderung, 'unterbrechungIds'>>;
 
 /** {@code einmalkosten} steht für Fehler an der ganzen Liste, z. B. zu viele Einträge. */
 export type EinzelFeld = Exclude<keyof VertragWerte, 'preise'>;
@@ -257,6 +271,7 @@ export function werteAus(v: VertragAntwort): VertragWerte {
     preisgarantieBis: v.preisgarantieBis ?? '',
     ...steigerungWerte(v.preissteigerung),
     erinnerungSonderkuendigung: v.erinnerungSonderkuendigung,
+    entfernteUnterbrechungen: [],
   };
 }
 
@@ -340,9 +355,14 @@ function steigerungEingabe(w: VertragWerte, waehrung: string): PreissteigerungEi
 export function anfrageAus(
   w: VertragWerte,
   gespeichert: VertragAntwort | null = null,
-): Required<VertragEingabe> {
+): VertragSpeichern {
   const waehrung = gespeichert?.betrag.waehrung ?? 'EUR';
   return {
+    ...(gespeichert && {
+      unterbrechungIds: verbleibendeUnterbrechungen(gespeichert, w.entfernteUnterbrechungen).map(
+        ({ id }) => id,
+      ),
+    }),
     anbieter: textOderNull(w.anbieter),
     bezeichnung: textOderNull(w.bezeichnung),
     kategorieId: textOderNull(w.kategorieId),
@@ -424,6 +444,10 @@ export function vorschauAus(
     gekuendigtZum: a.gekuendigtZum,
     // Unverändert aus der Antwort, damit gelöschte Stufen in der Vorschau nicht wieder entstehen.
     preissteigerungBetrachtetBis: gespeichert?.preissteigerungBetrachtetBis ?? null,
+    // Status und Kündigung zählen ab dem aktuellen Beginn, also nach der letzten verbleibenden.
+    unterbrechungen: verbleibendeUnterbrechungen(gespeichert, w.entfernteUnterbrechungen).map(
+      ({ von, bis, art }) => ({ von, bis, art }),
+    ),
   };
 }
 
@@ -454,6 +478,8 @@ const FELD_ZUM_API_FELD: Readonly<Record<string, VertragFeld>> = {
   'preissteigerung.naechsteAm': 'naechsteErhoehungAm',
 };
 
+const UNTERBRECHUNG_MUSTER = /^unterbrechungIds\b/;
+
 const PREIS_MUSTER = /^preise\[(\d+)\]\.(gueltigAb|betrag)\b/;
 
 const EINMALKOSTEN_MUSTER = /^einmalkosten\[(\d+)\]\.(bezeichnung|betrag|faelligAm)\b/;
@@ -463,6 +489,9 @@ const EINMALKOSTEN_MUSTER = /^einmalkosten\[(\d+)\]\.(bezeichnung|betrag|faellig
  * i − 1 der Liste. {@code einmalkosten[i]} ist die Zeile i.
  */
 function formularFeld(apiFeld: string): VertragFeld | undefined {
+  if (UNTERBRECHUNG_MUSTER.test(apiFeld)) {
+    return 'entfernteUnterbrechungen';
+  }
   const einmal = EINMALKOSTEN_MUSTER.exec(apiFeld);
   if (einmal) {
     return einmalkostenFeld(Number(einmal[1]), einmal[2] as keyof EinmalkostenWerte);
@@ -488,8 +517,19 @@ function einmalkostenTeil(feld: VertragFeld): keyof EinmalkostenWerte | null {
   return feld.startsWith('einmalkosten.') ? (feld.split('.')[2] as keyof EinmalkostenWerte) : null;
 }
 
-function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: Feldfehler): string {
+function feldfehlerText(
+  feld: VertragFeld,
+  { feld: apiFeld, code, parameter }: Feldfehler,
+  unterbrechungen: VertragAntwort['unterbrechungen'],
+): string {
   const einmal = einmalkostenTeil(feld);
+  if (feld === 'entfernteUnterbrechungen') {
+    return UNTERBRECHUNG_UNBEKANNT_TEXT;
+  }
+  const zuUnterbrechungen = unterbrechungFehlerText(code, unterbrechungen);
+  if (zuUnterbrechungen) {
+    return zuUnterbrechungen;
+  }
   if (feld === 'anteilProzent' && ['DecimalMin', 'DecimalMax', 'Digits'].includes(code)) {
     return ANTEIL_TEXT;
   }
@@ -561,13 +601,24 @@ function feldfehlerText(feld: VertragFeld, { feld: apiFeld, code, parameter }: F
   }
 }
 
-/** Texte je Formularfeld; Fehler ohne passendes Feld fehlen. Hat ein Feld mehrere, gilt der erste. */
-export function feldfehlerTexte(felder: Feldfehler[]): ReadonlyMap<VertragFeld, string> {
+/**
+ * Texte je Formularfeld; Fehler ohne passendes Feld fehlen. Hat ein Feld mehrere, gilt der erste.
+ * Die Texte zu den Unterbrechungen nennen die, die nach den Werten {@code w} bleiben.
+ */
+export function feldfehlerTexte(
+  felder: Feldfehler[],
+  gespeichert: VertragAntwort | null = null,
+  w?: Pick<VertragWerte, 'entfernteUnterbrechungen'>,
+): ReadonlyMap<VertragFeld, string> {
+  const unterbrechungen = verbleibendeUnterbrechungen(
+    gespeichert,
+    w?.entfernteUnterbrechungen ?? [],
+  );
   const texte = new Map<VertragFeld, string>();
   for (const fehler of felder) {
     const feld = fehler.feld ? formularFeld(fehler.feld) : undefined;
     if (feld && !texte.has(feld)) {
-      texte.set(feld, feldfehlerText(feld, fehler));
+      texte.set(feld, feldfehlerText(feld, fehler, unterbrechungen));
     }
   }
   return texte;

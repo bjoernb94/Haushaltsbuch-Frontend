@@ -50,22 +50,12 @@
       (entfernen)="einmalkostenEntfernen($event)"
       (geaendert)="einmalkostenGeaendert($event.index, $event.feld)"
     />
-    <app-vertrag-tab-laufzeit
-      [hidden]="tab() !== 'laufzeit'"
-      [idPrefix]="idPrefix"
-      [fehler]="feldFehler()"
-      [gespeicherteFrist]="vertrag()?.kuendigungsfristMonate"
-      [nichtKuendbar]="nichtKuendbar()"
-      [gekuendigt]="gekuendigt()"
-      [vorschau]="vorschau()"
-    />
     <app-vertrag-tab-preise
       [hidden]="tab() !== 'preise'"
       [idPrefix]="idPrefix"
       [fehler]="feldFehler()"
       [preise]="formular.controls.preise"
       [waehrung]="waehrung()"
-      [waehrungName]="waehrungName()"
       [werte]="werte()"
       [vorschau]="vorschau()"
       [geladen]="steigerung.geladen()"
@@ -76,6 +66,18 @@
       (hinzufuegen)="preisHinzufuegen()"
       (entfernen)="preisEntfernen($event)"
       (geaendert)="preisGeaendert($event.index, $event.feld)"
+    />
+    <app-vertrag-tab-laufzeit
+      [hidden]="tab() !== 'laufzeit'"
+      [idPrefix]="idPrefix"
+      [fehler]="feldFehler()"
+      [gespeicherteFrist]="vertrag()?.kuendigungsfristMonate"
+      [nichtKuendbar]="nichtKuendbar()"
+      [gekuendigt]="gekuendigt()"
+      [steigt]="werte().steigt"
+      [vorschau]="vorschau()"
+      [unterbrechungen]="vertrag()?.unterbrechungen ?? []"
+      [entfernt]="werte().entfernteUnterbrechungen"
     />
   </div>
 

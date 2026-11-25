@@ -78,6 +78,7 @@
           [loescht]="loeschendId() === vertrag.id"
           (details)="navigation.detailsUmschalten(vertrag.id)"
           (bearbeiten)="navigation.bearbeiten(vertrag.id)"
+          (wiederaufnehmen)="navigation.wiederaufnehmen(vertrag.id)"
           (loeschen)="loeschenFragen(vertrag)"
         />
       } @empty {

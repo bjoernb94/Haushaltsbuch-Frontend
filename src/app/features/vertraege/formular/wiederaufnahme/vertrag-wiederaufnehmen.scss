@@ -1,0 +1,92 @@
+@use '../../../../shared/zustaende/zustaende';
+@use '../sheet';
+@use 'masse' as *;
+
+@include zustaende.laedt;
+@include zustaende.fehler;
+@include sheet.vollbild;
+
+// Leiste oben, darunter der Inhalt, der scrollt.
+.rahmen {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.leiste-titel {
+  font-size: $schrift-abschnitt;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.kopf {
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-2;
+}
+
+.titel {
+  margin: 0;
+  font-size: $schrift-titel;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.text {
+  margin: 0;
+  font-size: $schrift-text;
+  // Zeilenhöhe wie im Design.
+  line-height: 1.45;
+  color: var(--app-text-gedaempft);
+}
+
+.knopf-sekundaer {
+  min-height: 44px;
+  padding: 0 $abstand-5;
+  border: 1.5px solid var(--app-gruen);
+  border-radius: $radius-feld;
+  background: var(--app-flaeche);
+  color: var(--app-gruen);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+// Bis 900 px wie „Vertrag bearbeiten“: Titel in der Leiste, darunter nur der Name.
+@media (max-width: 900px) {
+  .titel {
+    display: none;
+  }
+}
+
+// Am Desktop ein Dialog in der Fenstermitte, ohne Leiste.
+@media (min-width: 901px) {
+  .sheet {
+    inset: 0;
+    // Breite und Höhe des Dialogs (Layoutmaße wie im Design).
+    width: min(480px, calc(100% - 32px));
+    height: fit-content;
+    max-height: calc(100vh - 32px);
+    margin: auto;
+    overflow-y: auto;
+    border: 1px solid var(--app-trenner);
+    border-radius: $radius-gross;
+    background: var(--app-flaeche);
+    box-shadow: 0 24px 64px var(--app-schatten-sheet);
+    animation: einblenden 0.22s ease-out;
+  }
+
+  .leiste,
+  .name {
+    display: none;
+  }
+
+  .inhalt {
+    overflow: visible;
+    padding: $abstand-6;
+  }
+}
+
+@include sheet.ohne-bewegung;
