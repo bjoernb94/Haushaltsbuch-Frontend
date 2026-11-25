@@ -280,6 +280,24 @@ test.describe('Seite Verträge', () => {
     expect(new Set(hoehen).size).toBe(1);
   });
 
+  test('Liste und Detailpanel schließen rechts bündig mit den Kennzahlen ab', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+    const rechts = async (selektor: string) => {
+      const box = (await page.locator(selektor).boundingBox())!;
+      return Math.round(box.x + box.width);
+    };
+
+    await page.goto('/vertraege');
+    await expect(page.locator('.kennzahl')).toHaveCount(4);
+    const kennzahlen = await rechts('.kennzahlen');
+    expect(await rechts('.liste')).toBe(kennzahlen);
+
+    await oeffnen(page, KFZ).click();
+    await expect(details(page, KFZ)).toBeVisible();
+    expect(await rechts('.panel')).toBe(kennzahlen);
+  });
+
   for (const breite of [390, 1280]) {
     test(`die Blase bleibt bei ${breite} px im Fenster bzw. im Detailpanel`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 844 });
