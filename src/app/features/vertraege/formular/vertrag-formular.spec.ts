@@ -1349,6 +1349,20 @@ describe('VertragFormular', () => {
       return { ...hilfen, hinzufuegen, zeile, eingabe, eingeben, zeilenFehler };
     }
 
+    it('bietet alle Zahlungswege des Backends an', async () => {
+      const { feld } = await imTabKosten();
+      const optionen = [...feld<HTMLSelectElement>('zahlungsweg').options];
+      expect(optionen.map((o) => [o.value, o.text])).toEqual([
+        ['', 'Bitte wählen'],
+        ['LASTSCHRIFT', 'Lastschrift'],
+        ['KREDITKARTE', 'Kreditkarte'],
+        ['PAYPAL', 'PayPal'],
+        ['WERO', 'Wero'],
+        ['UEBERWEISUNG', 'Überweisung'],
+        ['DAUERAUFTRAG', 'Dauerauftrag'],
+      ]);
+    });
+
     it('fügt Zeilen hinzu, fokussiert „Wofür“ und schickt sie mit', async () => {
       const { host, hinzufuegen, eingabe, eingeben, pflichtfelderFuellen, absenden } =
         await imTabKosten();

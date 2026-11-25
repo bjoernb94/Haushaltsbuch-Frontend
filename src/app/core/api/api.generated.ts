@@ -578,7 +578,7 @@ export interface components {
             vorschlag: string;
         };
         /** @enum {string} */
-        Zahlungsweg: "LASTSCHRIFT" | "KREDITKARTE" | "PAYPAL" | "UEBERWEISUNG" | "DAUERAUFTRAG";
+        Zahlungsweg: "LASTSCHRIFT" | "KREDITKARTE" | "PAYPAL" | "WERO" | "UEBERWEISUNG" | "DAUERAUFTRAG";
         /** @enum {string} */
         Zahlweise: "MONATLICH" | "VIERTELJAEHRLICH" | "HALBJAEHRLICH" | "JAEHRLICH";
     };
