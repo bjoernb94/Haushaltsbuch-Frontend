@@ -49,6 +49,7 @@ export const ZAHLUNGSWEG_TEXT: Record<Zahlungsweg, string> = {
   LASTSCHRIFT: 'Lastschrift',
   KREDITKARTE: 'Kreditkarte',
   PAYPAL: 'PayPal',
+  WERO: 'Wero',
   UEBERWEISUNG: 'Überweisung',
   DAUERAUFTRAG: 'Dauerauftrag',
 };
