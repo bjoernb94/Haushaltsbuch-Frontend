@@ -33,6 +33,7 @@ const LEER: VertragWerte = {
   preisgarantieBis: '',
   ...OHNE_STEIGERUNG,
   erinnerungSonderkuendigung: true,
+  entfernteUnterbrechungen: [],
 };
 
 const PFLICHT: VertragWerte = {
@@ -612,7 +613,10 @@ describe('Bearbeiten', () => {
     kuendigungsfristMonate: null,
     gekuendigtZum: null,
     notiz: null,
+    unterbrechungen: [],
     berechnet: {
+      aktuellerBeginn: '2026-01-31',
+      wiederaufnahme: null,
       status: 'AKTIV',
       kostenProMonat: { wert: 586.8, waehrung: 'USD' },
       kostenImJahr: { wert: 7041.6, waehrung: 'USD' },
@@ -761,6 +765,7 @@ describe('Bearbeiten', () => {
         kuendigungsfristMonate: null,
         gekuendigtZum: null,
         preissteigerungBetrachtetBis: null,
+        unterbrechungen: [],
       });
     });
 
@@ -848,6 +853,7 @@ describe('Bearbeiten', () => {
   describe('anfrageAus mit gespeichertem Vertrag', () => {
     it('schickt ohne Änderung alle Felder unverändert', () => {
       expect(anfrageAus(werteAus(VERTRAG), VERTRAG)).toEqual({
+        unterbrechungIds: [],
         anbieter: 'Anbieter',
         bezeichnung: null,
         kategorieId: 'k1',

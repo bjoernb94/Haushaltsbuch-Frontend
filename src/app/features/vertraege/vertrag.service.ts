@@ -12,6 +12,7 @@ import {
   VertragsuebersichtAntwort,
   VertragVorschauAnfrage,
   VertragVorschauAntwort,
+  VertragWiederaufnahme,
 } from '../../core/api/api';
 
 /**
@@ -59,7 +60,7 @@ export class VertragService {
   /** Veraltete {@code version}: 409 KONFLIKT. */
   aendern(
     id: string,
-    vertrag: VertragEingabe & Pick<VertragAenderung, 'version'>,
+    vertrag: VertragEingabe & Pick<VertragAenderung, 'version' | 'unterbrechungIds'>,
   ): Observable<VertragAntwort> {
     return this.http.put<VertragAntwort>(`${VERTRAEGE_URL}/${id}`, vertrag);
   }
@@ -67,6 +68,14 @@ export class VertragService {
   /** Veraltete {@code version}: 409 KONFLIKT. */
   loeschen(id: string, version: number): Observable<void> {
     return this.http.delete<void>(`${VERTRAEGE_URL}/${id}`, { params: { version } });
+  }
+
+  /**
+   * Gekündigten oder beendeten Vertrag wieder aufnehmen. Veraltete {@code version}: 409 KONFLIKT;
+   * nicht (mehr) möglich: 409 WIEDERAUFNAHME_NICHT_MOEGLICH.
+   */
+  wiederaufnehmen(id: string, anfrage: VertragWiederaufnahme): Observable<VertragAntwort> {
+    return this.http.post<VertragAntwort>(`${VERTRAEGE_URL}/${id}/wiederaufnahme`, anfrage);
   }
 
   kategorien(): Observable<VertragKategorieAntwort[]> {

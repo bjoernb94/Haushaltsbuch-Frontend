@@ -3,7 +3,9 @@
   <div class="ankreuzen">
     <input
       [id]="id('nichtKuendbar')"
+      class="schalter"
       type="checkbox"
+      role="switch"
       formControlName="nichtKuendbar"
       [attr.aria-describedby]="id('nichtKuendbar') + '-hinweis'"
     />
@@ -75,6 +77,26 @@
       <b>Nächster Kündigungstermin:</b>
       <span>{{ vorschauText() }}</span>
     </div>
+    @if (erinnerung()) {
+      <div class="ankreuzen">
+        <input
+          [id]="id('erinnerungSonderkuendigung')"
+          class="schalter"
+          type="checkbox"
+          role="switch"
+          formControlName="erinnerungSonderkuendigung"
+          [attr.aria-describedby]="id('erinnerungSonderkuendigung') + '-hinweis'"
+        />
+        <div>
+          <label [for]="id('erinnerungSonderkuendigung')"
+            >An das Sonderkündigungsrecht erinnern</label
+          >
+          <span class="feldhinweis" [id]="id('erinnerungSonderkuendigung') + '-hinweis'"
+            >Vor jeder Preiserhöhung. Ob es gilt, steht meist im Ankündigungsschreiben.</span
+          >
+        </div>
+      </div>
+    }
   }
 </fieldset>
 
@@ -84,7 +106,9 @@
     <div class="ankreuzen">
       <input
         [id]="id('gekuendigt')"
+        class="schalter"
         type="checkbox"
+        role="switch"
         formControlName="gekuendigt"
         [attr.aria-describedby]="id('gekuendigt') + '-hinweis'"
       />
@@ -115,3 +139,65 @@
     }
   </div>
 </fieldset>
+
+@if (unterbrechungen().length) {
+  <fieldset class="unterbrechungen">
+    <legend>Unterbrechungen</legend>
+    <p class="feldhinweis">
+      Darin wird nichts abgebucht. Entfernst du eine, zählt der Vertrag dort als durchgehend
+      gelaufen.
+    </p>
+    @if (bleibende().length) {
+      <ul>
+        @for (zeile of bleibende(); track zeile.id) {
+          <li>
+            <span class="angaben">
+              <span class="zeitraum">{{ zeile.zeitraum }}</span>
+              <span class="art">{{ zeile.art }}</span>
+            </span>
+            <button
+              type="button"
+              class="entfernen"
+              [id]="idPrefix() + '-unterbrechung-' + zeile.id + '-entfernen'"
+              [attr.aria-label]="'Unterbrechung ' + zeile.zeitraum + ' entfernen'"
+              (click)="entfernen(zeile.id)"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 7h16"></path>
+                <path d="M9 7V4h6v3"></path>
+                <path d="M6 7l1 13h10l1-13"></path>
+              </svg>
+              Entfernen
+            </button>
+          </li>
+        }
+      </ul>
+    }
+    @for (zeile of entfernte(); track zeile.id) {
+      <div class="entfernt" role="status">
+        <span>Unterbrechung {{ zeile.zeitraum }} wird beim Sichern entfernt.</span>
+        <button
+          type="button"
+          class="rueckgaengig"
+          [id]="idPrefix() + '-unterbrechung-' + zeile.id + '-zurueck'"
+          (click)="rueckgaengig(zeile.id)"
+        >
+          Rückgängig
+        </button>
+      </div>
+    }
+    @if (fehlerText('entfernteUnterbrechungen'); as text) {
+      <p class="feldfehler">{{ text }}</p>
+    }
+  </fieldset>
+}

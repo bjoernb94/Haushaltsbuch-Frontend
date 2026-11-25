@@ -7,18 +7,28 @@ const EUR = (wert: number) => ({ wert, waehrung: 'EUR' });
 
 @Component({
   imports: [VertragPreisverlauf],
-  template: `<app-vertrag-preisverlauf [punkte]="punkte()" [heute]="heute()" />`,
+  template: `<app-vertrag-preisverlauf
+    [punkte]="punkte()"
+    [heute]="heute()"
+    [unterbrechungen]="unterbrechungen()"
+  />`,
 })
 class Host {
   readonly punkte = signal<Preispunkt[]>([]);
   readonly heute = signal('2026-11-15');
+  readonly unterbrechungen = signal<{ von: string; bis: string }[]>([]);
 }
 
-async function zeichnen(punkte: Preispunkt[], heute = '2026-11-15') {
+async function zeichnen(
+  punkte: Preispunkt[],
+  heute = '2026-11-15',
+  unterbrechungen: { von: string; bis: string }[] = [],
+) {
   TestBed.configureTestingModule({ providers: [{ provide: LOCALE_ID, useValue: 'de-DE' }] });
   const fixture = TestBed.createComponent(Host);
   fixture.componentInstance.punkte.set(punkte);
   fixture.componentInstance.heute.set(heute);
+  fixture.componentInstance.unterbrechungen.set(unterbrechungen);
   await fixture.whenStable();
   const el: HTMLElement = fixture.nativeElement;
   const text = (selektor: string) =>
@@ -115,5 +125,22 @@ describe('VertragPreisverlauf', () => {
   it('ohne errechnete Stufen keine Legende dafür', async () => {
     const { text } = await zeichnen(ZWEI);
     expect(text('figcaption > span')).toEqual(['Gezahlt', 'Angekündigt oder Prognose']);
+  });
+
+  it('Unterbrechungen als Fläche von „von“ bis zum Ende von „bis“, mit Legende', async () => {
+    // 2025-01-01 bis 2027-07-01 (Ende + 6 Monate): 911 Tage; die Fläche deckt Juli 2025 (31 Tage).
+    const { el, text } = await zeichnen(ZWEI, '2026-11-15', [
+      { von: '2025-07-01', bis: '2025-07-31' },
+    ]);
+    const pause = el.querySelector<HTMLElement>('.pause')!;
+    expect(parseFloat(pause.style.left)).toBeCloseTo((181 / 911) * 100, 1);
+    expect(parseFloat(pause.style.width)).toBeCloseTo((31 / 911) * 100, 1);
+    expect(text('figcaption > span')).toContain('Unterbrochen, nichts gezahlt');
+  });
+
+  it('ohne Unterbrechungen keine Fläche und keine Legende dafür', async () => {
+    const { el, text } = await zeichnen(ZWEI);
+    expect(el.querySelector('.pause')).toBeNull();
+    expect(text('figcaption > span')).not.toContain('Unterbrochen, nichts gezahlt');
   });
 });

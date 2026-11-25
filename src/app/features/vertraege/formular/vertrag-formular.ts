@@ -28,11 +28,11 @@ import {
 } from '../../../core/api/api';
 import { problemFelder } from '../../../core/fehler/problem';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
-import { waehrungName, waehrungZeichen } from '../../../shared/format/betrag.pipe';
+import { waehrungZeichen } from '../../../shared/format/betrag.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
 import { vertragName } from '../vertrag-texte';
-import { VertragEingabe, VertragService } from '../vertrag.service';
+import { VertragService } from '../vertrag.service';
 import { VertragTabAllgemein } from './tab-allgemein/tab-allgemein';
 import { VertragTabKosten } from './tab-kosten/tab-kosten';
 import { VertragTabLaufzeit } from './tab-laufzeit/tab-laufzeit';
@@ -48,6 +48,7 @@ import {
   preisFeld,
   VertragFeld,
   vertragPruefen,
+  VertragSpeichern,
   vorschauAus,
   werteAus,
 } from './vertrag-pruefung';
@@ -75,7 +76,7 @@ const VORSCHAU_VERZOEGERUNG_MS = 400;
 let letztesFormular = 0;
 
 /**
- * Felder eines Vertrags in den Tabs Allgemein, Kosten, Laufzeit und Preisverlauf (je eine Komponente);
+ * Felder eines Vertrags in den Tabs Allgemein, Kosten, Preisverlauf und Laufzeit (je eine Komponente);
  * das Formular hält Werte, Fehler und Vorschau. Jeder Tab zählt seine Fehler, und Fehler beim Speichern
  * führen zum ersten Tab mit Fehler. Prüft nur Pflichtfelder und meldet dann
  * {@link speichern}; das Speichern und die Antwort darauf liegen bei der Seite, die Fehler zurückgibt
@@ -125,7 +126,7 @@ export class VertragFormular implements OnInit {
   /** Beim Öffnen im Tab Preisverlauf mit einer leeren Zeile („Preis hinzufügen“ in den Details). */
   readonly neuerPreis = input(false);
 
-  readonly speichern = output<Required<VertragEingabe>>();
+  readonly speichern = output<VertragSpeichern>();
   readonly abbrechen = output<void>();
 
   /** Eindeutige Feld-IDs, auch bei zwei Formularen auf einer Seite. */
@@ -136,9 +137,6 @@ export class VertragFormular implements OnInit {
 
   protected readonly waehrung = computed(() =>
     waehrungZeichen(this.vertrag()?.betrag.waehrung ?? 'EUR', this.locale),
-  );
-  protected readonly waehrungName = computed(() =>
-    waehrungName(this.vertrag()?.betrag.waehrung ?? 'EUR', this.locale),
   );
   protected readonly name = computed(() => {
     const vertrag = this.vertrag();
@@ -175,7 +173,7 @@ export class VertragFormular implements OnInit {
   );
 
   protected readonly feldFehler = linkedSignal<ReadonlyMap<VertragFeld, string>>(() =>
-    feldfehlerTexte(problemFelder(this.fehlerAntwort())),
+    feldfehlerTexte(problemFelder(this.fehlerAntwort()), this.vertrag(), untracked(this.werte)),
   );
 
   /** Fehler, der sich keinem Feld zuordnen lässt, z. B. Serverfehler oder keine Verbindung. */

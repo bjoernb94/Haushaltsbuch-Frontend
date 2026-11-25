@@ -72,6 +72,26 @@ figcaption path {
   }
 }
 
+// Unterbrechung: schraffiert über die ganze Höhe; gezahlt wird darin nichts.
+.pause,
+.pause-legende {
+  background: repeating-linear-gradient(135deg, var(--app-trenner) 0 2px, transparent 2px 8px);
+}
+
+.pause {
+  position: absolute;
+  top: 0;
+  height: 150px;
+}
+
+// Legende wie im Design (Layoutmaß).
+.pause-legende {
+  display: inline-block;
+  width: 16px;
+  height: 12px;
+  border-radius: $radius-klein;
+}
+
 // Offener Punkt wie im Diagramm, für die Legende der errechneten Stufen.
 .punkt-legende {
   display: inline-block;

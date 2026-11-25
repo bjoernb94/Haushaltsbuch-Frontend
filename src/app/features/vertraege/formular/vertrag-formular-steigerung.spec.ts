@@ -91,7 +91,10 @@ const VERTRAG: VertragAntwort = {
   kuendigungsfristMonate: null,
   gekuendigtZum: null,
   notiz: null,
+  unterbrechungen: [],
   berechnet: {
+    aktuellerBeginn: '2021-03-01',
+    wiederaufnahme: null,
     status: 'AKTIV',
     kostenProMonat: EUR(110.4),
     kostenImJahr: EUR(1324.8),

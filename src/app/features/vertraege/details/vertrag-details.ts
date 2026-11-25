@@ -21,9 +21,12 @@ import { InfoKnopf } from '../../../shared/info-knopf/info-knopf';
 import { Tabliste } from '../../../shared/tabliste/tabliste';
 import { VertragEinmalkosten } from './vertrag-einmalkosten/vertrag-einmalkosten';
 import { VertragPreise } from './vertrag-preise/vertrag-preise';
+import { VertragUnterbrechungen } from './vertrag-unterbrechungen/vertrag-unterbrechungen';
+import { WiederaufnahmeLeiste } from './wiederaufnahme-leiste/wiederaufnahme-leiste';
 import { VertraegeSeite } from '../liste/vertraege-seite';
 import { VertragNavigation } from '../liste/vertrag-navigation';
 import {
+  endeText,
   ERRECHNET_TEXT,
   fristDauerText,
   INFO_RUNDUNG_DETAILS,
@@ -43,18 +46,26 @@ import {
 const NICHT_HINTERLEGT = 'Nicht hinterlegt';
 
 /**
- * Kachel „Laufzeit“: „seit …“ bzw. „ab …“, darunter die Mindestlaufzeit (ohne Verlängerung das Ende).
- * Beendete zeigen „Beginn – Ende“, stornierte nur das; beide ohne Zusatz, nicht kündbare auch.
+ * Kachel „Laufzeit“: „seit …“ bzw. „ab …“ (noch nicht begonnen oder unterbrochen), nach einer
+ * Wiederaufnahme „wieder seit …“, jeweils ab {@code aktuellerBeginn}; darunter die Mindestlaufzeit
+ * (ohne Verlängerung das Ende). Beendete zeigen „Beginn – Ende“, stornierte nur das; beide ohne
+ * Zusatz, nicht kündbare auch.
  */
 function laufzeitKachel(v: VertragAntwort): { wert: string; zusatz: string } {
-  const { status, vertragsende } = v.berechnet;
+  const { status, vertragsende, aktuellerBeginn } = v.berechnet;
   switch (status) {
     case 'BEENDET':
       return { wert: `${datumText(v.beginn)} – ${datumText(vertragsende)}`, zusatz: '' };
     case 'STORNIERT':
       return { wert: 'Storniert', zusatz: '' };
   }
-  const wert = `${status === 'NICHT_BEGONNEN' ? 'ab' : 'seit'} ${datumText(v.beginn)}`;
+  const praefix =
+    status === 'NICHT_BEGONNEN' || status === 'UNTERBROCHEN'
+      ? 'ab'
+      : aktuellerBeginn > v.beginn
+        ? 'wieder seit'
+        : 'seit';
+  const wert = `${praefix} ${datumText(aktuellerBeginn)}`;
   if (!v.kuendbar) {
     return { wert, zusatz: '' };
   }
@@ -71,8 +82,8 @@ function laufzeitKachel(v: VertragAntwort): { wert: string; zusatz: string } {
 const TABS = [
   { key: 'allgemein', label: 'Allgemein' },
   { key: 'kosten', label: 'Kosten' },
-  { key: 'laufzeit', label: 'Laufzeit' },
   { key: 'preise', label: 'Preisverlauf' },
+  { key: 'laufzeit', label: 'Laufzeit' },
 ] as const;
 
 type Tab = (typeof TABS)[number]['key'];
@@ -87,11 +98,20 @@ interface Eintrag {
 /**
  * Details eines Vertrags (Route {@code :id}, Tab in {@code ?tab=}): am Desktop ein Panel neben der
  * Liste, bis 900 px Vollbild über der Liste. Die Daten kommen aus der Liste der {@link VertraegeSeite};
- * Bearbeiten öffnet sich als Kind-Route darüber.
+ * Bearbeiten und Wieder aufnehmen öffnen sich als Kind-Route darüber.
  */
 @Component({
   selector: 'app-vertrag-details',
-  imports: [HinweisBox, RouterOutlet, InfoKnopf, Tabliste, VertragEinmalkosten, VertragPreise],
+  imports: [
+    HinweisBox,
+    RouterOutlet,
+    InfoKnopf,
+    Tabliste,
+    VertragEinmalkosten,
+    VertragPreise,
+    VertragUnterbrechungen,
+    WiederaufnahmeLeiste,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-details.html',
   styleUrl: './vertrag-details.scss',
@@ -123,6 +143,12 @@ export class VertragDetails {
     return vertrag ? vertragName(vertrag) : '';
   });
   protected readonly meldung = computed(() => this.seite.meldungZu(this.id()));
+
+  /** „Gekündigt zum …“ bzw. „Beendet am …“, nur wenn das Backend die Wiederaufnahme anbietet. */
+  protected readonly ende = computed(() => {
+    const v = this.vertrag();
+    return v?.berechnet.wiederaufnahme ? endeText(v.berechnet) : null;
+  });
 
   protected readonly kacheln = computed(() => {
     const v = this.vertrag();
@@ -193,10 +219,11 @@ export class VertragDetails {
       }
     });
 
-    // Beim Öffnen und beim Wechsel zu einem anderen Vertrag in die Details.
+    // Beim Öffnen und beim Wechsel zu einem anderen Vertrag in die Details; liegt ein Sheet darüber
+    // (z. B. ein geteilter Link), behält es den Fokus.
     effect(() => {
       this.id();
-      if (this.vertrag()) {
+      if (this.vertrag() && !untracked(this.navigation.ansicht)?.sheet) {
         untracked(() =>
           afterNextRender(() => this.panel()?.nativeElement.focus({ preventScroll: true }), {
             injector: this.injector,
@@ -212,6 +239,10 @@ export class VertragDetails {
 
   protected bearbeiten(): void {
     this.navigation.bearbeiten(this.id());
+  }
+
+  protected wiederaufnehmen(): void {
+    this.navigation.wiederaufnehmen(this.id());
   }
 
   protected preisHinzufuegen(): void {

@@ -1,6 +1,9 @@
 @if (abschnitte().length) {
   @if (vertrag().berechnet.preisverlauf.length > 1) {
-    <app-vertrag-preisverlauf [punkte]="vertrag().berechnet.preisverlauf" />
+    <app-vertrag-preisverlauf
+      [punkte]="vertrag().berechnet.preisverlauf"
+      [unterbrechungen]="vertrag().unterbrechungen"
+    />
   }
   <div class="preise">
     <h3>Preise<app-info-knopf beschriftung="Preise" [saetze]="info()" /></h3>

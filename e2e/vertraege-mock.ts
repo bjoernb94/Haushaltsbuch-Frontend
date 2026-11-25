@@ -13,6 +13,7 @@ import {
   VertragsuebersichtAntwort,
   VertragVorschauAnfrage,
   VertragVorschauAntwort,
+  VertragWiederaufnahme,
 } from '../src/app/core/api/api';
 
 export const KATEGORIEN: VertragKategorieAntwort[] = (
@@ -88,8 +89,14 @@ const BERECHNET_LEER: Pick<
   vertragsende: null,
 };
 
+/** Ohne Unterbrechung: `aktuellerBeginn` ist der Beginn, keine Unterbrechungen, keine Wiederaufnahme. */
+type BeispielVertrag = Omit<VertragAntwort, 'berechnet' | 'unterbrechungen'> & {
+  berechnet: Omit<VertragAntwort['berechnet'], 'aktuellerBeginn' | 'wiederaufnahme'> &
+    Partial<Pick<VertragAntwort['berechnet'], 'wiederaufnahme'>>;
+};
+
 /** Je eine Kündigungsart und jeder Status; `berechnet` steht fest wie vom Backend geliefert. */
-export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
+const BEISPIELE: BeispielVertrag[] = [
   {
     ...VERTRAG_LEER,
     id: 'kfz',
@@ -306,6 +313,7 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       kostenImJahr: betrag(118.8),
       kuendigung: { ...KEINE_KUENDIGUNG, art: 'GEKUENDIGT', fristMonate: 1, zum: '2026-12-31' },
       vertragsende: '2026-12-31',
+      wiederaufnahme: { fruehestens: '2027-01-01', vorschlag: '2027-01-01' },
     },
   },
   {
@@ -326,13 +334,20 @@ export const BEISPIEL_VERTRAEGE: VertragAntwort[] = [
       kostenImJahr: betrag(239.88),
       kuendigung: { ...KEINE_KUENDIGUNG, art: 'BEENDET' },
       vertragsende: '2026-06-30',
+      wiederaufnahme: { fruehestens: '2026-07-01', vorschlag: '2026-09-01' },
     },
   },
 ];
 
-/** Beendet oder storniert. */
+export const BEISPIEL_VERTRAEGE: VertragAntwort[] = BEISPIELE.map((v) => ({
+  ...v,
+  unterbrechungen: [],
+  berechnet: { wiederaufnahme: null, ...v.berechnet, aktuellerBeginn: v.beginn },
+}));
+
+/** Beendet, storniert oder unterbrochen: zählt nicht. */
 function vorbei({ berechnet }: VertragAntwort): boolean {
-  return berechnet.status === 'BEENDET' || berechnet.status === 'STORNIERT';
+  return ['BEENDET', 'STORNIERT', 'UNTERBROCHEN'].includes(berechnet.status);
 }
 
 function summeJeWaehrung(betraege: Betrag[]): Betrag[] {
@@ -488,6 +503,11 @@ const RHYTHMUS_MONATE = {
   ZWEIJAEHRLICH: 24,
   DREIJAEHRLICH: 36,
 };
+
+function plusTage(iso: string, tage: number): string {
+  const [jahr, monat, tag] = iso.split('-').map(Number);
+  return new Date(Date.UTC(jahr, monat - 1, tag + tage)).toISOString().slice(0, 10);
+}
 
 function plusMonate(iso: string, monate: number): string {
   const [jahr, monat, tag] = iso.split('-').map(Number);
@@ -675,7 +695,13 @@ function ausAnfrage(
   version: number,
   bisher: VertragAntwort | null = null,
 ): VertragAntwort {
-  const { kategorieId, ...felder } = anfrage;
+  const { kategorieId, ...rest } = anfrage;
+  const { unterbrechungIds, ...felder } = rest as typeof rest & { unterbrechungIds?: string[] };
+  // Beim Ändern bleiben nur die genannten Unterbrechungen; anlegen lassen sie sich so nicht.
+  const unterbrechungen = (bisher?.unterbrechungen ?? []).filter(({ id }) =>
+    unterbrechungIds?.includes(id),
+  );
+  const letzte = unterbrechungen.at(-1);
   const geprueft = anfrage.preise.map((p) => ({
     ...p,
     automatisch:
@@ -725,8 +751,11 @@ function ausAnfrage(
         }
       : null,
     kategorie: KATEGORIEN.find((k) => k.id === kategorieId) ?? KATEGORIEN[0],
+    unterbrechungen,
     berechnet: {
       ...BERECHNET_LEER,
+      aktuellerBeginn: letzte ? plusTage(letzte.bis, 1) : anfrage.beginn,
+      wiederaufnahme: null,
       einmalkosten: einmalkostenSumme(einmalkosten) ?? { wert: 0, waehrung },
       status: statusFuer(anfrage),
       kostenProMonat: { wert: Math.round((proJahr * 100) / 12) / 100, waehrung },
@@ -847,6 +876,72 @@ function eingabePruefen(route: Route, problem: FehlerAntwort): Promise<void> | n
     : null;
 }
 
+type Fehlschlag = { status: 409; code: string } | { status: 400; felder: Feldfehler[] };
+
+/**
+ * Grob wie das Backend: Die Lücke zwischen Vertragsende und Datum wird eine Unterbrechung, ab dem Datum
+ * läuft der Vertrag wieder; liegt es in der Zukunft, ist er bis dahin unterbrochen.
+ */
+function wiederaufnehmen(
+  bisher: VertragAntwort,
+  anfrage: VertragWiederaufnahme,
+): VertragAntwort | Fehlschlag {
+  const ende = bisher.berechnet.vertragsende;
+  if (!bisher.berechnet.wiederaufnahme || !ende) {
+    return { status: 409, code: 'WIEDERAUFNAHME_NICHT_MOEGLICH' };
+  }
+  if (anfrage.version !== bisher.version) {
+    return { status: 409, code: 'KONFLIKT' };
+  }
+  if (anfrage.datum <= ende) {
+    return {
+      status: 400,
+      felder: [{ feld: 'datum', code: 'NachVertragsende', parameter: { vertragsende: ende } }],
+    };
+  }
+  const heute = new Date().toISOString().slice(0, 10);
+  const luecke = plusTage(ende, 1) < anfrage.datum;
+  const unterbrechungen = luecke
+    ? [
+        ...bisher.unterbrechungen,
+        {
+          id: `u-${bisher.unterbrechungen.length + 1}`,
+          von: plusTage(ende, 1),
+          bis: plusTage(anfrage.datum, -1),
+          art: 'KUENDIGUNG' as const,
+        },
+      ]
+    : bisher.unterbrechungen;
+  const unterbrochen = anfrage.datum > heute;
+  const betrag = anfrage.betrag ?? bisher.betrag;
+  return {
+    ...bisher,
+    version: bisher.version + 1,
+    gekuendigtZum: null,
+    laufzeitende: anfrage.laufzeitende ?? null,
+    verlaengerung: bisher.kuendbar ? (anfrage.verlaengerung ?? null) : null,
+    kuendigungsfristMonate: bisher.kuendbar ? (anfrage.kuendigungsfristMonate ?? null) : null,
+    betrag,
+    preise: anfrage.betrag
+      ? [
+          ...bisher.preise.map((p) => ({ ...p, art: 'FRUEHER' as const })),
+          { gueltigAb: anfrage.datum, betrag, art: 'AKTUELL', automatisch: false },
+        ]
+      : bisher.preise,
+    unterbrechungen,
+    berechnet: {
+      ...bisher.berechnet,
+      status: unterbrochen ? 'UNTERBROCHEN' : 'AKTIV',
+      aktuellerBeginn: luecke ? anfrage.datum : bisher.beginn,
+      vertragsende: null,
+      wiederaufnahme: null,
+      kuendigung: unterbrochen
+        ? { ...KEINE_KUENDIGUNG, art: 'WIEDER_AB', zum: anfrage.datum }
+        : { ...KEINE_KUENDIGUNG, art: 'MONATLICH_KUENDBAR', zum: plusMonate(heute, 1) },
+    },
+  };
+}
+
 type FehlerAntwort = (route: Route, status: number, code: string, detail: string) => Promise<void>;
 
 /** Endpunkte unter /api/vertraege; Anlegen, Ändern und Löschen ändern den Stand im Test. */
@@ -897,6 +992,25 @@ export async function vertraegeSimulieren(
     }
     if (!pfad) {
       return route.fulfill({ json: vertraege });
+    }
+
+    const [id, unterpfad] = pfad.split('/');
+    if (unterpfad === 'wiederaufnahme') {
+      const bisher = vertraege.find((v) => v.id === id);
+      if (!bisher) {
+        return problem(route, 404, 'NICHT_GEFUNDEN', `Contract ${id} not found.`);
+      }
+      const antwort = wiederaufnehmen(bisher, anfrage.postDataJSON());
+      if ('status' in antwort) {
+        return antwort.status === 400
+          ? route.fulfill({
+              status: 400,
+              json: { code: 'VALIDIERUNG', status: 400, felder: antwort.felder },
+            })
+          : problem(route, antwort.status, antwort.code, 'Resumption failed.');
+      }
+      vertraege = vertraege.map((v) => (v.id === id ? antwort : v));
+      return route.fulfill({ json: antwort });
     }
 
     const vorhanden = vertraege.find((v) => v.id === pfad);
