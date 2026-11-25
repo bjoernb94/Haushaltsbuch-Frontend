@@ -212,6 +212,21 @@ describe('RegistrierungSeite', () => {
     expect(ungueltig('reg-email')).toBe(false);
   });
 
+  it('bittet bei nicht erreichbarem Keycloak, es später erneut zu versuchen', async () => {
+    registrieren.mockReturnValue(
+      throwError(
+        () => new HttpErrorResponse({ status: 503, error: { code: 'KEYCLOAK_NICHT_ERREICHBAR' } }),
+      ),
+    );
+    await gueltigAusfuellen();
+    await absenden();
+
+    expect(hinweis()).toBe(
+      'Die Registrierung ist gerade nicht möglich. Bitte versuche es später erneut.',
+    );
+    expect(ungueltig('reg-email')).toBe(false);
+  });
+
   it('sperrt das Formular, wenn ein Dienst fehlt', async () => {
     systemstatus.next({ backend: true, datenbank: true, anmeldeserver: false });
     await fixture.whenStable();

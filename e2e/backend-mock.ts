@@ -51,6 +51,9 @@ export const ABGELEHNT = 'abgelehnt@beispiel.de';
 /** E-Mail-Adresse eines gesperrten Kontos. */
 export const GESPERRT = 'gesperrt@beispiel.de';
 
+/** Konto nur in Keycloak, ohne Haushalt im Backend (z. B. nach abgebrochener Registrierung). */
+export const UNVOLLSTAENDIG = 'unvollstaendig@beispiel.de';
+
 /** Fehlerantwort im Format des Backends (`docs/api.md`): `detail` ist englisch und nur für Entwickler. */
 function problem(route: Route, status: number, code: string, detail: string) {
   return route.fulfill({
@@ -144,6 +147,9 @@ export async function backendSimulieren(
     }
     if (email === GESPERRT) {
       return problem(route, 403, 'ANMELDUNG_GESPERRT', 'Account is locked.');
+    }
+    if (email === UNVOLLSTAENDIG) {
+      return problem(route, 403, 'KONTO_UNVOLLSTAENDIG', 'Account has no household.');
     }
     return problem(route, 401, 'ANMELDUNG_UNGUELTIG', 'Invalid email or password.');
   });

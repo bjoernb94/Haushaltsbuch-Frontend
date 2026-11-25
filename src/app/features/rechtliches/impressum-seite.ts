@@ -1,9 +1,20 @@
-import { ChangeDetectionStrategy, Component, computed, inject, LOCALE_ID } from '@angular/core';
+import {
+  afterRenderEffect,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  LOCALE_ID,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { InstanzService } from '../../core/instanz/instanz.service';
 import { Stand, VersionService } from '../../core/version/version.service';
 import { DatumPipe } from '../../shared/format/datum.pipe';
 import { zeitpunktText } from '../../shared/format/zeitpunkt';
 import { HinweisBox } from '../../shared/hinweis-box/hinweis-box';
+import { inDenBlick } from '../../shared/in-den-blick/in-den-blick';
 import { RechtlicherRahmen } from './rechtlicher-rahmen/rechtlicher-rahmen';
 
 /** Repos dieser Anwendung; ein Fork ersetzt sie über `quellcode` in der instanz.json. */
@@ -49,6 +60,8 @@ export class ImpressumSeite {
 
   protected readonly instanz = inject(InstanzService);
 
+  private readonly fragment = toSignal(inject(ActivatedRoute).fragment);
+
   protected readonly frontend = standText(this.version.frontend, this.locale);
   protected readonly backend = computed(() => {
     const backend = this.version.backend();
@@ -69,4 +82,18 @@ export class ImpressumSeite {
       backend: quellcodeLink(QUELLCODE.backend, this.version.backend()?.commit, eigener.backend),
     };
   });
+
+  constructor() {
+    // Sprungmarke selbst anfahren: Den Abschnitt gibt es erst, wenn die Angaben geladen sind.
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    afterRenderEffect(() => {
+      const fragment = this.fragment();
+      if (fragment && this.instanz.stand().zustand === 'da') {
+        const ziel = host.querySelector<HTMLElement>(`#${CSS.escape(fragment)}`);
+        if (ziel) {
+          inDenBlick(ziel);
+        }
+      }
+    });
+  }
 }

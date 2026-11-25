@@ -10,6 +10,12 @@
 
     @if (fehlerHinweis(); as text) {
       <app-hinweis-box [text]="text" />
+    } @else if (supportHinweis()) {
+      <app-hinweis-box>
+        Dein Konto wurde nicht vollständig angelegt. Bitte wende dich an den
+        <a routerLink="/impressum" fragment="kontakt" [state]="impressumState()">Support</a>, er
+        kann es entfernen. Danach kannst du dich neu registrieren.
+      </app-hinweis-box>
     } @else if (infoHinweis(); as text) {
       <app-hinweis-box [text]="text" art="info" />
     }

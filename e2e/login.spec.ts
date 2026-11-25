@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { abmelden, backendSimulieren, GESPERRT, nutzerKnopf } from './backend-mock';
+import { abmelden, backendSimulieren, GESPERRT, nutzerKnopf, UNVOLLSTAENDIG } from './backend-mock';
 
 test.beforeEach(async ({ page }) => {
   await backendSimulieren(page);
@@ -41,6 +41,30 @@ test('gesperrtes Konto zeigt einen eigenen Text', async ({ page }) => {
     'Das Konto ist gesperrt. Bitte versuche es später erneut.',
   );
   await expect(page.getByLabel('Passwort')).toHaveAttribute('aria-invalid', 'false');
+});
+
+test('unvollständiges Konto verweist auf den Support im Impressum', async ({ page }) => {
+  await page.goto('/login?returnUrl=%2Fvertraege');
+  await page.getByLabel('E-Mail-Adresse').fill(UNVOLLSTAENDIG);
+  await page.getByLabel('Passwort', { exact: true }).fill('geheim123');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  const hinweis = page.getByRole('alert');
+  await expect(hinweis).toHaveText(
+    'Dein Konto wurde nicht vollständig angelegt. Bitte wende dich an den Support, er kann es ' +
+      'entfernen. Danach kannst du dich neu registrieren.',
+  );
+  await expect(page.getByLabel('Passwort', { exact: true })).toHaveAttribute(
+    'aria-invalid',
+    'false',
+  );
+
+  await hinweis.getByRole('link', { name: 'Support' }).click();
+  await expect(page).toHaveURL(/\/impressum#kontakt$/);
+  await expect(page.getByRole('heading', { name: 'Kontakt' })).toBeInViewport();
+
+  await page.getByRole('link', { name: 'Zurück zu Login' }).first().click();
+  await expect(page).toHaveURL(/\/login\?returnUrl=%2Fvertraege$/);
 });
 
 test('Abmelden führt zurück zum Login', async ({ page }) => {
