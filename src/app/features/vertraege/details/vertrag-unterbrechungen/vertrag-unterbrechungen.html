@@ -1,0 +1,9 @@
+<h3>Unterbrechungen<app-info-knopf beschriftung="Unterbrechungen" [saetze]="info" /></h3>
+<ul>
+  @for (zeile of zeilen(); track zeile.id) {
+    <li>
+      <span class="zeitraum">{{ zeile.zeitraum }}</span>
+      <span class="art">{{ zeile.art }}</span>
+    </li>
+  }
+</ul>

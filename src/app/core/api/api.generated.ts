@@ -165,6 +165,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vertraege/{id}/wiederaufnahme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["vertragWiederaufnehmen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -225,7 +241,7 @@ export interface components {
             zum: string | null;
         };
         /** @enum {string} */
-        Kuendigungsart: "KUENDIGEN_BIS" | "MONATLICH_KUENDBAR" | "ENDET" | "KEINE_LAUFZEIT" | "NICHT_KUENDBAR" | "GEKUENDIGT" | "BEENDET" | "STORNIERT";
+        Kuendigungsart: "KUENDIGEN_BIS" | "MONATLICH_KUENDBAR" | "ENDET" | "KEINE_LAUFZEIT" | "NICHT_KUENDBAR" | "GEKUENDIGT" | "WIEDER_AB" | "BEENDET" | "STORNIERT";
         Preisaenderung: {
             /** Format: date */
             ab: string;
@@ -277,6 +293,8 @@ export interface components {
         /** @enum {string} */
         Steigerungsart: "PROZENT" | "BETRAG";
         /** @enum {string} */
+        Unterbrechungsart: "KUENDIGUNG";
+        /** @enum {string} */
         Verlaengerung: "ZAHLUNGSINTERVALL" | "MONATLICH" | "ZWOELF_MONATE" | "KEINE";
         VertragAenderung: {
             anbieter: string;
@@ -300,6 +318,7 @@ export interface components {
             /** Format: date */
             preisgarantieBis?: string | null;
             preissteigerung?: components["schemas"]["VertragPreissteigerungAnfrage"] | null;
+            unterbrechungIds: string[];
             verlaengerung?: components["schemas"]["Verlaengerung"] | null;
             /** Format: int64 */
             version: number;
@@ -362,6 +381,7 @@ export interface components {
             preissteigerung: components["schemas"]["VertragPreissteigerungAntwort"] | null;
             /** Format: date */
             preissteigerungBetrachtetBis: string | null;
+            unterbrechungen: components["schemas"]["VertragUnterbrechungAntwort"][];
             verlaengerung: components["schemas"]["Verlaengerung"] | null;
             /** Format: int64 */
             version: number;
@@ -370,6 +390,8 @@ export interface components {
             zahlweise: components["schemas"]["Zahlweise"];
         };
         VertragBerechnet: {
+            /** Format: date */
+            aktuellerBeginn: string;
             eigenerAnteil: components["schemas"]["VertragEigenerAnteil"] | null;
             einmalkosten: components["schemas"]["Betrag"];
             /** Format: int32 */
@@ -384,6 +406,7 @@ export interface components {
             status: components["schemas"]["Vertragsstatus"];
             /** Format: date */
             vertragsende: string | null;
+            wiederaufnahme: components["schemas"]["Wiederaufnahmetermin"] | null;
         };
         VertragEigenerAnteil: {
             betrag: components["schemas"]["Betrag"];
@@ -439,6 +462,15 @@ export interface components {
             prozent: number | null;
             rhythmus: components["schemas"]["Erhoehungsrhythmus"];
         };
+        VertragUnterbrechungAntwort: {
+            art: components["schemas"]["Unterbrechungsart"];
+            /** Format: date */
+            bis: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            von: string;
+        };
         VertragVorschauAnfrage: {
             anteilProzent?: number | null;
             /** Format: date */
@@ -457,6 +489,7 @@ export interface components {
             preissteigerung?: components["schemas"]["VertragVorschauPreissteigerung"] | null;
             /** Format: date */
             preissteigerungBetrachtetBis?: string | null;
+            unterbrechungen?: components["schemas"]["VertragVorschauUnterbrechung"][] | null;
             verlaengerung?: components["schemas"]["Verlaengerung"] | null;
             zahlweise?: components["schemas"]["Zahlweise"] | null;
         };
@@ -504,8 +537,27 @@ export interface components {
             prozent?: number | null;
             rhythmus?: components["schemas"]["Erhoehungsrhythmus"] | null;
         };
+        VertragVorschauUnterbrechung: {
+            art?: components["schemas"]["Unterbrechungsart"] | null;
+            /** Format: date */
+            bis?: string | null;
+            /** Format: date */
+            von?: string | null;
+        };
+        VertragWiederaufnahme: {
+            betrag?: components["schemas"]["Betrag"] | null;
+            /** Format: date */
+            datum: string;
+            /** Format: int32 */
+            kuendigungsfristMonate?: number | null;
+            /** Format: date */
+            laufzeitende?: string | null;
+            verlaengerung?: components["schemas"]["Verlaengerung"] | null;
+            /** Format: int64 */
+            version: number;
+        };
         /** @enum {string} */
-        Vertragsstatus: "NICHT_BEGONNEN" | "AKTIV" | "GEKUENDIGT" | "BEENDET" | "STORNIERT";
+        Vertragsstatus: "NICHT_BEGONNEN" | "AKTIV" | "GEKUENDIGT" | "UNTERBROCHEN" | "BEENDET" | "STORNIERT";
         VertragsuebersichtAntwort: {
             einmalkostenImJahr: components["schemas"]["Betrag"][];
             hatAnteile: boolean;
@@ -519,8 +571,14 @@ export interface components {
             laufendeVertraege: number;
             naechsteKuendigungsfristen: components["schemas"]["AnstehendeKuendigung"][];
         };
+        Wiederaufnahmetermin: {
+            /** Format: date */
+            fruehestens: string;
+            /** Format: date */
+            vorschlag: string;
+        };
         /** @enum {string} */
-        Zahlungsweg: "LASTSCHRIFT" | "KREDITKARTE" | "PAYPAL" | "UEBERWEISUNG" | "DAUERAUFTRAG";
+        Zahlungsweg: "LASTSCHRIFT" | "KREDITKARTE" | "PAYPAL" | "WERO" | "UEBERWEISUNG" | "DAUERAUFTRAG";
         /** @enum {string} */
         Zahlweise: "MONATLICH" | "VIERTELJAEHRLICH" | "HALBJAEHRLICH" | "JAEHRLICH";
     };
@@ -1178,6 +1236,68 @@ export interface operations {
             };
             /** @description Inzwischen von jemand anderem geändert, version veraltet (KONFLIKT). */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    vertragWiederaufnehmen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VertragWiederaufnahme"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VertragAntwort"];
+                };
+            };
+            /** @description Ungültige Anfrage (VALIDIERUNG mit felder, ANFRAGE_UNGUELTIG, z. B. ID kein UUID-Format). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Nicht angemeldet (NICHT_ANGEMELDET). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Keine Berechtigung, z. B. Komponente nicht gebucht (KEIN_ZUGRIFF), oder CSRF-Token fehlt (CSRF_TOKEN_UNGUELTIG). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Nicht gefunden, auch Daten eines fremden Haushalts (NICHT_GEFUNDEN). */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -2,7 +2,7 @@ import { expect, Page, test } from '@playwright/test';
 import { abmelden, backendSimulieren, BEISPIEL_VERTRAEGE, tabsEinzeilig } from './backend-mock';
 
 /** Der Name des Tabs kann einen Fehlerzähler tragen, z. B. „Kosten 3, 3 Fehler“. */
-async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Laufzeit' | 'Preisverlauf') {
+async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Preisverlauf' | 'Laufzeit') {
   await page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
 }
 
@@ -591,7 +591,7 @@ test.describe('Neuer Vertrag', () => {
     const termin = page.getByLabel('Erste Erhöhung am *');
     await expect(termin).toHaveValue(`${jahr - 4}-01-01`);
     await expect(termin).toHaveAccessibleDescription('Danach im gewählten Rhythmus.');
-    await page.getByLabel('Erhöhung in % *').fill('2');
+    await page.getByLabel('Erhöhung um *').fill('2');
 
     // Die Stufen legt erst das Speichern an: ein Hinweis, die aktuelle als feste Zeile, keine Infobox.
     const hinweis = `Beim Speichern werden 5 automatische Preise angelegt (${jahr - 4}–${jahr})`;
@@ -654,7 +654,7 @@ test.describe('Neuer Vertrag', () => {
         page.getByText('Pflichtfelder (*) findest du unter „Allgemein“ und „Kosten“.'),
       ).toBeVisible();
       const tabs = page.getByRole('tablist', { name: 'Bereiche des Vertrags' }).getByRole('tab');
-      await expect(tabs).toHaveText(['Allgemein', 'Kosten', 'Laufzeit', 'Preisverlauf']);
+      await expect(tabs).toHaveText(['Allgemein', 'Kosten', 'Preisverlauf', 'Laufzeit']);
       await expect(page.getByLabel('Betrag ab Vertragsbeginn in € *')).toBeHidden();
 
       await tabs.first().focus();
@@ -718,7 +718,7 @@ test.describe('Neuer Vertrag', () => {
       await expect(zusammenfassung).toContainText('Einmalkosten49,90 €');
       await tab(page, 'Preisverlauf');
       await page.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
-      await page.getByLabel('Erhöhung in % *').fill('10');
+      await page.getByLabel('Erhöhung um *').fill('10');
       await page.getByLabel('Erste Erhöhung am *').fill('2027-06-01');
       await expect(zusammenfassung).toContainText(
         'Nächste Preisänderungab 01.06.2027: 21,99 € (Prognose)',
@@ -736,8 +736,8 @@ test.describe('Neuer Vertrag', () => {
       await expect(tabs.getByRole('tab')).toHaveText([
         'Allgemein',
         'Kosten',
-        'Laufzeit',
         'Preisverlauf',
+        'Laufzeit',
       ]);
       await tabsEinzeilig(tabs);
       const breiten = await tabs

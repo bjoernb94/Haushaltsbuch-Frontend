@@ -1,0 +1,45 @@
+@use 'masse' as *;
+
+// Gekündigt oder beendet: Leiste im Info-Stil mit „Wieder aufnehmen“ über den Kacheln.
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $abstand-3;
+  padding: $abstand-3 $abstand-4;
+  border: 1px solid var(--app-info-rand);
+  border-radius: $radius-feld;
+  background: var(--app-info-grund);
+  color: var(--app-info-text);
+  font-size: $schrift-text;
+  // Zeilenhöhe wie im Design.
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.wieder-knopf {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: $abstand-2;
+  padding: 0 $abstand-4;
+  border: 1.5px solid var(--app-gruen);
+  border-radius: $radius-feld;
+  background: var(--app-flaeche);
+  color: var(--app-gruen);
+  font: inherit;
+  font-size: $schrift-text;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--app-gruen-dunkel);
+    border-color: var(--app-gruen-dunkel);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
+  }
+}

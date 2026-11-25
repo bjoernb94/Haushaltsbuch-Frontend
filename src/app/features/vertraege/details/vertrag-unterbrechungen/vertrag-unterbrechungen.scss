@@ -1,0 +1,46 @@
+@use 'masse' as *;
+
+// Tab Laufzeit: Zeiträume, in denen der Vertrag unterbrochen war.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-2;
+  margin-top: $abstand-4;
+  padding-top: $abstand-4;
+  border-top: 1px solid var(--app-trenner-innen);
+
+  h3 {
+    // Die Blase des Info-Knopfs hängt an der Überschrift.
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: $abstand-1;
+    margin: 0;
+    font-size: $schrift-text;
+    font-weight: 800;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: $abstand-halb;
+    padding: $abstand-2 0;
+    border-bottom: 1px solid var(--app-trenner-innen);
+    font-size: $schrift-text;
+  }
+
+  .zeitraum {
+    font-weight: 700;
+  }
+
+  .art {
+    font-size: $schrift-beschriftung;
+    color: var(--app-text-gedaempft);
+  }
+}
