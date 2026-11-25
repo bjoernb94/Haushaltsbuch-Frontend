@@ -155,6 +155,8 @@ export class RegistrierungSeite {
           new Set(FELDER.filter((feld) => problemFelder(error).some((f) => f.feld === feld))),
         );
         break;
+      // Keycloak antwortet nicht rechtzeitig: wie der allgemeine Fall, später erneut versuchen.
+      case 'KEYCLOAK_NICHT_ERREICHBAR':
       default:
         this.fehler.set(FEHLER_UNBEKANNT);
     }

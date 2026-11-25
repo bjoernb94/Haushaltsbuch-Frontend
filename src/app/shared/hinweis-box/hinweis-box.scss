@@ -39,3 +39,11 @@
     }
   }
 }
+
+// Links im Inhalt (z. B. „Support“): Farbe des Box-Texts, unterstrichen, wie im Designsystem. Der Inhalt kommt
+// von der Seite, deshalb ::ng-deep; :host hält die Regel in der Box.
+:host ::ng-deep a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}

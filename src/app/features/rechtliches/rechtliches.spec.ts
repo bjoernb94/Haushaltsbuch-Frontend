@@ -123,6 +123,24 @@ describe('Impressum und Datenschutz', () => {
       expect(element.querySelector('a[href="mailto:betrieb@beispiel.de"]')).not.toBeNull();
     });
 
+    it('fährt die Sprungmarke zum Kontakt an, sobald die Angaben geladen sind', async () => {
+      const scrollen = vi.fn();
+      Element.prototype.scrollIntoView = scrollen;
+      window.matchMedia = vi.fn().mockReturnValue({ matches: true });
+      stand.set({ zustand: 'laedt' });
+      await TestBed.inject(Router).navigateByUrl('/#kontakt');
+
+      const fixture = TestBed.createComponent(ImpressumSeite);
+      await fixture.whenStable();
+      expect(scrollen).not.toHaveBeenCalled();
+
+      stand.set({ zustand: 'da', angaben: ANGABEN, quellcode: {} });
+      await fixture.whenStable();
+      expect(scrollen).toHaveBeenCalledTimes(1);
+      expect(scrollen.mock.contexts[0]).toBe(fixture.nativeElement.querySelector('#kontakt'));
+      expect(fixture.nativeElement.querySelector('#kontakt h2')?.textContent).toBe('Kontakt');
+    });
+
     it('nennt beide Versionen getrennt, fehlendes als nicht bekannt', async () => {
       const element = await seite(ImpressumSeite);
       const werte = [...element.querySelectorAll('dd.technisch')].map((dd) => dd.textContent);

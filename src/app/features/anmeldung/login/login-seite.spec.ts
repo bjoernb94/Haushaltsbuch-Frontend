@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Location } from '@angular/common';
 import { provideRouter, Router } from '@angular/router';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -23,7 +24,10 @@ describe('LoginSeite', () => {
     await TestBed.configureTestingModule({
       imports: [LoginSeite],
       providers: [
-        provideRouter([]),
+        provideRouter([
+          { path: 'login', children: [] },
+          { path: 'impressum', children: [] },
+        ]),
         { provide: AuthService, useValue: { anmelden } },
         { provide: SystemstatusService, useValue: { beobachten: () => systemstatus } },
       ],
@@ -109,6 +113,58 @@ describe('LoginSeite', () => {
 
     await ablehnen(403, { code: 'ANMELDUNG_NICHT_EINGERICHTET' });
     expect(fehlertext()).toBe('Das Konto ist noch nicht vollständig eingerichtet.');
+  });
+
+  it('verweist bei unvollständigem Konto auf den Support statt auf später', async () => {
+    await ablehnen(403, { code: 'KONTO_UNVOLLSTAENDIG' });
+
+    expect(fehlertext()).toBe(
+      'Dein Konto wurde nicht vollständig angelegt. Bitte wende dich an den Support, er kann es ' +
+        'entfernen. Danach kannst du dich neu registrieren.',
+    );
+    expect(fehlertext()).not.toContain('Das Konto ist noch nicht vollständig eingerichtet.');
+    expect(felderMarkiert()).toEqual([false, false]);
+
+    const support = element.querySelector<HTMLAnchorElement>('[role="alert"] a')!;
+    expect(support.textContent?.trim()).toBe('Support');
+    expect(support.getAttribute('href')).toBe('/impressum#kontakt');
+  });
+
+  it('gibt dem Support-Link die Login-Seite als Herkunft mit', async () => {
+    const router = TestBed.inject(Router);
+    navigiert.mockRestore();
+    await router.navigateByUrl('/login?returnUrl=%2Fvertraege');
+    await ablehnen(403, { code: 'KONTO_UNVOLLSTAENDIG' });
+
+    element.querySelector<HTMLAnchorElement>('[role="alert"] a')!.click();
+    await fixture.whenStable();
+
+    expect(router.url).toBe('/impressum#kontakt');
+    expect(TestBed.inject(Location).getState()).toMatchObject({
+      herkunft: '/login?returnUrl=%2Fvertraege',
+    });
+  });
+
+  it('blendet den Support-Hinweis beim Tippen aus, gesperrt geht vor', async () => {
+    await ablehnen(403, { code: 'KONTO_UNVOLLSTAENDIG' });
+    systemstatus.next({ backend: true, datenbank: false, anmeldeserver: true });
+    await fixture.whenStable();
+    expect(fehlertext()).toBe('Login gerade nicht möglich.');
+
+    systemstatus.next({ backend: true, datenbank: true, anmeldeserver: true });
+    await fixture.whenStable();
+    expect(fehlertext()).toContain('Support');
+
+    await eingeben('max@beispiel.de', 'x');
+    expect(fehlertext()).toBeUndefined();
+  });
+
+  it('bittet bei nicht erreichbarem Keycloak, es später erneut zu versuchen', async () => {
+    await ablehnen(503, { code: 'KEYCLOAK_NICHT_ERREICHBAR' });
+    expect(fehlertext()).toBe(
+      'Die Anmeldung ist gerade nicht möglich. Bitte versuche es später erneut.',
+    );
+    expect(felderMarkiert()).toEqual([false, false]);
   });
 
   it('meldet Validierungsfehler des Backends', async () => {
