@@ -68,6 +68,13 @@ html:has(app-vertrag-bearbeiten dialog[open]) {
   }
 }
 
+// Ein Outlet bleibt immer leer, die Seite steht daneben. In Flex-Layouts mit `gap` (Liste und
+// Details der Verträge) bekäme es sonst einen Abstand ab, und Liste bzw. Panel wären schmaler als die
+// Kennzahlen darüber.
+router-outlet {
+  display: none;
+}
+
 body {
   color-scheme: light;
   background-color: var(--app-grund);
