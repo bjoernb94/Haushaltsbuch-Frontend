@@ -105,6 +105,44 @@
   }
 }
 
+// Zeile mit Schalter wie der Baustein „Schalter“ im Design System: Titel und Hilfe links, Schalter rechts, die ganze
+// Zeile ist das `label` und schaltet. Markup: label.schalterzeile > span.schalterzeile-text (span.schalterzeile-titel,
+// span.schalterzeile-hilfe) + input.schalter; der Schalter nennt per aria-labelledby nur den Titel.
+@mixin schalterzeile {
+  @include schalter;
+
+  .schalterzeile {
+    min-width: 0;
+    min-height: 48px; // Zeilenhöhe wie im Design (Trefferfläche)
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $abstand-4;
+    cursor: pointer;
+  }
+
+  .schalterzeile-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $abstand-halb;
+  }
+
+  .schalterzeile-titel {
+    font-size: $schrift-eingabe;
+    line-height: 1.4;
+    font-weight: 700;
+    color: var(--app-text);
+  }
+
+  .schalterzeile-hilfe {
+    font-size: $schrift-beschriftung;
+    line-height: 1.45;
+    color: var(--app-text-gedaempft);
+  }
+}
+
 @mixin knoepfe {
   .aktionen {
     display: flex;

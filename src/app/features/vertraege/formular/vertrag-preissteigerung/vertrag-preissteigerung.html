@@ -1,19 +1,20 @@
-<div class="ankreuzen">
+<label class="schalterzeile">
+  <span class="schalterzeile-text">
+    <span class="schalterzeile-titel" [id]="id('steigt') + '-titel'">Preis steigt regelmäßig</span>
+    <span class="schalterzeile-hilfe" [id]="id('steigt') + '-hinweis'"
+      >Zum Beispiel jährlich um 2,5 %. Vergangene Erhöhungen werden beim Speichern zu Preisen.</span
+    >
+  </span>
   <input
     [id]="id('steigt')"
     class="schalter"
     type="checkbox"
     role="switch"
     formControlName="steigt"
+    [attr.aria-labelledby]="id('steigt') + '-titel'"
     [attr.aria-describedby]="id('steigt') + '-hinweis'"
   />
-  <div>
-    <label [for]="id('steigt')">Preis steigt regelmäßig</label>
-    <span class="feldhinweis" [id]="id('steigt') + '-hinweis'"
-      >Zum Beispiel jährlich um 2,5 %. Vergangene Erhöhungen werden beim Speichern zu Preisen.</span
-    >
-  </div>
-</div>
+</label>
 
 <!-- auto-fill statt auto-fit: Die Preisgarantie allein bleibt halb breit. -->
 <div class="raster">

@@ -1,22 +1,23 @@
 <fieldset>
   <legend>Laufzeit und Kündigung</legend>
-  <div class="ankreuzen">
+  <label class="schalterzeile">
+    <span class="schalterzeile-text">
+      <span class="schalterzeile-titel" [id]="id('nichtKuendbar') + '-titel'">Nicht kündbar</span>
+      <span class="schalterzeile-hilfe" [id]="id('nichtKuendbar') + '-hinweis'"
+        >Für Pflichtbeiträge wie den Rundfunkbeitrag. Verlängerung und Kündigungsfrist werden dann
+        ausgeblendet; das Laufzeitende bleibt.</span
+      >
+    </span>
     <input
       [id]="id('nichtKuendbar')"
       class="schalter"
       type="checkbox"
       role="switch"
       formControlName="nichtKuendbar"
+      [attr.aria-labelledby]="id('nichtKuendbar') + '-titel'"
       [attr.aria-describedby]="id('nichtKuendbar') + '-hinweis'"
     />
-    <div>
-      <label [for]="id('nichtKuendbar')">Nicht kündbar</label>
-      <span class="feldhinweis" [id]="id('nichtKuendbar') + '-hinweis'"
-        >Für Pflichtbeiträge wie den Rundfunkbeitrag. Verlängerung und Kündigungsfrist werden dann
-        ausgeblendet; das Laufzeitende bleibt.</span
-      >
-    </div>
-  </div>
+  </label>
   <div class="raster">
     <div class="feld">
       <label [for]="id('laufzeitende')"
@@ -78,24 +79,25 @@
       <span>{{ vorschauText() }}</span>
     </div>
     @if (erinnerung()) {
-      <div class="ankreuzen">
+      <label class="schalterzeile">
+        <span class="schalterzeile-text">
+          <span class="schalterzeile-titel" [id]="id('erinnerungSonderkuendigung') + '-titel'"
+            >An das Sonderkündigungsrecht erinnern</span
+          >
+          <span class="schalterzeile-hilfe" [id]="id('erinnerungSonderkuendigung') + '-hinweis'"
+            >Vor jeder Preiserhöhung. Ob es gilt, steht meist im Ankündigungsschreiben.</span
+          >
+        </span>
         <input
           [id]="id('erinnerungSonderkuendigung')"
           class="schalter"
           type="checkbox"
           role="switch"
           formControlName="erinnerungSonderkuendigung"
+          [attr.aria-labelledby]="id('erinnerungSonderkuendigung') + '-titel'"
           [attr.aria-describedby]="id('erinnerungSonderkuendigung') + '-hinweis'"
         />
-        <div>
-          <label [for]="id('erinnerungSonderkuendigung')"
-            >An das Sonderkündigungsrecht erinnern</label
-          >
-          <span class="feldhinweis" [id]="id('erinnerungSonderkuendigung') + '-hinweis'"
-            >Vor jeder Preiserhöhung. Ob es gilt, steht meist im Ankündigungsschreiben.</span
-          >
-        </div>
-      </div>
+      </label>
     }
   }
 </fieldset>
@@ -103,22 +105,23 @@
 <fieldset>
   <legend>Status</legend>
   <div class="raster">
-    <div class="ankreuzen">
+    <label class="schalterzeile">
+      <span class="schalterzeile-text">
+        <span class="schalterzeile-titel" [id]="id('gekuendigt') + '-titel'">Gekündigt</span>
+        <span class="schalterzeile-hilfe" [id]="id('gekuendigt') + '-hinweis'"
+          >Bis zum Kündigungsdatum gilt der Vertrag als gekündigt, danach als beendet.</span
+        >
+      </span>
       <input
         [id]="id('gekuendigt')"
         class="schalter"
         type="checkbox"
         role="switch"
         formControlName="gekuendigt"
+        [attr.aria-labelledby]="id('gekuendigt') + '-titel'"
         [attr.aria-describedby]="id('gekuendigt') + '-hinweis'"
       />
-      <div>
-        <label [for]="id('gekuendigt')">Gekündigt</label>
-        <span class="feldhinweis" [id]="id('gekuendigt') + '-hinweis'"
-          >Bis zum Kündigungsdatum gilt der Vertrag als gekündigt, danach als beendet.</span
-        >
-      </div>
-    </div>
+    </label>
     @if (gekuendigt()) {
       <div class="feld">
         <label [for]="id('gekuendigtZum')">Gekündigt zum *</label>
