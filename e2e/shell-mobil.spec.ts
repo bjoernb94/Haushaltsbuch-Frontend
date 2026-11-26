@@ -4,7 +4,7 @@ import { backendSimulieren, BEISPIEL_VERTRAEGE, nutzerKnopf } from './backend-mo
 const kopf = (page: Page) => page.getByRole('banner');
 const hauptmenue = (page: Page) => page.getByRole('navigation', { name: 'Hauptmenü' });
 
-test.describe('bis 900 px', () => {
+test.describe('bis 900 px', { tag: '@mobil' }, () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
   });
@@ -52,7 +52,8 @@ test.describe('bis 900 px', () => {
     expect(stil.grund).toBe('rgba(0, 0, 0, 0)');
     expect(stil.unschaerfe).toContain('blur(20px)');
 
-    await page.mouse.wheel(0, 1500);
+    // Mobile WebKit kennt kein Mausrad.
+    await page.evaluate(() => window.scrollBy(0, 1500));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
     await expect.poll(async () => (await kopf(page).boundingBox())!.y).toBe(0);
   });
@@ -156,21 +157,25 @@ test.describe('bis 900 px', () => {
   });
 });
 
-test('zwischen 641 und 900 px: Klick auf die Tab-Leiste schließt nur das Kontomenü', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 800, height: 900 });
-  await backendSimulieren(page, { angemeldet: true });
-  await page.goto('/vertraege');
-  await nutzerKnopf(page).click();
-  await expect(page.getByRole('dialog', { name: 'Dein Konto' })).toBeVisible();
+test(
+  'zwischen 641 und 900 px: Klick auf die Tab-Leiste schließt nur das Kontomenü',
+  { tag: '@mobil' },
+  async ({ page }) => {
+    await page.setViewportSize({ width: 800, height: 900 });
+    await backendSimulieren(page, { angemeldet: true });
+    await page.goto('/vertraege');
+    await nutzerKnopf(page).click();
+    await expect(page.getByRole('dialog', { name: 'Dein Konto' })).toBeVisible();
 
-  const eintrag = (await hauptmenue(page).getByRole('link', { name: 'Übersicht' }).boundingBox())!;
-  await page.mouse.click(eintrag.x + eintrag.width / 2, eintrag.y + eintrag.height / 2);
+    const eintrag = (await hauptmenue(page)
+      .getByRole('link', { name: 'Übersicht' })
+      .boundingBox())!;
+    await page.mouse.click(eintrag.x + eintrag.width / 2, eintrag.y + eintrag.height / 2);
 
-  await expect(page.getByRole('dialog', { name: 'Dein Konto' })).toHaveCount(0);
-  await expect(page).toHaveURL(/\/vertraege$/);
-});
+    await expect(page.getByRole('dialog', { name: 'Dein Konto' })).toHaveCount(0);
+    await expect(page).toHaveURL(/\/vertraege$/);
+  },
+);
 
 test('ab 901 px keine Aktionen im Kopf, „Zurück“ steht im Inhalt', async ({ page }) => {
   await backendSimulieren(page, { angemeldet: true });

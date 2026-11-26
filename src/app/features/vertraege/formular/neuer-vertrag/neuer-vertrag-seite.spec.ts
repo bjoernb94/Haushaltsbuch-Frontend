@@ -68,6 +68,7 @@ describe('NeuerVertragSeite', () => {
     await absenden();
     expect(anlegen).toHaveBeenCalledOnce();
     expect(navigieren).toHaveBeenCalledWith(['/vertraege'], {
+      scroll: 'manual',
       state: { meldung: '„Anbieter“ wurde gespeichert.', vertragId: 'v1' },
     });
   });
@@ -82,6 +83,7 @@ describe('NeuerVertragSeite', () => {
     });
     await absenden();
     expect(navigieren.mock.calls[0][1]).toEqual({
+      scroll: 'manual',
       state: { meldung: '„Kfz“ wurde gespeichert.', vertragId: 'v1' },
     });
   });

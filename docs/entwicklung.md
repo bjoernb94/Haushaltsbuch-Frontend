@@ -112,11 +112,24 @@ Die E2E-Tests simulieren das Backend im Browser (`e2e/backend-mock.ts`) und brau
 Backend noch Keycloak. Playwright startet den Dev-Server selbst oder nutzt einen bereits
 laufenden auf Port 4200. Die Browser installiert einmalig `npx playwright install chromium firefox`.
 
+Die Tests laufen am Desktop in Chromium, Firefox und WebKit (Safari), auf dem Handy in Mobile Chrome
+(Pixel 7) und Mobile Safari (iPhone 15). Auf dem Handy nur die Tests mit Tag `@mobil`
+(`test('…', { tag: '@mobil' }, …)`), denn die übrigen gehen von der Desktop-Ansicht aus. Ein neuer
+Test, der eine Breite bis 900 px prüft, bekommt den Tag; erst Desktop, dann Handy in einem Test bleibt
+ohne. Abweichungen einzelner Browser nur per `test.skip` mit Grund.
+
+WebKit unterstützt Playwright nur unter Ubuntu und Debian. `npm run e2e:webkit` startet die Tests
+deshalb per Podman im offiziellen Playwright-Image in der Version aus `package-lock.json`, mit dem Netz
+des Hosts, nutzt also einen laufenden Dev-Server. Argumente gehen an Playwright, z. B.
+`--project=webkit`. Ohne `CI` oder `E2E_WEBKIT` fehlen die WebKit-Projekte, damit `npm run e2e`
+auch ohne installiertes WebKit läuft.
+
 Die CI (`.github/workflows/build.yml`) führt Lint, Formatprüfung, Production-Build,
 `npm audit` für die Laufzeit-Abhängigkeiten, Unit- und E2E-Tests aus. Die E2E-Tests verteilt sie
-auf drei Jobs: Chromium und Firefox in zwei Teilen. Diese laufen im offiziellen Playwright-Image, in
-dem Browser und Systempakete schon installiert sind. Seine Version liest die CI aus
-`package-lock.json`, sie folgt also jedem Update von Playwright. Außerdem baut sie das Container-Image,
+auf fünf Jobs: Chromium mit Mobile Chrome, Firefox in zwei Teilen und WebKit mit Mobile Safari in
+zwei Teilen. Diese laufen im offiziellen Playwright-Image, in dem Browser und Systempakete schon
+installiert sind. Seine Version liest die CI aus `package-lock.json`, sie folgt also jedem Update
+von Playwright. Außerdem baut sie das Container-Image,
 startet es und prüft es. Dieser Job läuft wegen Podman direkt auf dem Runner, die Prüfung startet
 Playwright aber im selben Image (`PLAYWRIGHT_IMAGE` für `npm run image:pruefen`). Lokal nutzt sie
 ohne diese Variable die installierten Browser.

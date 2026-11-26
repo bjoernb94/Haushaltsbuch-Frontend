@@ -149,7 +149,7 @@ test('ohne instanz.json ein Hinweis statt der Angaben', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '1. Verantwortlicher' })).toHaveCount(0);
 });
 
-test('Handy: alles passt in die Breite', async ({ page }) => {
+test('Handy: alles passt in die Breite', { tag: '@mobil' }, async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 });
   await backendSimulieren(page, { angemeldet: true });
   for (const pfad of ['/impressum', '/datenschutz']) {

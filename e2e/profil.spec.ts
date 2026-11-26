@@ -65,25 +65,27 @@ test('das Kontomenü markiert die Einstellungen, die das Profil als Herkunft bek
   await expect(page).toHaveURL(/\/einstellungen\/profil$/);
 });
 
-test('auf dem Handy: „Einstellungen“ im Kopf, Angaben untereinander, nichts zu breit', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await backendSimulieren(page, { angemeldet: true });
-  await zumProfil(page);
+test(
+  'auf dem Handy: „Einstellungen“ im Kopf, Angaben untereinander, nichts zu breit',
+  { tag: '@mobil' },
+  async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await backendSimulieren(page, { angemeldet: true });
+    await zumProfil(page);
 
-  const zurueck = page.getByRole('banner').getByRole('link', { name: 'Zurück zu Einstellungen' });
-  await expect(zurueck).toHaveText('Einstellungen');
-  const feld = page.getByRole('region', { name: 'Persönliche Angaben' }).getByRole('term').last();
-  const wert = page
-    .getByRole('region', { name: 'Persönliche Angaben' })
-    .getByRole('definition')
-    .last();
-  expect((await wert.boundingBox())!.y).toBeGreaterThan((await feld.boundingBox())!.y);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    const zurueck = page.getByRole('banner').getByRole('link', { name: 'Zurück zu Einstellungen' });
+    await expect(zurueck).toHaveText('Einstellungen');
+    const feld = page.getByRole('region', { name: 'Persönliche Angaben' }).getByRole('term').last();
+    const wert = page
+      .getByRole('region', { name: 'Persönliche Angaben' })
+      .getByRole('definition')
+      .last();
+    expect((await wert.boundingBox())!.y).toBeGreaterThan((await feld.boundingBox())!.y);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
 
-  await zurueck.click();
-  await expect(page).toHaveURL(/\/einstellungen$/);
-  await page.getByRole('banner').getByRole('link', { name: 'Zurück zu Verträge' }).click();
-  await expect(page).toHaveURL(/\/vertraege$/);
-});
+    await zurueck.click();
+    await expect(page).toHaveURL(/\/einstellungen$/);
+    await page.getByRole('banner').getByRole('link', { name: 'Zurück zu Verträge' }).click();
+    await expect(page).toHaveURL(/\/vertraege$/);
+  },
+);

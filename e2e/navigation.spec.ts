@@ -70,25 +70,29 @@ test('die Startseite behält am Desktop die Kopfzeile', async ({ page }) => {
   await expect(page.getByRole('banner').getByText('Haushaltsbuch')).toBeVisible();
 });
 
-test('auf dem Handy wird die Navigation zur Leiste mit Kurzbezeichnungen', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/vertraege');
-  const hauptmenue = page.getByRole('navigation', { name: 'Hauptmenü' });
+test(
+  'auf dem Handy wird die Navigation zur Leiste mit Kurzbezeichnungen',
+  { tag: '@mobil' },
+  async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/vertraege');
+    const hauptmenue = page.getByRole('navigation', { name: 'Hauptmenü' });
 
-  await expect(hauptmenue.getByText('Finanzen')).toBeVisible();
-  await expect(hauptmenue.getByText('Finanzübersicht')).toBeHidden();
-  await expect(hauptmenue.getByText('Komponenten')).toBeHidden();
-  await expect(hauptmenue.getByText('© Björn Bochmann')).toBeHidden();
-  // Ohne Fußzeile; Impressum und Datenschutz über die Einstellungen.
-  await expect(page.getByRole('contentinfo')).toBeHidden();
-  // Nur für Screenreader: Der Text bleibt im Zugriffsbaum, sichtbar ist nur der graue Eintrag.
-  await expect(hauptmenue).toContainText('Demnächst verfügbar');
+    await expect(hauptmenue.getByText('Finanzen')).toBeVisible();
+    await expect(hauptmenue.getByText('Finanzübersicht')).toBeHidden();
+    await expect(hauptmenue.getByText('Komponenten')).toBeHidden();
+    await expect(hauptmenue.getByText('© Björn Bochmann')).toBeHidden();
+    // Ohne Fußzeile; Impressum und Datenschutz über die Einstellungen.
+    await expect(page.getByRole('contentinfo')).toBeHidden();
+    // Nur für Screenreader: Der Text bleibt im Zugriffsbaum, sichtbar ist nur der graue Eintrag.
+    await expect(hauptmenue).toContainText('Demnächst verfügbar');
 
-  const box = await hauptmenue.boundingBox();
-  expect(box!.y + box!.height).toBe(844);
-  const breite = await page.evaluate(() => document.documentElement.scrollWidth);
-  expect(breite).toBe(390);
-});
+    const box = await hauptmenue.boundingBox();
+    expect(box!.y + box!.height).toBe(844);
+    const breite = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(breite).toBe(390);
+  },
+);
 
 test('Fußzeile der Shell ohne Systemstatus, als flache Zeile', async ({ page }) => {
   for (const pfad of ['/start', '/vertraege']) {

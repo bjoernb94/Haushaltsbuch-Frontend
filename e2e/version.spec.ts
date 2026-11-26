@@ -57,7 +57,7 @@ test('ohne Antwort des Backends steht die Version trotzdem, ohne Badge und Strei
   await expect(streifen(page)).toHaveCount(0);
 });
 
-test('Handy: der Streifen bleibt einzeilig', async ({ page }) => {
+test('Handy: der Streifen bleibt einzeilig', { tag: '@mobil' }, async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   await backendSimulieren(page, { stage: 'DEV' });
   await page.goto('/login');

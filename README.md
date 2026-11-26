@@ -50,7 +50,8 @@ npm run lint           # ESLint inkl. Template-Regeln
 npm run format:check   # Prettier (npm run format formatiert)
 npm test               # Unit-Tests (Vitest), im Watch-Modus
 npm run test:ci        # Unit-Tests einmalig, mit Abdeckung (coverage/) und JUnit (junit/)
-npm run e2e            # E2E-Tests (Playwright) in Chromium und Firefox
+npm run e2e            # E2E-Tests (Playwright) in Chromium, Firefox und Mobile Chrome
+npm run e2e:webkit     # E2E-Tests in Desktop und Mobile Safari, im Playwright-Image (Podman)
 npm run image:pruefen  # gebautes Container-Image starten und prüfen (Podman)
 npm run api:typen      # API-Typen aus der OpenAPI-Beschreibung des Backends erzeugen
 npm run design:pruefen -- <Ordner>  # geladenen Canvas oder Design System gegen die Tokens prüfen

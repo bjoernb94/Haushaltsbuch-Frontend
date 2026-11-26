@@ -57,7 +57,10 @@ export class NeuerVertragSeite {
       .subscribe({
         next: (vertrag) => {
           this.ungespeichert.vergessen();
+          // Die Liste holt Meldung und Zeile selbst ins Bild. Scrollte der Router danach nach oben,
+          // bräche Safari ihren sanften Bildlauf ab.
           void this.router.navigate(['/vertraege'], {
+            scroll: 'manual',
             state: {
               meldung: `„${vertragName(vertrag)}“ wurde gespeichert.`,
               vertragId: vertrag.id,

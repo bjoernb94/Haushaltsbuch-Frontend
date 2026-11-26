@@ -118,20 +118,22 @@ test('bei 409 lädt die Seite den aktuellen Stand und weist darauf hin', async (
   await expect(speichern(page)).toBeDisabled();
 });
 
-test('auf dem Handy: „Einstellungen“ im Kopf, Speichern über Verwerfen, nichts zu breit', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await backendSimulieren(page, { angemeldet: true, komponenten: ['VERTRAGSUEBERSICHT'] });
-  await zuDenKomponenten(page);
-  await expect(
-    page.getByRole('banner').getByRole('link', { name: 'Zurück zu Einstellungen' }),
-  ).toHaveText('Einstellungen');
+test(
+  'auf dem Handy: „Einstellungen“ im Kopf, Speichern über Verwerfen, nichts zu breit',
+  { tag: '@mobil' },
+  async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await backendSimulieren(page, { angemeldet: true, komponenten: ['VERTRAGSUEBERSICHT'] });
+    await zuDenKomponenten(page);
+    await expect(
+      page.getByRole('banner').getByRole('link', { name: 'Zurück zu Einstellungen' }),
+    ).toHaveText('Einstellungen');
 
-  await schalter(page, /Portfolio/).check();
-  const oben = (await speichern(page).boundingBox())!;
-  const unten = (await page.getByRole('button', { name: 'Änderungen verwerfen' }).boundingBox())!;
-  expect(oben.y).toBeLessThan(unten.y);
-  expect(oben.width).toBe(unten.width);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-});
+    await schalter(page, /Portfolio/).check();
+    const oben = (await speichern(page).boundingBox())!;
+    const unten = (await page.getByRole('button', { name: 'Änderungen verwerfen' }).boundingBox())!;
+    expect(oben.y).toBeLessThan(unten.y);
+    expect(oben.width).toBe(unten.width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  },
+);

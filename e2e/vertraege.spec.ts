@@ -322,7 +322,7 @@ test.describe('Seite Verträge', () => {
     });
   }
 
-  test('passt auf dem Handy in die Breite', async ({ page }) => {
+  test('passt auf dem Handy in die Breite', { tag: '@mobil' }, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
     await page.goto('/vertraege');
@@ -332,19 +332,23 @@ test.describe('Seite Verträge', () => {
   });
 
   test.describe('Details', () => {
-    test('auf dem Handy (390 px) stehen alle Tabs in einer Zeile', async ({ page }) => {
-      await page.setViewportSize({ width: 390, height: 844 });
-      await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
-      await page.goto('/vertraege/kfz?tab=preise');
-      const tabs = page.getByRole('tablist', { name: 'Bereiche der Details' });
-      await expect(tabs.getByRole('tab')).toHaveText([
-        'Allgemein',
-        'Kosten',
-        'Preisverlauf',
-        'Laufzeit',
-      ]);
-      await tabsEinzeilig(tabs);
-    });
+    test(
+      'auf dem Handy (390 px) stehen alle Tabs in einer Zeile',
+      { tag: '@mobil' },
+      async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+        await page.goto('/vertraege/kfz?tab=preise');
+        const tabs = page.getByRole('tablist', { name: 'Bereiche der Details' });
+        await expect(tabs.getByRole('tab')).toHaveText([
+          'Allgemein',
+          'Kosten',
+          'Preisverlauf',
+          'Laufzeit',
+        ]);
+        await tabsEinzeilig(tabs);
+      },
+    );
 
     test.beforeEach(async ({ page }) => {
       await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
@@ -489,23 +493,25 @@ test.describe('Seite Verträge', () => {
       await expect(page).toHaveURL(/\/vertraege$/);
     });
 
-    test('bis 900 px gibt es kein „…“, Tippen öffnet die Details als Vollbild', async ({
-      page,
-    }) => {
-      await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.setViewportSize({ width: 390, height: 844 });
-      await expect(page.getByRole('button', { name: `Aktionen für ${KFZ}` })).toBeHidden();
-      await oeffnen(page, KFZ).click();
+    test(
+      'bis 900 px gibt es kein „…“, Tippen öffnet die Details als Vollbild',
+      { tag: '@mobil' },
+      async ({ page }) => {
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expect(page.getByRole('button', { name: `Aktionen für ${KFZ}` })).toBeHidden();
+        await oeffnen(page, KFZ).click();
 
-      const panel = details(page, KFZ);
-      expect(await panel.boundingBox()).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
-      // Die Tab-Leiste bleibt darüber.
-      await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeVisible();
-      await expect(panel.getByRole('button', { name: 'Details schließen' })).toBeHidden();
-      await panel.getByRole('button', { name: 'Verträge' }).click();
-      await expect(page).toHaveURL(/\/vertraege$/);
-      await expect(page.getByRole('complementary')).toHaveCount(0);
-    });
+        const panel = details(page, KFZ);
+        expect(await panel.boundingBox()).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
+        // Die Tab-Leiste bleibt darüber.
+        await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeVisible();
+        await expect(panel.getByRole('button', { name: 'Details schließen' })).toBeHidden();
+        await panel.getByRole('button', { name: 'Verträge' }).click();
+        await expect(page).toHaveURL(/\/vertraege$/);
+        await expect(page.getByRole('complementary')).toHaveCount(0);
+      },
+    );
   });
 
   test.describe('Kürzel N', () => {
