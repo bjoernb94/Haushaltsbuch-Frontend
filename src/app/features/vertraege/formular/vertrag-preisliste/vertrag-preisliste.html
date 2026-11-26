@@ -5,7 +5,7 @@
       <label [for]="erstId('gueltigAb')"
         >Gilt ab
         @if (etikett(beginn()); as e) {
-          <span [class]="'etikett ' + e.klasse">{{ e.text }}</span>
+          <app-chip class="etikett" [ton]="e.ton">{{ e.text }}</app-chip>
         }
       </label>
       <input
@@ -108,8 +108,8 @@
       <div class="feld">
         <label [for]="idPrefix() + '-preise-neu-gueltigAb'"
           >Gilt ab
-          <span class="etikett aktuell">aktuell</span>
-          <span class="etikett">{{ automatischText }}</span>
+          <app-chip class="etikett" ton="erfolg">aktuell</app-chip>
+          <app-chip class="etikett" ton="info">{{ automatischText }}</app-chip>
         </label>
         <input
           [id]="idPrefix() + '-preise-neu-gueltigAb'"
@@ -141,10 +141,10 @@
       <label [for]="id(i, 'gueltigAb')"
         >Gilt ab *
         @if (etikett(werte()[i]?.gueltigAb); as e) {
-          <span [class]="'etikett ' + e.klasse">{{ e.text }}</span>
+          <app-chip class="etikett" [ton]="e.ton">{{ e.text }}</app-chip>
         }
         @if (unveraendertAutomatisch(i)) {
-          <span class="etikett">{{ automatischText }}</span>
+          <app-chip class="etikett" ton="info">{{ automatischText }}</app-chip>
         }
       </label>
       <input

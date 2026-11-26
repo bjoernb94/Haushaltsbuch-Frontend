@@ -3,10 +3,11 @@
     <a kachelLink routerLink="/vertraege">Alle Verträge</a>
 
     @if (fehler()) {
-      <app-hinweis-box text="Die Vertragsübersicht konnte nicht geladen werden." />
-      <button type="button" class="knopf knopf-sekundaer" (click)="laden()">
-        Erneut versuchen
-      </button>
+      <app-hinweis-box
+        text="Die Vertragsübersicht konnte nicht geladen werden."
+        aktionText="Erneut versuchen"
+        (aktion)="laden()"
+      />
     } @else if (uebersicht(); as daten) {
       <div class="kennzahlen">
         <div class="kennzahl">
@@ -30,9 +31,9 @@
               <b>{{ frist.name }}</b>
               <span class="betrag">{{ frist.betrag | betrag }}/{{ frist.einheit }}</span>
             </span>
-            <span class="termin" [class.dringend]="frist.dringend">
+            <app-chip class="termin" [ton]="frist.dringend ? 'warnung' : 'neutral'">
               bis {{ frist.kuendigenBis | datum }}
-            </span>
+            </app-chip>
           </div>
         } @empty {
           <p class="keine">Gerade steht keine Kündigungsfrist an.</p>

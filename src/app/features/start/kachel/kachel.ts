@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Komponente } from '../../../core/api/api';
+import { Chip } from '../../../shared/chip/chip';
 import { istVerfuegbar, KOMPONENTE_ICON } from '../../../core/komponenten/komponente';
 
 /**
@@ -8,6 +9,7 @@ import { istVerfuegbar, KOMPONENTE_ICON } from '../../../core/komponenten/kompon
  */
 @Component({
   selector: 'app-kachel',
+  imports: [Chip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './kachel.html',
   styleUrl: './kachel.scss',

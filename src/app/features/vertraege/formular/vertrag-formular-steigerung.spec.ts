@@ -325,7 +325,7 @@ describe('VertragFormular: Preissteigerung und automatische Preise', () => {
           vorschauPreis(p.gueltigAb === '2026-03-01' ? { ...p, art: 'AKTUELL' } : p),
         ),
       });
-      expect(text('.preis:not(.erster) .etikett.aktuell')).toEqual(['aktuell']);
+      expect(text('.preis:not(.erster) .etikett[data-ton="erfolg"]')).toEqual(['aktuell']);
       el.querySelector<HTMLButtonElement>('.gruppe-umschalten')!.click();
       tick();
       expect(text('.gruppe-umschalten')).toEqual([

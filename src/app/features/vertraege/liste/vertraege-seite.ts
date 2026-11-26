@@ -196,7 +196,7 @@ export class VertraegeSeite {
     this.nachAenderung({
       id: vertrag.id,
       text: `„${vertragName(vertrag)}“ wurde gespeichert.`,
-      art: 'info',
+      art: 'erfolg',
     });
   }
 
@@ -299,7 +299,7 @@ export class VertraegeSeite {
     const text: unknown = state?.['meldung'];
     const id: unknown = state?.['vertragId'];
     return typeof text === 'string'
-      ? { id: typeof id === 'string' ? id : null, text, art: 'info', zeileZeigen: true }
+      ? { id: typeof id === 'string' ? id : null, text, art: 'erfolg', zeileZeigen: true }
       : null;
   }
 
@@ -322,7 +322,7 @@ export class VertraegeSeite {
     this.meldung.set({
       ...this.stelleDerZeile(vertrag.id),
       text: `„${vertragName(vertrag)}“ wurde gelöscht.`,
-      art: 'info',
+      art: 'erfolg',
     });
     this.laden(true);
   }

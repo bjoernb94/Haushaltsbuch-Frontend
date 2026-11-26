@@ -74,22 +74,5 @@ h2 {
 
 .beispiel {
   align-self: flex-start;
-  margin: -#{$abstand-2} 0;
-  padding: $abstand-1 $abstand-3;
-  border-radius: $radius-pille;
-  background: var(--app-hinweis-grund);
-  color: var(--app-hinweis-text);
-  font-size: $schrift-hinweis;
-  font-weight: 700;
-}
-
-.hinweis {
-  margin: 0;
-  padding: $abstand-1 $abstand-3;
-  border-radius: $radius-pille;
-  background: var(--app-grund);
-  color: var(--app-text-gedaempft);
-  font-size: $schrift-hinweis;
-  font-weight: 700;
-  white-space: nowrap;
+  margin: -#{$abstand-1} 0; // näher an Kopf und Inhalt als der Abstand der Kachel, wie im Canvas
 }

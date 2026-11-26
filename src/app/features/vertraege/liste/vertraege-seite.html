@@ -28,12 +28,11 @@
 </div>
 
 @if (fehler()) {
-  <div class="fehler">
-    <app-hinweis-box text="Die Verträge konnten nicht geladen werden." />
-    <button type="button" class="knopf knopf-sekundaer" (click)="laden(true)">
-      Erneut versuchen
-    </button>
-  </div>
+  <app-hinweis-box
+    text="Die Verträge konnten nicht geladen werden."
+    aktionText="Erneut versuchen"
+    (aktion)="laden(true)"
+  />
 } @else if (daten(); as stand) {
   <div class="kennzahlen">
     <div class="kennzahl">

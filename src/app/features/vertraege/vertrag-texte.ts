@@ -17,6 +17,7 @@ import {
   Zahlungsweg,
   Zahlweise,
 } from '../../core/api/api';
+import { ChipTon } from '../../shared/chip/chip';
 import { betragText } from '../../shared/format/betrag.pipe';
 import { datumText } from '../../shared/format/datum.pipe';
 
@@ -89,13 +90,11 @@ export function vertragName(vertrag: { bezeichnung: string | null; anbieter: str
   return vertrag.bezeichnung || vertrag.anbieter;
 }
 
-type KuendigungTon = 'warnung' | 'ok' | 'info' | 'neutral';
-
 interface KuendigungAnzeige {
   text: string;
   /** Zusatztext unter dem Badge, leer wenn es keinen gibt. */
   zusatz: string;
-  ton: KuendigungTon;
+  ton: ChipTon;
 }
 
 /** Dauer der hinterlegten Frist für die Details, {@code null} ohne Angabe. */
@@ -116,12 +115,12 @@ const KUENDIGUNG_ANZEIGE: Record<Kuendigungsart, (k: Kuendigung) => KuendigungAn
   KUENDIGEN_BIS: (k) => ({
     text: `Kündbar bis ${datumText(k.kuendigenBis)}`,
     zusatz: `Vertrag endet zum ${datumText(k.zum)}`,
-    ton: k.dringend ? 'warnung' : 'ok',
+    ton: k.dringend ? 'warnung' : 'erfolg',
   }),
   MONATLICH_KUENDBAR: (k) => ({
     text: 'Monatlich kündbar',
     zusatz: `Kündbar zum ${datumText(k.zum)}`,
-    ton: 'ok',
+    ton: 'erfolg',
   }),
   ENDET: (k) => ({
     text: `Endet am ${datumText(k.zum)}`,

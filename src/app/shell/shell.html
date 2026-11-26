@@ -11,12 +11,12 @@
     <div class="spalte">
       <main>
         @if (komponentenFehler()) {
-          <div class="ladefehler">
-            <app-hinweis-box text="Deine Bereiche konnten nicht geladen werden." />
-            <button type="button" class="knopf knopf-sekundaer" (click)="komponentenLaden()">
-              Erneut versuchen
-            </button>
-          </div>
+          <app-hinweis-box
+            class="ladefehler"
+            text="Deine Bereiche konnten nicht geladen werden."
+            aktionText="Erneut versuchen"
+            (aktion)="komponentenLaden()"
+          />
         }
         <router-outlet />
       </main>

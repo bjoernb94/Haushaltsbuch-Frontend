@@ -3,7 +3,6 @@
 @use 'masse' as *;
 
 @include zustaende.laedt;
-@include zustaende.fehler;
 @include sheet.vollbild;
 
 // Leiste oben, darunter der Inhalt, der scrollt.
@@ -40,18 +39,6 @@
   // Zeilenhöhe wie im Design.
   line-height: 1.45;
   color: var(--app-text-gedaempft);
-}
-
-.knopf-sekundaer {
-  min-height: 44px;
-  padding: 0 $abstand-5;
-  border: 1.5px solid var(--app-gruen);
-  border-radius: $radius-feld;
-  background: var(--app-flaeche);
-  color: var(--app-gruen);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 // Bis 900 px wie „Vertrag bearbeiten“: Titel in der Leiste, darunter nur der Name.

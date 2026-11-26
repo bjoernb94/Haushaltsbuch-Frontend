@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Preiszeilenart, VertragVorschauPreisAntwort } from '../../../../core/api/api';
+import { Chip, ChipTon } from '../../../../shared/chip/chip';
 import { betragText } from '../../../../shared/format/betrag.pipe';
 import { datumText } from '../../../../shared/format/datum.pipe';
 import {
@@ -35,11 +36,12 @@ export type PreisZeile = FormGroup<{
   automatisch: FormControl<boolean>;
 }>;
 
-const ETIKETT_KLASSE: Record<Preiszeilenart, string> = {
-  FRUEHER: '',
-  AKTUELL: 'aktuell',
-  ANGEKUENDIGT: 'angekuendigt',
-  NACH_ENDE: 'nach-ende',
+/** Ton des Etiketts je Art aus der Vorschau, wie im Canvas: „aktuell“ grün, künftige und nach dem Ende gelb. */
+const ETIKETT_TON: Record<Preiszeilenart, ChipTon> = {
+  FRUEHER: 'neutral',
+  AKTUELL: 'erfolg',
+  ANGEKUENDIGT: 'warnung',
+  NACH_ENDE: 'warnung',
 };
 
 /** Schlüssel eines geladenen Preises, um Änderungen an automatischen Preisen zu erkennen. */
@@ -63,7 +65,7 @@ export function preisSchluessel({ gueltigAb, betrag }: Pick<PreisWerte, 'gueltig
  */
 @Component({
   selector: 'app-vertrag-preisliste',
-  imports: [NgTemplateOutlet, ReactiveFormsModule],
+  imports: [NgTemplateOutlet, ReactiveFormsModule, Chip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-preisliste.html',
   styleUrl: './vertrag-preisliste.scss',
@@ -155,11 +157,11 @@ export class VertragPreisliste {
     return stelle === -1 ? abschnitte.length : stelle;
   });
 
-  /** Etikett aus der Vorschau für den Preis ab diesem Datum, z. B. „aktuell“, mit Klasse für die Farbe. */
-  protected etikett(gueltigAb: string | undefined): { text: string; klasse: string } | null {
+  /** Etikett aus der Vorschau für den Preis ab diesem Datum, z. B. „aktuell“, mit seinem Ton. */
+  protected etikett(gueltigAb: string | undefined): { text: string; ton: ChipTon } | null {
     const preis = gueltigAb ? this.vorschauNachDatum().get(gueltigAb) : undefined;
     const text = preis && PREISZEILE_ETIKETT[preis.art];
-    return text ? { text, klasse: ETIKETT_KLASSE[preis.art] } : null;
+    return text ? { text, ton: ETIKETT_TON[preis.art] } : null;
   }
 
   /** Schlüssel (erster Index) der aufgeklappten Gruppen. */

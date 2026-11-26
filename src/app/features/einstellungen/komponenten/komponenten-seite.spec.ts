@@ -177,11 +177,9 @@ describe('KomponentenSeite', () => {
     });
     await s.stabil();
 
-    expect(s.meldung()?.getAttribute('role')).toBe('alert');
+    expect(s.meldung()?.getAttribute('role')).toBe('status');
     expect(s.meldung()?.textContent).toContain('inzwischen an anderer Stelle geändert');
-    expect(s.element.querySelector('app-hinweis-box .box')?.classList.contains('hinweis')).toBe(
-      true,
-    );
+    expect(s.element.querySelector('app-hinweis-box .box')?.classList.contains('info')).toBe(true);
     expect(s.schalter().map((e) => e.checked)).toEqual([true, false, false, false]);
     expect(komponentenLaden).toHaveBeenCalledOnce();
     expect(TestBed.inject(UngespeicherteEingaben).vorhanden()).toBe(false);

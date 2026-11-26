@@ -38,7 +38,7 @@
   </div>
   <div class="kuendigung">
     <span class="kuendigung-titel">Kündigung</span>
-    <span class="badge" [class]="'ton-' + kuendigung().ton">{{ kuendigung().text }}</span>
+    <app-chip [ton]="kuendigung().ton">{{ kuendigung().text }}</app-chip>
     @if (kuendigung().zusatz; as zusatz) {
       <span class="zusatz">{{ zusatz }}</span>
     }

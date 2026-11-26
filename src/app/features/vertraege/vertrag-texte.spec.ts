@@ -43,7 +43,7 @@ describe('Vertragstexte', () => {
       ).toEqual({
         text: 'Kündbar bis 30.11.2026',
         zusatz: 'Vertrag endet zum 31.12.2026',
-        ton: 'ok',
+        ton: 'erfolg',
       });
     });
 
@@ -53,7 +53,7 @@ describe('Vertragstexte', () => {
       ).toEqual({
         text: 'Monatlich kündbar',
         zusatz: 'Kündbar zum 31.12.2026',
-        ton: 'ok',
+        ton: 'erfolg',
       });
     });
 

@@ -274,8 +274,8 @@ describe('Vertrag wieder aufnehmen', () => {
       const { zeile } = await seite('/vertraege');
       const z = zeile('pause');
       expect(text(z.querySelector('.kosten'))).toContain('Gekündigt, wieder ab 01.01.2027');
-      expect(text(z.querySelector('.badge'))).toBe('Wieder ab 01.01.2027');
-      expect(z.querySelector('.badge')!.classList).toContain('ton-info');
+      expect(text(z.querySelector('.kuendigung app-chip'))).toBe('Wieder ab 01.01.2027');
+      expect(z.querySelector('.kuendigung app-chip')!.getAttribute('data-ton')).toBe('info');
       expect(text(z.querySelector('.zusatz'))).toBe('Gekündigt, wird wieder aufgenommen');
       expect(z.classList).toContain('beendet');
       expect(zeile('musik').classList).not.toContain('beendet');

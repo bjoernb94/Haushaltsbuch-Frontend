@@ -1,25 +1,11 @@
 @use 'masse' as *;
 
-// Lade- und Fehlerzustand einer Seite oder eines Bereichs mit Daten.
+// Ladezustand einer Seite oder eines Bereichs mit Daten. Ladefehler zeigt die Hinweis-Box mit „Erneut versuchen“.
 
 @mixin laedt {
   .laedt {
     margin: 0;
     font-size: $schrift-text;
     color: var(--app-text-gedaempft);
-  }
-}
-
-@mixin fehler {
-  .fehler {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: $abstand-3 $abstand-4;
-
-    .knopf {
-      flex: none;
-      padding: 0 $abstand-5;
-    }
   }
 }

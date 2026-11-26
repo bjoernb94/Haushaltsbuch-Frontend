@@ -31,12 +31,11 @@
       </div>
 
       @if (seite.fehler()) {
-        <div class="fehler">
-          <app-hinweis-box text="Der Vertrag konnte nicht geladen werden." />
-          <button type="button" class="knopf-sekundaer" (click)="seite.laden(true)">
-            Erneut versuchen
-          </button>
-        </div>
+        <app-hinweis-box
+          text="Der Vertrag konnte nicht geladen werden."
+          aktionText="Erneut versuchen"
+          (aktion)="seite.laden(true)"
+        />
       } @else if (vertrag(); as v) {
         <app-wiederaufnahme-felder
           [formular]="formular"

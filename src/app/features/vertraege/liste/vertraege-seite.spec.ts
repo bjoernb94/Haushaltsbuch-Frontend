@@ -391,8 +391,8 @@ describe('VertraegeSeite', () => {
       expect(text(zeile.querySelector('.betrag'))).toBe('586,80 €');
       expect(text(zeile.querySelectorAll('.klein')[0])).toBe('jährlich · 48,90 €/Monat');
       expect(text(zeile.querySelectorAll('.klein')[1])).toBe('Seit 01.01.2023');
-      expect(text(zeile.querySelector('.badge'))).toBe('Kündbar bis 30.11.2026');
-      expect(zeile.querySelector('.badge')?.classList).toContain('ton-warnung');
+      expect(text(zeile.querySelector('.kuendigung app-chip'))).toBe('Kündbar bis 30.11.2026');
+      expect(zeile.querySelector('.kuendigung app-chip')?.getAttribute('data-ton')).toBe('warnung');
       expect(text(zeile.querySelector('.zusatz'))).toBe('Vertrag endet zum 31.12.2026');
     });
 
@@ -412,8 +412,10 @@ describe('VertraegeSeite', () => {
       expect(text(storniert.querySelectorAll('.klein')[1])).toBe(
         'Storniert, Beginn wäre 01.03.2027',
       );
-      expect(text(storniert.querySelector('.badge'))).toBe('Storniert');
-      expect(storniert.querySelector('.badge')?.classList).toContain('ton-neutral');
+      expect(text(storniert.querySelector('.kuendigung app-chip'))).toBe('Storniert');
+      expect(storniert.querySelector('.kuendigung app-chip')?.getAttribute('data-ton')).toBe(
+        'neutral',
+      );
       expect(storniert.querySelector('.zeile')?.classList).toContain('beendet');
     });
 
@@ -443,7 +445,7 @@ describe('VertraegeSeite', () => {
       expect(element.querySelector('.kennzahlen')).toBeNull();
 
       aufruf.mockReturnValue(aufruf === auflisten ? of([JAEHRLICH]) : of(UEBERSICHT));
-      element.querySelector<HTMLButtonElement>('.fehler button')!.click();
+      element.querySelector<HTMLButtonElement>('app-hinweis-box button')!.click();
       await stabil();
 
       expect(element.querySelector('[role="alert"]')).toBeNull();
@@ -508,7 +510,7 @@ describe('VertraegeSeite', () => {
       expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
 
       auflisten.mockReturnValue(of([JAEHRLICH, BEENDET, PFLICHT]));
-      element.querySelector<HTMLButtonElement>('.fehler button')!.click();
+      element.querySelector<HTMLButtonElement>('app-hinweis-box button')!.click();
       await stabil();
       expect(element.querySelector(':scope > .meldung')).toBeNull();
       expect(zeilen(element)[1].querySelector('.meldung')?.textContent).toContain('„Neu“');
@@ -625,8 +627,10 @@ describe('VertraegeSeite', () => {
       expect(text(element.querySelectorAll('.kachel')[3])).toBe(
         'Nächste Preisänderungab 01.01.2027620,00 € · angekündigt',
       );
-      expect(text(zeilen(element)[0].querySelector('.chip'))).toBe('Preis ↑ ab 01.01.2027');
-      expect(zeilen(element)[1].querySelector('.chip')).toBeNull();
+      expect(text(zeilen(element)[0].querySelector('app-vertrag-chips app-chip'))).toBe(
+        'Preis ↑ ab 01.01.2027',
+      );
+      expect(zeilen(element)[1].querySelector('app-vertrag-chips app-chip')).toBeNull();
       expect(await info('Preise')).toEqual([INFO_RUNDUNG_PROGNOSE]);
     });
 
@@ -748,10 +752,9 @@ describe('VertraegeSeite', () => {
       } satisfies VertragAntwort;
       auflisten.mockReturnValue(of([guenstiger, prognose]));
       const { element } = await seite();
-      expect([...zeilen(element)].map((z) => text(z.querySelector('.chip')))).toEqual([
-        'Preis ↓ ab 01.01.2027',
-        'Preis ↑ ab 01.01.2028 (Prognose)',
-      ]);
+      expect(
+        [...zeilen(element)].map((z) => text(z.querySelector('app-vertrag-chips app-chip'))),
+      ).toEqual(['Preis ↓ ab 01.01.2027', 'Preis ↑ ab 01.01.2028 (Prognose)']);
     });
 
     it('Tab Preisverlauf: automatische Preise zusammengeklappt, errechnete Stufe als aktuell', async () => {
@@ -1143,7 +1146,9 @@ describe('VertraegeSeite', () => {
       expect(element.querySelector('app-vertrag-bearbeiten form')).toBeNull();
       expect(schaltflaeche(sheet(element)!, 'Sichern').disabled).toBe(true);
 
-      element.querySelector<HTMLButtonElement>('app-vertrag-bearbeiten .fehler button')!.click();
+      element
+        .querySelector<HTMLButtonElement>('app-vertrag-bearbeiten app-hinweis-box button')!
+        .click();
       await stabil();
       expect(element.querySelector('app-vertrag-bearbeiten form')).not.toBeNull();
     });

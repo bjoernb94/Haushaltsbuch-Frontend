@@ -1,12 +1,9 @@
-@use '../../shared/formular/formular';
 @use '../../shared/zustaende/zustaende';
 @use 'masse' as *;
 
 // Text von Impressum und Datenschutz.
 @mixin text {
-  @include formular.knoepfe;
   @include zustaende.laedt;
-  @include zustaende.fehler;
 
   :host {
     display: contents;

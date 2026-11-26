@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { VertragsuebersichtAntwort } from '../../../core/api/api';
 import { problemCode } from '../../../core/fehler/problem';
+import { Chip } from '../../../shared/chip/chip';
 import { BetraegePipe, BetragPipe } from '../../../shared/format/betrag.pipe';
 import { DatumPipe } from '../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
@@ -27,7 +28,7 @@ import { Kachel } from '../kachel/kachel';
 /** Kachel „Vertragsübersicht“ mit Kennzahlen und nächsten Fristen; lädt beim Öffnen der Seite. */
 @Component({
   selector: 'app-vertrag-kachel',
-  imports: [RouterLink, Kachel, HinweisBox, BetragPipe, BetraegePipe, DatumPipe, InfoKnopf],
+  imports: [RouterLink, Kachel, Chip, HinweisBox, BetragPipe, BetraegePipe, DatumPipe, InfoKnopf],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-kachel.html',
   styleUrl: './vertrag-kachel.scss',

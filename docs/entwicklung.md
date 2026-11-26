@@ -194,7 +194,10 @@ im Backend.
   geladen, nach einer Änderung neu. So bleibt nach dem Abmelden nichts für den nächsten Nutzer im
   Speicher. Ausgenommen sind Sitzungsdaten im `AuthService` und der Systemstatus.
 - **Zustände einer Seite:** Jede Seite mit Daten hat einen Lade- und einen Fehlerzustand mit
-  „Erneut versuchen“ sowie einen Leerzustand.
+  „Erneut versuchen“ sowie einen Leerzustand. Den Fehler zeigt `shared/hinweis-box` mit `aktionText="Erneut
+versuchen"` und `(aktion)`; der Knopf steht dann neben der Box.
+- **Meldungen und Chips:** genau die vier Zustände des Design Systems, Fehler, Warnung, Info und Erfolg
+  (`art` der Hinweis-Box), bei Chips (`shared/chip`, `ton`) statt Fehler „neutral“. „Hinweis“ ist kein Zustand.
 - **Angular:** Standalone-Komponenten, Signals, `OnPush` und zoneless (ADR 0017); `strict` und
   `strictTemplates` sind an.
 - **Oberfläche ohne UI-Bibliothek** (ADR 0016): Markup nach Design, Icons als Inline-SVG, die Schrift

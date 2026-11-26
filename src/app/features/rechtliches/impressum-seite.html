@@ -12,12 +12,11 @@
       <p class="laedt" role="status">Wird geladen …</p>
     }
     @case ('fehler') {
-      <div class="fehler">
-        <app-hinweis-box text="Die Angaben zum Betreiber konnten nicht geladen werden." />
-        <button type="button" class="knopf knopf-sekundaer" (click)="instanz.laden()">
-          Erneut versuchen
-        </button>
-      </div>
+      <app-hinweis-box
+        text="Die Angaben zum Betreiber konnten nicht geladen werden."
+        aktionText="Erneut versuchen"
+        (aktion)="instanz.laden()"
+      />
     }
     @case ('fehlt') {
       <app-hinweis-box text="Für diese Instanz sind keine Angaben zum Betreiber hinterlegt." />

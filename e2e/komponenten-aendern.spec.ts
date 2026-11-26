@@ -112,7 +112,7 @@ test('bei 409 lädt die Seite den aktuellen Stand und weist darauf hin', async (
   await schalter(page, /Portfolio/).check();
   await speichern(page).click();
 
-  await expect(page.getByRole('alert')).toContainText('inzwischen an anderer Stelle geändert');
+  await expect(page.getByRole('status')).toContainText('inzwischen an anderer Stelle geändert');
   await expect(schalter(page, /Finanzübersicht/)).toBeChecked();
   await expect(schalter(page, /Portfolio/)).not.toBeChecked();
   await expect(speichern(page)).toBeDisabled();

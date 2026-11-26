@@ -15,27 +15,9 @@
   }
 }
 
-// Kennzeichen eines automatischen Preises, in der Bezeichnung des Datums.
+// Art aus der Vorschau und „automatisch“, in der Bezeichnung des Datums.
 .etikett {
   margin-left: $abstand-2;
-  padding: 2px $abstand-2; // 2px: schmaler als die kleinste Stufe, damit die Zeile nicht wächst
-  border-radius: $radius-pille;
-  background: var(--app-info-grund);
-  color: var(--app-info-text);
-  font-size: $schrift-klein;
-  font-weight: 700;
-
-  // Art aus der Vorschau, vor „automatisch“.
-  &.aktuell {
-    background: var(--app-gruen-hell);
-    color: var(--app-gruen);
-  }
-
-  &.angekuendigt,
-  &.nach-ende {
-    background: var(--app-hinweis-grund);
-    color: var(--app-hinweis-text);
-  }
 }
 
 .gruppe {

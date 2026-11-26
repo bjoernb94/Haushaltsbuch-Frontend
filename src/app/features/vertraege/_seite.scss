@@ -35,6 +35,5 @@
     letter-spacing: -0.02em;
   }
 
-  @include zustaende.fehler;
   @include zustaende.laedt;
 }

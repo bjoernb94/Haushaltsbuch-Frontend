@@ -251,33 +251,6 @@
   color: var(--app-text-gedaempft);
 }
 
-.badge {
-  padding: $abstand-1 $abstand-3;
-  border-radius: $radius-pille;
-  font-size: $schrift-hinweis;
-  font-weight: 700;
-}
-
-.ton-warnung {
-  background: var(--app-hinweis-grund);
-  color: var(--app-hinweis-text);
-}
-
-.ton-ok {
-  background: var(--app-gruen-hell);
-  color: var(--app-gruen-dunkel);
-}
-
-.ton-info {
-  background: var(--app-info-grund);
-  color: var(--app-info-text);
-}
-
-.ton-neutral {
-  background: var(--app-grund);
-  color: var(--app-text-gedaempft);
-}
-
 .zusatz {
   font-size: $schrift-hinweis;
   line-height: 1.4;

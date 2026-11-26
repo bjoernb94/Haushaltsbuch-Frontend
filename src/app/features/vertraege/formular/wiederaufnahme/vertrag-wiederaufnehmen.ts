@@ -190,7 +190,7 @@ export class VertragWiederaufnehmen {
     this.seite.nachAenderung({
       id: vertrag.id,
       text: `„${vertragName(vertrag)}“ wird ab ${datumText(datum)} wieder aufgenommen.`,
-      art: 'info',
+      art: 'erfolg',
     });
     this.abbrechen();
   }

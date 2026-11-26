@@ -1,8 +1,5 @@
-@use '../shared/formular/formular';
 @use '../shared/layout/raender';
 @use 'masse' as *;
-
-@include formular.knoepfe;
 
 .seite {
   min-height: calc(100vh - var(--app-streifen-hoehe, 0px));
@@ -41,16 +38,7 @@ main {
 }
 
 .ladefehler {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: $abstand-3 $abstand-4;
   margin-bottom: $abstand-6;
-
-  .knopf {
-    flex: none;
-    padding: 0 $abstand-5;
-  }
 }
 
 // Die Startseite hat ab 901 px keine Navigation, bis 900 px aber die Tab-Leiste wie alle anderen.

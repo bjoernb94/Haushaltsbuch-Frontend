@@ -98,7 +98,7 @@ describe('StartSeite', () => {
     komponenten.set(['VERTRAGSUEBERSICHT']);
     const element = await seite();
     expect(element.querySelector('a')?.getAttribute('href')).toBe('/vertraege');
-    expect(element.querySelector('.hinweis')).toBeNull();
+    expect(element.querySelector('.kopf app-chip')).toBeNull();
     expect(element.querySelector('.inhalt')?.hasAttribute('aria-hidden')).toBe(false);
   });
 
@@ -106,8 +106,8 @@ describe('StartSeite', () => {
     komponenten.set(['FINANZUEBERSICHT', 'VERSORGUNGSVERTRAEGE', 'PORTFOLIO']);
     const element = await seite();
     expect(element.querySelector('a')).toBeNull();
-    expect(element.querySelectorAll('.hinweis').length).toBe(3);
-    expect(element.querySelector('.hinweis')?.textContent).toBe('Demnächst verfügbar');
+    expect(element.querySelectorAll('.kopf app-chip').length).toBe(3);
+    expect(element.querySelector('.kopf app-chip')?.textContent).toBe('Demnächst verfügbar');
     for (const inhalt of element.querySelectorAll('.inhalt')) {
       expect(inhalt.getAttribute('aria-hidden')).toBe('true');
     }
