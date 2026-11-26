@@ -1,4 +1,5 @@
 // Ein Tab des Vertragsformulars: Abschnitte mit Feldern, Schaltern und Vorschau-Zeilen.
+@use '../../../shared/formular/formular';
 @use 'zeilen';
 @use 'masse' as *;
 
@@ -69,4 +70,4 @@ legend {
   }
 }
 
-@include zeilen.schalterzeile;
+@include formular.schalterzeile;

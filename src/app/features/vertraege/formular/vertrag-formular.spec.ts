@@ -535,6 +535,21 @@ describe('VertragFormular', () => {
     expect(box()).toBeUndefined();
   });
 
+  it('Schalter wie im Design System: die ganze Zeile schaltet, der Name ist nur der Titel', async () => {
+    const { el, feld, fixture } = await erstellen();
+    const schalter = feld('nichtKuendbar');
+    const zeile = schalter.closest('label.schalterzeile')!;
+    const titel = el.querySelector(`[id="${schalter.getAttribute('aria-labelledby')}"]`);
+    const hilfe = el.querySelector(`[id="${schalter.getAttribute('aria-describedby')}"]`);
+    expect(titel?.textContent?.trim()).toBe('Nicht kündbar');
+    expect(hilfe?.textContent).toContain('Pflichtbeiträge');
+    expect(zeile.contains(hilfe)).toBe(true);
+
+    zeile.querySelector<HTMLElement>('.schalterzeile-hilfe')!.click();
+    await fixture.whenStable();
+    expect(feld('nichtKuendbar').checked).toBe(true);
+  });
+
   it('blendet Verlängerung und Frist bei „Nicht kündbar“ aus, das Laufzeitende bleibt', async () => {
     const { host, feld, setzen, ankreuzen, absenden, pflichtfelderFuellen } = await erstellen();
     pflichtfelderFuellen();
@@ -864,8 +879,9 @@ describe('VertragFormular', () => {
     expect(new Set(ids).size).toBe(ids.length);
     const labels = [...el.querySelectorAll('label')];
     expect(labels.length).toBeGreaterThan(0);
+    // Mit `for` oder als Hülle (Schalterzeile): Jedes Label hat sein Feld im Formular.
     for (const label of labels) {
-      expect(el.querySelector(`[id="${label.htmlFor}"]`)).not.toBeNull();
+      expect(label.control && el.contains(label.control)).toBe(true);
     }
   });
 
@@ -1278,7 +1294,9 @@ describe('VertragFormular', () => {
       const { el, host, einschalten, ankreuzen, absenden, pflichtfelderFuellen, feld, fixture } =
         await imTabPreise();
       const erinnerung = () =>
-        el.querySelector('[formcontrolname="erinnerungSonderkuendigung"]')?.closest('.ankreuzen');
+        el
+          .querySelector('[formcontrolname="erinnerungSonderkuendigung"]')
+          ?.closest('.schalterzeile');
       expect(erinnerung()).toBeFalsy();
       expect(el.querySelector('app-vertrag-tab-preise')?.textContent).not.toContain(
         'Sonderkündigungsrecht',

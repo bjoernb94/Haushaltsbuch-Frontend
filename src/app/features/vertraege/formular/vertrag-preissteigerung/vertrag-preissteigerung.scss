@@ -1,3 +1,4 @@
+@use '../../../../shared/formular/formular';
 @use '../zeilen';
 @use 'masse' as *;
 
@@ -28,7 +29,7 @@
   }
 }
 
-@include zeilen.schalterzeile;
+@include formular.schalterzeile;
 
 .prognose {
   // Die Blase des Info-Knopfs hängt an der Box.
