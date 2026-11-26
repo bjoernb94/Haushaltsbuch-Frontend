@@ -1,11 +1,9 @@
 @use '../kennzahl';
 @use '../../../shared/format/kuerzen';
-@use '../../../shared/formular/formular';
 @use '../../../shared/zustaende/zustaende';
 @use 'masse' as *;
 
 @include kennzahl.kennzahl;
-@include formular.knoepfe;
 
 :host {
   // Raster statt Block: Die Kachel wird so hoch wie die Nachbarkarte in der Zeile.
@@ -83,18 +81,6 @@ a[kachelLink] {
 
 .termin {
   flex: none;
-  padding: $abstand-1 $abstand-3;
-  border-radius: $radius-pille;
-  background: var(--app-grund);
-  color: var(--app-text-gedaempft);
-  font-size: $schrift-hinweis;
-  font-weight: 700;
-  white-space: nowrap;
-
-  &.dringend {
-    background: var(--app-hinweis-grund);
-    color: var(--app-hinweis-text);
-  }
 }
 
 .keine {
@@ -106,9 +92,3 @@ a[kachelLink] {
 }
 
 @include zustaende.laedt;
-
-.knopf {
-  flex: none;
-  align-self: flex-start;
-  padding: 0 $abstand-5;
-}

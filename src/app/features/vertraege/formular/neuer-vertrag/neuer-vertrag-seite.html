@@ -36,10 +36,11 @@
 </div>
 
 @if (ladefehler()) {
-  <div class="fehler">
-    <app-hinweis-box text="Die Kategorien konnten nicht geladen werden." />
-    <button type="button" class="knopf knopf-sekundaer" (click)="laden()">Erneut versuchen</button>
-  </div>
+  <app-hinweis-box
+    text="Die Kategorien konnten nicht geladen werden."
+    aktionText="Erneut versuchen"
+    (aktion)="laden()"
+  />
 } @else if (kategorien(); as liste) {
   <app-vertrag-formular
     [kategorien]="liste"

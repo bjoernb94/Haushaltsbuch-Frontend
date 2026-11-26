@@ -1,14 +1,26 @@
 @use 'masse' as *;
+@use '../formular/formular';
+
+@include formular.knoepfe;
+@include formular.knopf-abbrechen;
+
+// Box und Aktion („Erneut versuchen“) in einer Zeile, bei wenig Platz untereinander; wie im Canvas.
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $abstand-3 $abstand-4;
+}
 
 .box {
+  flex: 1 1 280px; // Mindestbreite der Box neben dem Knopf, wie im Canvas
+  box-sizing: border-box;
   display: flex;
   align-items: flex-start;
   gap: $abstand-3;
-  padding: $abstand-4 $abstand-4;
+  padding: $abstand-4;
   border-radius: $radius-feld;
-  background: var(--app-fehler-grund);
-  border: 1px solid var(--app-fehler-rand);
-  color: var(--app-fehler-text);
+  border: 1px solid transparent;
   font-size: $schrift-text;
   line-height: 1.45;
   font-weight: 600;
@@ -16,28 +28,44 @@
   svg {
     flex: none;
     margin-top: 1px;
+  }
+}
+
+.fehler {
+  background: var(--app-fehler-grund);
+  border-color: var(--app-fehler-rand);
+  color: var(--app-fehler-text);
+
+  svg {
     color: var(--app-fehler);
   }
+}
 
-  &.info {
-    background: var(--app-gruen-hell);
-    border-color: var(--app-gruen-hell-rand);
-    color: var(--app-gruen-dunkel);
+.warnung {
+  background: var(--app-warnung-grund);
+  border-color: var(--app-warnung-rand);
+  color: var(--app-warnung-text);
+}
 
-    svg {
-      color: var(--app-erfolg);
-    }
+.info {
+  background: var(--app-info-grund);
+  border-color: var(--app-info-rand);
+  color: var(--app-info-text);
+}
+
+.erfolg {
+  background: var(--app-gruen-hell);
+  border-color: var(--app-gruen-hell-rand);
+  color: var(--app-gruen-dunkel);
+
+  svg {
+    color: var(--app-erfolg);
   }
+}
 
-  &.hinweis {
-    background: var(--app-info-grund);
-    border-color: var(--app-info-rand);
-    color: var(--app-info-text);
-
-    svg {
-      color: var(--app-info-text);
-    }
-  }
+.knopf {
+  flex: none;
+  padding: 0 $abstand-5;
 }
 
 // Links im Inhalt (z. B. „Support“): Farbe des Box-Texts, unterstrichen, wie im Designsystem. Der Inhalt kommt

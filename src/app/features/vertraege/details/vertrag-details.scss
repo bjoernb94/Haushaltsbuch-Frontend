@@ -3,7 +3,6 @@
 @use 'masse' as *;
 
 @include zustaende.laedt;
-@include zustaende.fehler;
 
 // Panel und Bearbeiten-Sheet sind Geschwister im Layout der Liste.
 :host {
@@ -143,10 +142,10 @@
 }
 
 .ton-warnung {
-  color: var(--app-hinweis-text);
+  color: var(--app-warnung-text);
 }
 
-.ton-ok {
+.ton-erfolg {
   color: var(--app-gruen-dunkel);
 }
 

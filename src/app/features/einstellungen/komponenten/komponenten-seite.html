@@ -22,7 +22,7 @@
 
 <div class="spalte">
   @if (erfolg()) {
-    <app-hinweis-box text="Deine Komponenten wurden gespeichert." art="info" />
+    <app-hinweis-box text="Deine Komponenten wurden gespeichert." art="erfolg" />
   }
 
   <div class="titel">
@@ -38,12 +38,11 @@
       <p class="laedt" role="status">Wird geladen …</p>
     }
     @case ('fehler') {
-      <div class="fehler">
-        <app-hinweis-box text="Deine Komponenten konnten nicht geladen werden." />
-        <button type="button" class="knopf knopf-sekundaer" (click)="laden()">
-          Erneut versuchen
-        </button>
-      </div>
+      <app-hinweis-box
+        text="Deine Komponenten konnten nicht geladen werden."
+        aktionText="Erneut versuchen"
+        (aktion)="laden()"
+      />
     }
     @case ('da') {
       <form novalidate (submit)="speichern($event)">
@@ -51,10 +50,7 @@
           <legend>{{ anzahl() }} von {{ komponenten.length }} aktiv</legend>
 
           @if (meldungText(); as text) {
-            <app-hinweis-box
-              [text]="text"
-              [art]="meldung() === 'konflikt' ? 'hinweis' : 'fehler'"
-            />
+            <app-hinweis-box [text]="text" [art]="meldung() === 'konflikt' ? 'info' : 'fehler'" />
           }
 
           <ul class="liste" [class.ungueltig]="meldung() === 'leer'">

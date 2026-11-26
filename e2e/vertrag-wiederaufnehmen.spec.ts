@@ -96,7 +96,9 @@ test.describe('Vertrag wieder aufnehmen', () => {
     // In der Zukunft: bis dahin unterbrochen.
     await expect(box).toBeHidden();
     await expect(zeile(page, ABO)).toContainText('Gekündigt, wieder ab 01.03.2027');
-    await expect(zeile(page, ABO).locator('.badge')).toHaveText('Wieder ab 01.03.2027');
+    await expect(zeile(page, ABO).locator('.kuendigung app-chip')).toHaveText(
+      'Wieder ab 01.03.2027',
+    );
   });
 
   test('Fehler des Backends am Feld, Esc fragt bei Eingaben nach', async ({ page }) => {

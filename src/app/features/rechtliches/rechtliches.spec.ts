@@ -233,7 +233,7 @@ describe('Impressum und Datenschutz', () => {
       stand.set({ zustand: 'fehler' });
       const element = await seite(ImpressumSeite);
       instanzLaden.mockClear();
-      element.querySelector<HTMLButtonElement>('.fehler button')!.click();
+      element.querySelector<HTMLButtonElement>('app-hinweis-box button')!.click();
       expect(instanzLaden).toHaveBeenCalledOnce();
     });
 

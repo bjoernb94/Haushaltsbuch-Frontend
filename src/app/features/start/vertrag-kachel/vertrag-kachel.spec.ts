@@ -143,8 +143,8 @@ describe('VertragKachel', () => {
     const fristen = element.querySelectorAll('.frist');
     expect(text(fristen[0])).toBe('Kfz-Versicherung586,80 €/Jahr bis 30.11.2026');
     expect(text(fristen[1])).toBe('Mobilfunk GmbH19,99 €/Monat bis 14.02.2027');
-    expect(fristen[0].querySelector('.termin')?.classList).toContain('dringend');
-    expect(fristen[1].querySelector('.termin')?.classList).not.toContain('dringend');
+    expect(fristen[0].querySelector('.termin')?.getAttribute('data-ton')).toBe('warnung');
+    expect(fristen[1].querySelector('.termin')?.getAttribute('data-ton')).toBe('neutral');
   });
 
   it('zeigt den Leerzustand ohne Fristen', async () => {

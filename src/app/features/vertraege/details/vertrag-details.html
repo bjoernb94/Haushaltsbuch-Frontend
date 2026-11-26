@@ -51,12 +51,11 @@
 
   <div class="inhalt">
     @if (seite.fehler()) {
-      <div class="fehler">
-        <app-hinweis-box text="Der Vertrag konnte nicht geladen werden." />
-        <button type="button" class="kopf-knopf" (click)="seite.laden(true)">
-          Erneut versuchen
-        </button>
-      </div>
+      <app-hinweis-box
+        text="Der Vertrag konnte nicht geladen werden."
+        aktionText="Erneut versuchen"
+        (aktion)="seite.laden(true)"
+      />
     } @else if (vertrag()) {
       @if (meldung(); as hinweis) {
         <div class="meldung" tabindex="-1">

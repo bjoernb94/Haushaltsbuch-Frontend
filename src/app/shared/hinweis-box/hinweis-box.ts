@@ -1,9 +1,13 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+
+/** Die vier Zustände des Design Systems. */
+export type HinweisArt = 'fehler' | 'warnung' | 'info' | 'erfolg';
 
 /**
- * Meldung über einem Formular: Fehler (rot), Info (grün, z. B. „gespeichert“) oder Hinweis (blau), etwa
- * wenn sich der Stand inzwischen geändert hat und neu geladen wurde. Statt {@code text} darf der Inhalt
- * stehen, z. B. mit einem Link zum Support.
+ * Meldung im Inhalt in den vier Zuständen des Design Systems: Fehler (rot) und Warnung (gelb, zeitkritisch) mit
+ * {@code role="alert"}, Info (blau, z. B. „inzwischen an anderer Stelle geändert“) und Erfolg (grün, z. B.
+ * „gespeichert“) mit {@code role="status"}. Statt {@code text} darf der Inhalt stehen, z. B. mit einem Link zum
+ * Support. Mit {@code aktionText} steht ein Knopf daneben (z. B. „Erneut versuchen“), der {@code aktion} meldet.
  */
 @Component({
   selector: 'app-hinweis-box',
@@ -13,5 +17,12 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 })
 export class HinweisBox {
   readonly text = input<string>();
-  readonly art = input<'fehler' | 'info' | 'hinweis'>('fehler');
+  readonly art = input<HinweisArt>('fehler');
+  readonly aktionText = input<string>();
+  readonly aktion = output<void>();
+
+  protected rolle(): 'alert' | 'status' {
+    const art = this.art();
+    return art === 'fehler' || art === 'warnung' ? 'alert' : 'status';
+  }
 }

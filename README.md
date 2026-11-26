@@ -110,7 +110,7 @@ src/app/
       formular/    Formular mit je einer Komponente pro Tab, Prüfung, Neuer Vertrag, Bearbeiten
                    und die Bausteine der Tabs (Preisliste, Einmalkosten, Preissteigerung, Zusammenfassung)
                    oben: Service, Routen und vertrag-texte.ts
-  shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, format/, formular/, fusszeile/,
+  shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, chip/, format/, formular/, fusszeile/,
                herkunft/, hinweis-box/, in-den-blick/, info-knopf/, kopfzeile/, layout/, logo/,
                nutzermenue/, rechtliche-links/, seitenaktionen/, systemstatus-leiste/, tabliste/,
                version-anzeige/, verwerfen-dialog/, zustaende/

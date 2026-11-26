@@ -1004,7 +1004,7 @@ describe('VertragFormular', () => {
       const etiketten = (z: HTMLElement) =>
         [...z.querySelectorAll('.etikett')].map((s) => [
           s.textContent?.trim(),
-          [...s.classList].filter((k) => k !== 'etikett'),
+          s.getAttribute('data-ton'),
         ]);
       setzen('beginn', '2026-01-01');
       await hinzufuegen();
@@ -1030,8 +1030,8 @@ describe('VertragFormular', () => {
       );
       TestBed.tick();
       await fixture.whenStable();
-      expect(etiketten(erste())).toEqual([['aktuell', ['aktuell']]]);
-      expect(etiketten(zeile(0))).toEqual([['angekündigt', ['angekuendigt']]]);
+      expect(etiketten(erste())).toEqual([['aktuell', 'erfolg']]);
+      expect(etiketten(zeile(0))).toEqual([['angekündigt', 'warnung']]);
       expect(el.querySelector('.verlauf')).toBeNull();
       expect(el.querySelector('app-vertrag-preisliste')?.textContent).not.toContain('Preisverlauf');
       expect(el.querySelector('.neu-hinweis')).toBeNull();

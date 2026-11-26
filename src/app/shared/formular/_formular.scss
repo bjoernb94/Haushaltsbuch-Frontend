@@ -161,3 +161,17 @@
     }
   }
 }
+
+// „Abbrechen“ im Design System: neutral, z. B. „Erneut versuchen“ neben einer Hinweis-Box. Eigenes Mixin,
+// damit es nur dort im Stil landet, wo es gebraucht wird (Budget je Komponente).
+@mixin knopf-abbrechen {
+  .knopf-abbrechen {
+    border-color: var(--app-rand);
+    background: var(--app-flaeche);
+    color: var(--app-text);
+
+    &:hover:not(:disabled) {
+      background: var(--app-seitenleiste-hover);
+    }
+  }
+}

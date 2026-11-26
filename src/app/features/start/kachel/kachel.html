@@ -21,13 +21,15 @@
       <h2>{{ titel() }}</h2>
     </div>
     @if (demnaechst()) {
-      <p class="hinweis">Demnächst verfügbar</p>
+      <app-chip ton="neutral">Demnächst verfügbar</app-chip>
     } @else {
       <ng-content select="[kachelLink]" />
     }
   </div>
   @if (demnaechst()) {
-    <p class="beispiel" aria-hidden="true">Beispielwerte, nicht deine Daten</p>
+    <app-chip class="beispiel" ton="warnung" aria-hidden="true"
+      >Beispielwerte, nicht deine Daten</app-chip
+    >
   }
   <div class="inhalt" [attr.aria-hidden]="demnaechst() ? 'true' : null">
     <ng-content />

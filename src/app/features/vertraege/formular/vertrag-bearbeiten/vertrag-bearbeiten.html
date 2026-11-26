@@ -22,10 +22,11 @@
   <div class="inhalt">
     <p class="name">{{ name() }}</p>
     @if (ladefehler()) {
-      <div class="fehler">
-        <app-hinweis-box text="Die Kategorien konnten nicht geladen werden." />
-        <button type="button" class="knopf-sekundaer" (click)="laden()">Erneut versuchen</button>
-      </div>
+      <app-hinweis-box
+        text="Die Kategorien konnten nicht geladen werden."
+        aktionText="Erneut versuchen"
+        (aktion)="laden()"
+      />
     } @else if (kategorien() && vertrag()) {
       <app-vertrag-formular
         [vertrag]="vertrag()"

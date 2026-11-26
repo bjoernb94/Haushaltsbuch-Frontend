@@ -52,7 +52,7 @@ describe('NeuerVertragSeite', () => {
     expect(el.querySelector('form')).toBeNull();
     expect(el.textContent).toContain('Die Kategorien konnten nicht geladen werden.');
 
-    el.querySelector<HTMLButtonElement>('.fehler button')!.click();
+    el.querySelector<HTMLButtonElement>('app-hinweis-box button')!.click();
     await fixture.whenStable();
     expect(el.querySelector('form')).not.toBeNull();
   });

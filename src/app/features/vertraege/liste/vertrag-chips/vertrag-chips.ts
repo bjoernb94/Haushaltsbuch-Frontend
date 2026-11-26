@@ -1,17 +1,19 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Chip, ChipTon } from '../../../../shared/chip/chip';
 
-export interface Chip {
+export interface VertragChip {
   text: string;
-  /** {@code hinweis} gelb (Preisänderung), {@code info} blau (Anteil). */
-  art: 'hinweis' | 'info';
+  /** {@code warnung} gelb (Preisänderung), {@code info} blau (Anteil). */
+  ton: ChipTon;
 }
 
 /** Hinweise unter dem Namen eines Vertrags in der Liste, z. B. „Preis ↑ ab …“ und „Anteil 50 %“. */
 @Component({
   selector: 'app-vertrag-chips',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Chip],
   template: `@for (chip of chips(); track chip.text) {
-    <span class="chip" [class]="chip.art">{{ chip.text }}</span>
+    <app-chip [ton]="chip.ton">{{ chip.text }}</app-chip>
   }`,
   styles: `
     @use 'masse' as *;
@@ -22,25 +24,8 @@ export interface Chip {
       gap: $abstand-2;
       padding-top: $abstand-halb;
     }
-
-    .chip {
-      padding: $abstand-halb $abstand-2;
-      border-radius: $radius-pille;
-      font-size: $schrift-klein;
-      font-weight: 700;
-    }
-
-    .hinweis {
-      background: var(--app-hinweis-grund);
-      color: var(--app-hinweis-text);
-    }
-
-    .info {
-      background: var(--app-info-grund);
-      color: var(--app-info-text);
-    }
   `,
 })
 export class VertragChips {
-  readonly chips = input.required<Chip[]>();
+  readonly chips = input.required<VertragChip[]>();
 }

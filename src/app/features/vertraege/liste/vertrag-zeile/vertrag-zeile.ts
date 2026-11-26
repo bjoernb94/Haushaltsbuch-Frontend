@@ -16,7 +16,8 @@ import { VertragAntwort } from '../../../../core/api/api';
 import { BetragPipe, betragText } from '../../../../shared/format/betrag.pipe';
 import { datumText } from '../../../../shared/format/datum.pipe';
 import { HinweisBox } from '../../../../shared/hinweis-box/hinweis-box';
-import { Chip, VertragChips } from '../vertrag-chips/vertrag-chips';
+import { Chip } from '../../../../shared/chip/chip';
+import { VertragChip, VertragChips } from '../vertrag-chips/vertrag-chips';
 import {
   kategorieText,
   kuendigungAnzeige,
@@ -29,7 +30,7 @@ import {
 
 export interface ZeilenMeldung {
   text: string;
-  art: 'info' | 'fehler';
+  art: 'erfolg' | 'fehler';
   /** Betrifft nicht diese Zeile, sondern den gelöschten Vertrag daneben: mit Trenner abgesetzt. */
   abgesetzt?: boolean;
   /** Unter statt über der Zeile, wenn der gelöschte Vertrag der letzte war. */
@@ -47,7 +48,7 @@ let letzteZeile = 0;
  */
 @Component({
   selector: 'app-vertrag-zeile',
-  imports: [BetragPipe, HinweisBox, VertragChips],
+  imports: [BetragPipe, Chip, HinweisBox, VertragChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-zeile.html',
   styleUrl: './vertrag-zeile.scss',
@@ -109,18 +110,18 @@ export class VertragZeile {
    */
   protected readonly chips = computed(() => {
     const { betrag, anteilProzent, berechnet } = this.vertrag();
-    const chips: Chip[] = [];
+    const chips: VertragChip[] = [];
     const aenderung = berechnet.naechstePreisaenderung;
     if (aenderung) {
       const pfeil = aenderung.betrag.wert < betrag.wert ? '↓' : '↑';
       const prognose = aenderung.art === 'PROGNOSE' ? ' (Prognose)' : '';
       chips.push({
         text: `Preis ${pfeil} ab ${datumText(aenderung.ab)}${prognose}`,
-        art: 'hinweis',
+        ton: 'warnung',
       });
     }
     if (berechnet.eigenerAnteil && anteilProzent !== null) {
-      chips.push({ text: `Anteil ${prozentText(anteilProzent, this.locale)} %`, art: 'info' });
+      chips.push({ text: `Anteil ${prozentText(anteilProzent, this.locale)} %`, ton: 'info' });
     }
     return chips;
   });
