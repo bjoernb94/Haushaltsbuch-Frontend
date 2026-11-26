@@ -109,7 +109,7 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   (gap, padding, margin) only via the SCSS variables in `src/styles/_masse.scss` (`@use 'masse' as *;`, include path
   `src/styles`), named like the design system (`$abstand-4`, `$radius-feld`, `$schrift-text`); exceptions (1px, line
   heights, layout sizes) stay fixed values with a comment.
-- The design in the Claude Design canvas "Haushaltsbuch" (https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx; pages
+- The design in the Claude Design canvas "Haushaltsbuch" (https://claude.ai/artifact/1MUUwCGUPdDSQ15Ab5QzWb; pages
   Anmeldung, Allgemein, Verträge with desktop and 390 px artboards, Grundlagen with the shared building blocks) is
   authoritative (ADR 0020): pages and behaviour are designed there first, the code follows. App and canvas are
   always kept the same: if the code has to differ (texts, conditions, layout), update the artboard in the same

@@ -157,7 +157,7 @@ Gemeinsame Run Configurations liegen in `.run/`, u.&nbsp;a. „Run Frontend“, 
 
 Ein neuer Bereich (z.&nbsp;B. Finanzübersicht) folgt dem Muster von `features/vertraege/`:
 
-- [ ] **Design:** Desktop- und 390-px-Artboards im [Canvas](https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx)
+- [ ] **Design:** Desktop- und 390-px-Artboards im [Canvas](https://claude.ai/artifact/1MUUwCGUPdDSQ15Ab5QzWb)
       sind fertig, neue Farben oder Bausteine stehen zuerst im Design System.
 - [ ] **Ordner:** `features/<modul>/` wie das Backend-Modul, darin oben Service, Routen und Texte, darunter
       ein Unterordner je Bereich der Oberfläche (`liste/`, `details/`, `formular/`), nicht je Schicht. Keine Datei
@@ -201,7 +201,7 @@ im Backend.
   Manrope lokal aus `@fontsource-variable/manrope`, Formularfelder und Buttons als Mixins in
   `shared/formular/_formular.scss`.
 - **Design zuerst** (ADR 0020): Seiten und Verhalten entstehen im
-  [Canvas „Haushaltsbuch“](https://claude.ai/artifact/U1DJUDYTgy9efP1dHJm5Hx), der Code folgt daraus.
+  [Canvas „Haushaltsbuch“](https://claude.ai/artifact/1MUUwCGUPdDSQ15Ab5QzWb), der Code folgt daraus.
   Die Farb-Tokens `--app-*` in `src/styles.scss` sind genau die Farben des
   [Design Systems „Haushaltsbuch“](https://claude.ai/artifact/1mDWVeKNzU1Mp3Co6TFD7H), mit denselben
   Namen; eine neue Farbe oder ein neuer Baustein kommt zuerst dorthin. Anwendung und Canvas

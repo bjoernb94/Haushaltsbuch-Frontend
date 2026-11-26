@@ -23,12 +23,16 @@ const tokens = JSON.parse(
   readFileSync(existsSync(kopie) ? kopie : join(projekt, 'tokens.json'), 'utf8'),
 );
 
-/** Gleiche Farben gleich schreiben: klein, ohne Leerzeichen, #fff als #ffffff, Zahlen ohne Nullen am Ende. */
+/**
+ * Gleiche Farben gleich schreiben: klein, ohne Leerzeichen, #fff als #ffffff, Zahlen in rgba() ohne Nullen am Ende.
+ * Hex-Werte bleiben, wie sie sind: Nullen sind dort Ziffern (#7a4b00 ist nicht #7a4b0).
+ */
 function farbe(wert) {
-  let w = wert.toLowerCase().replace(/\s+/g, '');
+  const w = wert.toLowerCase().replace(/\s+/g, '');
   if (/^#[0-9a-f]{3}$/.test(w)) {
-    w = '#' + [...w.slice(1)].map((z) => z + z).join('');
+    return '#' + [...w.slice(1)].map((z) => z + z).join('');
   }
+  if (w.startsWith('#')) return w;
   return w.replace(/\d*\.\d+|\d+/g, (zahl) => String(Number(zahl)));
 }
 
