@@ -4,8 +4,13 @@
   display: block;
 }
 
-// Feste Höhe (--app-streifen-hoehe), deshalb einzeilig.
+// Feste Höhe (--app-streifen-hoehe), deshalb einzeilig. Bleibt beim Scrollen oben stehen: Kopfzeile,
+// Seitenleiste und Toasts stehen so immer an derselben Stelle (sticky darunter, ohne Messen).
 .streifen {
+  position: sticky;
+  top: 0;
+  // Über Kopfzeile (12) und Seitenleiste, unter geöffneten Menüs (30 und mehr) und der Tab-Leiste (20).
+  z-index: 13;
   height: 24px;
   box-sizing: border-box;
   margin: 0;

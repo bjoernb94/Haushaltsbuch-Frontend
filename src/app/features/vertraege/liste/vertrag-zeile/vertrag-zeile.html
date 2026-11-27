@@ -11,16 +11,6 @@
     [attr.aria-label]="'Details zu ' + name() + (offen() ? ' schließen' : ' anzeigen')"
     (click)="details.emit()"
   ></button>
-  @if (meldung(); as hinweis) {
-    <div
-      class="meldung"
-      [class.abgesetzt]="hinweis.abgesetzt"
-      [class.unten]="hinweis.unten"
-      tabindex="-1"
-    >
-      <app-hinweis-box [art]="hinweis.art" [text]="hinweis.text" />
-    </div>
-  }
   <div class="angaben">
     <span class="name">{{ name() }}</span>
     <span class="meta">{{ meta() }}</span>

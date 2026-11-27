@@ -42,6 +42,33 @@ Login, Registrierung und die Fußzeile der App fragen den Systemstatus beim Öff
 erreichbar. Fehlt ein Dienst, sind Login und Registrierung gesperrt; in der App zeigen ihn nur die
 Einstellungen, Impressum und Datenschutz ohne Session in der Fußzeile.
 
+### Benachrichtigungen
+
+Rückmeldungen nach Aktionen stehen an einem festen Ort, nicht mehr in der Seite: Seiten rufen
+`Benachrichtigungen.melden()` (`core/benachrichtigungen`) mit Art, Titel und optional Text, Link und
+`dauerhaft`. Die Seite springt dafür nicht, der Fokus bleibt, wo er ist; verschwindet sein Element (z.&nbsp;B.
+nach dem Löschen), setzt die Seite ihn sinnvoll neu.
+
+- **Toasts** (`shared/benachrichtigungen`, einmal in `App`, damit die Live-Region vor der ersten Meldung
+  steht): oben rechts unter der Glocke, neueste oben; bis 900&nbsp;px über die volle Breite unter der
+  Kopfzeile, ohne Kopfzeile (Login, Registrierung) weiter oben. Sie stehen immer im selben Abstand unter dem,
+  was oben steht: Kopfzeile und eigene Leisten tragen `data-kopf`, der Stapel misst deren Unterkante, solange
+  Toasts stehen. Der Streifen der Umgebung bleibt beim Scrollen oben stehen, sticky Teile stehen darunter.
+  Erfolg 5&nbsp;s, Info 6&nbsp;s, Warnung 8&nbsp;s mit Zeitbalken, Fehler und `dauerhaft` bleiben. Maus oder
+  Fokus halten die Zeit an. Höchstens drei; ein vierter schiebt den ältesten zeitgesteuerten ins Center.
+  Fehler als `alert`, sonst `status`, die Art steht für Screenreader vor dem Titel.
+- **Meldungscenter** hinter der Glocke (`shared/glocke`): Abgelaufene Toasts kommen ungelesen hinein,
+  geschlossene gelesen; höchstens 50. Zähler ab 10 „9+“, „Alle als gelesen“, „Alle entfernen“, je
+  Eintrag gelesen markieren und entfernen, Zeitangabe („Vor 5 Min.“). Bis 640&nbsp;px ein Blatt von unten.
+- **Speicher:** Das Center liegt im `sessionStorage` des Tabs, gebunden an die E-Mail-Adresse des Nutzers
+  (ein anderer Nutzer verwirft es). Es übersteht Neuladen und Seitenwechsel; Abmelden leert es vorher
+  (`leeren()`), eine abgelaufene Sitzung blendet es aus, bis sich derselbe Nutzer wieder anmeldet. Das ist
+  neben `AuthService` und Systemstatus die Ausnahme zu ADR&nbsp;0018 und steht in der Datenschutzerklärung.
+- **Vor dem Login** nur Toasts, jeweils 8&nbsp;s: abgemeldet, abgelaufene Sitzung (dauerhaft, verschwindet
+  mit der Anmeldung), Konto angelegt ohne automatische Anmeldung.
+- **Was am Ort bleibt:** Feldfehler am Feld, die Fehlerbox über dem Formular, Ladefehler mit „Erneut
+  versuchen“, der 409-Hinweis auf der Seite Komponenten.
+
 ### Ungespeicherte Eingaben
 
 Ein Formular meldet Änderungen an `core/ungespeichert`. Wer es verlässt, wird im Dialog der Shell
@@ -68,7 +95,7 @@ Das Design im Canvas „Haushaltsbuch“ ist maßgeblich (ADR 0020, siehe [Konve
   der Seitentitel (die `h1`), optional mit Pfad davor („Einstellungen ›“), und die Hauptaktion als kleiner
   Primärknopf stehen bündig mit dem Inhalt. Der hat links und rechts denselben Abstand: höchstens
   1152&nbsp;px breit, mittig neben der Seitenleiste, mindestens 24&nbsp;px (`raender.neben-seitenleiste`).
-  Glocke (`shared/glocke`, Funktion mit #49) und Nutzermenü stehen am rechten Fensterrand; wo der Seitenteil
+  Glocke (`shared/glocke`) und Nutzermenü stehen am rechten Fensterrand; wo der Seitenteil
   davor endet, misst `kopfAusrichten()`. Einen Trennstrich gibt es nur, wenn die Hauptaktion direkt neben der
   Glocke steht. Die Fußzeile
   der Shell zeigt nur Impressum und Datenschutz, mittig zur ganzen Seite. Version und Systemstatus stehen in
@@ -216,7 +243,8 @@ im Backend.
 - **Aufbau eines Fachbereichs:** ein Ordner je Backend-Modul unter `features/` mit Service und
   Seiten. Services halten keine Fachdaten (ADR 0018): Die Daten liegen in der Seite und werden beim Öffnen
   geladen, nach einer Änderung neu. So bleibt nach dem Abmelden nichts für den nächsten Nutzer im
-  Speicher. Ausgenommen sind Sitzungsdaten im `AuthService` und der Systemstatus.
+  Speicher. Ausgenommen sind Sitzungsdaten im `AuthService`, der Systemstatus und das Meldungscenter
+  (im `sessionStorage` des Tabs, beim Abmelden geleert).
 - **Zustände einer Seite:** Jede Seite mit Daten hat einen Lade- und einen Fehlerzustand mit
   „Erneut versuchen“ sowie einen Leerzustand. Den Fehler zeigt `shared/hinweis-box` mit `aktionText="Erneut
 versuchen"` und `(aktion)`; der Knopf steht dann neben der Box.

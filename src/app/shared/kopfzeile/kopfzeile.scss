@@ -1,9 +1,9 @@
 @use 'masse' as *;
 
-// Sticky; bleibt in der Shell über die ganze Spalte stehen (siehe dort).
+// Sticky; bleibt in der Shell über die ganze Spalte stehen (siehe dort), unter dem Streifen der Umgebung.
 :host {
   position: sticky;
-  top: 0;
+  top: var(--app-streifen-hoehe, 0px);
   z-index: 12;
   display: block;
 }

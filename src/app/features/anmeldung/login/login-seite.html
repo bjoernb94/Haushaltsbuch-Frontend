@@ -16,8 +16,6 @@
         <a routerLink="/impressum" fragment="kontakt" [state]="impressumState()">Support</a>, er
         kann es entfernen. Danach kannst du dich neu registrieren.
       </app-hinweis-box>
-    } @else if (infoHinweis(); as text) {
-      <app-hinweis-box [text]="text" art="erfolg" />
     }
 
     <div class="feld">

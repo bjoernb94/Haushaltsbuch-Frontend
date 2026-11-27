@@ -142,7 +142,6 @@ export class VertragDetails {
     const vertrag = this.vertrag();
     return vertrag ? vertragName(vertrag) : '';
   });
-  protected readonly meldung = computed(() => this.seite.meldungZu(this.id()));
 
   /** „Gekündigt zum …“ bzw. „Beendet am …“, nur wenn das Backend die Wiederaufnahme anbietet. */
   protected readonly ende = computed(() => {

@@ -175,7 +175,7 @@ export class VertragWiederaufnehmen {
   private vorbelegen(vertrag: VertragAntwort): void {
     // Z. B. ein Link auf einen Vertrag, der wieder läuft.
     if (!vertrag.berechnet.wiederaufnahme) {
-      this.nichtMoeglich(vertrag.id);
+      this.nichtMoeglich();
       return;
     }
     this.formular.setValue(wiederaufnahmeWerte(vertrag), { emitEvent: false });
@@ -188,9 +188,8 @@ export class VertragWiederaufnehmen {
   private gespeichert(vertrag: VertragAntwort, datum: string): void {
     this.ungespeichert.vergessen();
     this.seite.nachAenderung({
-      id: vertrag.id,
-      text: `„${vertragName(vertrag)}“ wird ab ${datumText(datum)} wieder aufgenommen.`,
       art: 'erfolg',
+      titel: `„${vertragName(vertrag)}“ wird ab ${datumText(datum)} wieder aufgenommen.`,
     });
     this.abbrechen();
   }
@@ -200,11 +199,11 @@ export class VertragWiederaufnehmen {
     switch (problemCode(error)) {
       case 'KONFLIKT':
         this.ungespeichert.vergessen();
-        this.seite.konflikt(id);
+        this.seite.konflikt();
         this.abbrechen();
         break;
       case 'WIEDERAUFNAHME_NICHT_MOEGLICH':
-        this.nichtMoeglich(id);
+        this.nichtMoeglich();
         break;
       case 'NICHT_GEFUNDEN':
         this.ungespeichert.vergessen();
@@ -219,9 +218,9 @@ export class VertragWiederaufnehmen {
     }
   }
 
-  private nichtMoeglich(id: string): void {
+  private nichtMoeglich(): void {
     this.ungespeichert.vergessen();
-    this.seite.nachAenderung({ id, text: NICHT_MOEGLICH, art: 'fehler' });
+    this.seite.nachAenderung({ art: 'fehler', titel: NICHT_MOEGLICH });
     this.abbrechen();
   }
 

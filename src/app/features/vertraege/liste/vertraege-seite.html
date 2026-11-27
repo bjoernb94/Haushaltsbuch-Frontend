@@ -1,16 +1,10 @@
-@if (meldungOben(); as oben) {
-  <div class="meldung" tabindex="-1">
-    <app-hinweis-box [art]="oben.art" [text]="oben.text" />
-  </div>
-}
-
 <h1 class="nur-mobil">Verträge</h1>
 
 @if (fehler()) {
   <app-hinweis-box
     text="Die Verträge konnten nicht geladen werden."
     aktionText="Erneut versuchen"
-    (aktion)="laden(true)"
+    (aktion)="laden()"
   />
 } @else if (daten(); as stand) {
   <div class="kennzahlen">
@@ -52,7 +46,6 @@
           [attr.data-vertrag]="vertrag.id"
           [vertrag]="vertrag"
           [offen]="ansicht()?.id === vertrag.id"
-          [meldung]="zeilenMeldung(vertrag.id)"
           [loescht]="loeschendId() === vertrag.id"
           (details)="navigation.detailsUmschalten(vertrag.id)"
           (bearbeiten)="navigation.bearbeiten(vertrag.id)"

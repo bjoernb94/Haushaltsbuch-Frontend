@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { App } from './app';
+import { Benachrichtigungen } from './core/benachrichtigungen/benachrichtigungen';
 import { VersionService } from './core/version/version.service';
 
 describe('App', () => {
@@ -11,7 +12,14 @@ describe('App', () => {
     stage.set(undefined);
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter([]), { provide: VersionService, useValue: { stage } }],
+      providers: [
+        provideRouter([]),
+        { provide: VersionService, useValue: { stage } },
+        {
+          provide: Benachrichtigungen,
+          useValue: { toasts: signal([]) },
+        },
+      ],
     }).compileComponents();
   });
 
@@ -35,5 +43,10 @@ describe('App', () => {
     const element = await app();
     expect(element.querySelector('.streifen')).toBeNull();
     expect(element.style.getPropertyValue('--app-streifen-hoehe')).toBe('');
+  });
+
+  it('hat die Live-Region der Toasts schon vor der ersten Meldung', async () => {
+    const element = await app();
+    expect(element.querySelector('app-toasts [aria-live="polite"]')).not.toBeNull();
   });
 });

@@ -2,11 +2,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
+import { Benachrichtigungen } from '../../../core/benachrichtigungen/benachrichtigungen';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Systemstatus, SystemstatusService } from '../../../core/systemstatus/systemstatus.service';
 import { RegistrierungSeite } from './registrierung-seite';
 
 describe('RegistrierungSeite', () => {
+  const melden = vi.fn();
   let fixture: ComponentFixture<RegistrierungSeite>;
   let element: HTMLElement;
   let registrieren: ReturnType<typeof vi.fn>;
@@ -15,6 +17,7 @@ describe('RegistrierungSeite', () => {
 
   beforeEach(async () => {
     registrieren = vi.fn(() => of(true));
+    melden.mockClear();
     systemstatus = new BehaviorSubject<Systemstatus>({
       backend: true,
       datenbank: true,
@@ -25,6 +28,7 @@ describe('RegistrierungSeite', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: { registrieren } },
+        { provide: Benachrichtigungen, useValue: { melden } },
         { provide: SystemstatusService, useValue: { beobachten: () => systemstatus } },
       ],
     }).compileComponents();
@@ -132,9 +136,14 @@ describe('RegistrierungSeite', () => {
     await gueltigAusfuellen();
     await absenden();
 
-    expect(router.navigate).toHaveBeenCalledWith(['/login'], {
-      queryParams: { registriert: true },
-    });
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
+    await vi.waitFor(() =>
+      expect(melden).toHaveBeenCalledWith({
+        art: 'erfolg',
+        titel: 'Dein Konto wurde angelegt.',
+        text: 'Bitte melde dich an.',
+      }),
+    );
   });
 
   it('markiert eine vergebene E-Mail-Adresse', async () => {

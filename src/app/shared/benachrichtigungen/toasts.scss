@@ -1,0 +1,174 @@
+@use 'masse' as *;
+
+// Über Kopfzeile (12) und Tab-Leiste (20), unter modalen Dialogen. --toasts-kante ist die Unterkante
+// dessen, was oben steht (Kopfzeile, sonst der Streifen der Umgebung), gemessen in toasts.ts.
+:host {
+  position: fixed;
+  top: calc(var(--toasts-kante, 0px) + #{$abstand-6});
+  right: $abstand-6;
+  z-index: 45;
+  width: min(400px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+// Unter der Kopfzeile immer 12 px Abstand.
+:host(.mit-kopfzeile) {
+  top: calc(var(--toasts-kante, 60px) + #{$abstand-3});
+}
+
+.stapel {
+  display: flex;
+  // Neueste oben.
+  flex-direction: column-reverse;
+  gap: $abstand-3;
+}
+
+.toast {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: $abstand-3;
+  box-sizing: border-box;
+  padding: $abstand-4 $abstand-2 $abstand-4 $abstand-4;
+  border: 1px solid var(--app-trenner);
+  border-radius: $radius-karte;
+  background: var(--app-flaeche);
+  box-shadow: 0 12px 32px var(--app-schatten-menue);
+  color: var(--app-text);
+  pointer-events: auto;
+  animation: rein 0.2s ease-out;
+}
+
+.inhalt {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: $abstand-1;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-halb;
+}
+
+.titel {
+  margin: 0;
+  font-size: $schrift-text;
+  // Zeilenhöhe wie im Canvas, keine Skala.
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.text {
+  margin: 0;
+  font-size: $schrift-beschriftung;
+  line-height: 1.45;
+  color: var(--app-text-gedaempft);
+}
+
+.link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: $schrift-beschriftung;
+  font-weight: 700;
+}
+
+.schliessen {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-top: -$abstand-2;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: $radius-feld;
+  background: transparent;
+  color: var(--app-text-gedaempft);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--app-seitenleiste-hover);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: -3px;
+  }
+}
+
+// Zeitbalken; steht still, solange Maus oder Fokus auf dem Toast liegen.
+.zeit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  transform-origin: left center;
+  animation-name: ablaufen;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+
+  .toast:hover &,
+  .toast:focus-within & {
+    animation-play-state: paused;
+  }
+
+  .erfolg & {
+    background: var(--app-erfolg);
+  }
+
+  .info & {
+    background: var(--app-info-text);
+  }
+
+  .warnung & {
+    background: var(--app-warnung-text);
+  }
+}
+
+@keyframes rein {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ablaufen {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+// Über die volle Breite: unter der Kopfzeile, Tab-Leiste und Tastatur verdecken nichts.
+@media (max-width: 900px) {
+  :host {
+    top: calc(var(--toasts-kante, 0px) + #{$abstand-4} + env(safe-area-inset-top));
+    left: $abstand-4;
+    right: $abstand-4;
+    width: auto;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  // Die Kopfzeile enthält den Abstand zur Notch schon.
+  :host(.mit-kopfzeile) {
+    top: calc(var(--toasts-kante, 60px) + #{$abstand-2});
+  }
+}

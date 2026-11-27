@@ -8,11 +8,11 @@
   border-right: 1px solid var(--app-trenner);
 }
 
-// Bleibt beim Scrollen stehen. Die Höhe ohne den Streifen der Umgebung, sonst ragt die Leiste oben am
-// Seitenanfang unten aus dem Fenster.
+// Bleibt beim Scrollen stehen, unter dem Streifen der Umgebung (der oben stehen bleibt), und reicht bis
+// zum unteren Fensterrand.
 .seitennavigation {
   position: sticky;
-  top: 0;
+  top: var(--app-streifen-hoehe, 0px);
   align-self: flex-start;
   width: 100%;
   height: calc(100vh - var(--app-streifen-hoehe, 0px));

@@ -1,10 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { Benachrichtigungen } from '../../../../core/benachrichtigungen/benachrichtigungen';
 import { NEVER, of, throwError } from 'rxjs';
 import { Seitenaktionen } from '../../../../shared/seitenaktionen/seitenaktionen';
 import { VertragService } from '../../vertrag.service';
 import { NeuerVertragSeite } from './neuer-vertrag-seite';
+
+const melden = vi.fn();
+beforeEach(() => melden.mockClear());
 
 const KATEGORIEN = [{ id: 'k1', schluessel: 'VERSICHERUNG', name: null }] as const;
 
@@ -13,6 +17,7 @@ async function erstellen(service: Partial<VertragService>) {
     providers: [
       provideRouter([]),
       { provide: VertragService, useValue: { vorschau: () => NEVER, ...service } },
+      { provide: Benachrichtigungen, useValue: { melden } },
     ],
   });
   const navigieren = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -57,7 +62,7 @@ describe('NeuerVertragSeite', () => {
     expect(el.querySelector('form')).not.toBeNull();
   });
 
-  it('kehrt nach dem Anlegen mit Meldung zur Liste zurück', async () => {
+  it('meldet das Anlegen und kehrt zur Liste zurück', async () => {
     const anlegen = vi
       .fn()
       .mockReturnValue(of({ id: 'v1', anbieter: 'Anbieter', bezeichnung: null }));
@@ -67,24 +72,25 @@ describe('NeuerVertragSeite', () => {
     });
     await absenden();
     expect(anlegen).toHaveBeenCalledOnce();
-    expect(navigieren).toHaveBeenCalledWith(['/vertraege'], {
-      scroll: 'manual',
-      state: { meldung: '„Anbieter“ wurde gespeichert.', vertragId: 'v1' },
+    expect(melden).toHaveBeenCalledExactlyOnceWith({
+      art: 'erfolg',
+      titel: '„Anbieter“ wurde gespeichert.',
     });
+    expect(navigieren).toHaveBeenCalledWith(['/vertraege']);
   });
 
   it('nennt in der Meldung die Bezeichnung, wenn es eine gibt', async () => {
     const anlegen = vi
       .fn()
       .mockReturnValue(of({ id: 'v1', anbieter: 'Anbieter', bezeichnung: 'Kfz' }));
-    const { navigieren, absenden } = await erstellen({
+    const { absenden } = await erstellen({
       kategorien: () => of([...KATEGORIEN]),
       anlegen,
     });
     await absenden();
-    expect(navigieren.mock.calls[0][1]).toEqual({
-      scroll: 'manual',
-      state: { meldung: '„Kfz“ wurde gespeichert.', vertragId: 'v1' },
+    expect(melden).toHaveBeenCalledExactlyOnceWith({
+      art: 'erfolg',
+      titel: '„Kfz“ wurde gespeichert.',
     });
   });
 

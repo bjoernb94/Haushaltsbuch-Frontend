@@ -14,6 +14,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { Benachrichtigungen } from '../../core/benachrichtigungen/benachrichtigungen';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
 import { HERKUNFT, herkunftAus } from '../herkunft/herkunft';
 import { initialen } from './initialen';
@@ -63,6 +64,7 @@ export class Nutzermenue {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly ungespeichert = inject(UngespeicherteEingaben);
+  private readonly benachrichtigungen = inject(Benachrichtigungen);
 
   private readonly knopf = viewChild<ElementRef<HTMLButtonElement>>('knopf');
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
@@ -126,10 +128,15 @@ export class Nutzermenue {
     if (!(await this.ungespeichert.bestaetigen())) {
       return;
     }
+    // Solange die Sitzung besteht: Meldungen des Nutzers vergessen, nichts bleibt für den nächsten.
+    this.benachrichtigungen.leeren();
     // Auch wenn das Backend nicht antwortet, ist der Nutzer im Frontend abgemeldet.
-    this.auth.abmelden().subscribe({
-      complete: () => void this.router.navigateByUrl('/login'),
-      error: () => void this.router.navigateByUrl('/login'),
-    });
+    const zumLogin = () =>
+      void this.router
+        .navigateByUrl('/login')
+        .then(() =>
+          this.benachrichtigungen.melden({ art: 'erfolg', titel: 'Du wurdest abgemeldet.' }),
+        );
+    this.auth.abmelden().subscribe({ complete: zumLogin, error: zumLogin });
   }
 }

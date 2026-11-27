@@ -7,6 +7,7 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { NEVER, of, Subject, throwError } from 'rxjs';
 import { VertragAntwort, VertragsuebersichtAntwort } from '../../../core/api/api';
+import { Benachrichtigungen } from '../../../core/benachrichtigungen/benachrichtigungen';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { VERTRAEGE_ROUTES } from '../vertraege.routes';
 import { Seitenaktionen } from '../../../shared/seitenaktionen/seitenaktionen';
@@ -221,6 +222,8 @@ const UEBERSICHT: VertragsuebersichtAntwort = {
 const naechsteRunde = () => new Promise((fertig) => setTimeout(fertig));
 
 describe('VertraegeSeite', () => {
+  const melden = vi.fn();
+  beforeEach(() => melden.mockClear());
   const auflisten = vi.fn();
   const uebersicht = vi.fn();
   const aendern = vi.fn();
@@ -253,6 +256,7 @@ describe('VertraegeSeite', () => {
         ),
         provideLocationMocks(),
         { provide: LOCALE_ID, useValue: 'de-DE' },
+        { provide: Benachrichtigungen, useValue: { melden } },
         {
           provide: VertragService,
           useValue: { auflisten, uebersicht, aendern, kategorien, loeschen, vorschau: () => NEVER },
@@ -476,55 +480,10 @@ describe('VertraegeSeite', () => {
     });
   });
 
-  describe('nach dem Anlegen', () => {
-    const naviAus = (trigger: string, state: Record<string, unknown>) =>
-      vi
-        .spyOn(TestBed.inject(Router), 'currentNavigation')
-        .mockReturnValue({ trigger, extras: { state } } as never);
-    const STATE = { meldung: '„Neu“ wurde gespeichert.', vertragId: 'alt' };
-
-    beforeEach(() => vi.mocked(Element.prototype.scrollIntoView).mockClear());
-
-    it('zeigt die Meldung an der Zeile, fokussiert sie und holt die Zeile ins Bild', async () => {
-      naviAus('imperative', STATE);
-      const { element } = await seite();
-      const meldung = zeilen(element)[1].querySelector('.meldung');
-      expect(meldung?.textContent).toContain('„Neu“ wurde gespeichert.');
-      expect(element.querySelector(':scope > .meldung')).toBeNull();
-      expect(document.activeElement).toBe(meldung);
-      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toEqual([
-        zeilen(element)[1].querySelector('.zeile'),
-      ]);
-    });
-
-    it('zeigt die Meldung oben, wenn die Zeile fehlt, und scrollt nicht', async () => {
-      naviAus('imperative', { ...STATE, vertragId: 'unbekannt' });
-      const { element } = await seite();
-      expect(element.querySelector(':scope > .meldung')?.textContent).toContain('„Neu“');
-      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
-    });
-
-    it('zeigt die Meldung oben, wenn das Laden scheitert; der neue Versuch holt die Zeile ins Bild', async () => {
-      naviAus('imperative', STATE);
-      auflisten.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
-      const { element, stabil } = await seite();
-      expect(element.querySelector(':scope > .meldung')?.textContent).toContain('„Neu“');
-      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
-
-      auflisten.mockReturnValue(of([JAEHRLICH, BEENDET, PFLICHT]));
-      element.querySelector<HTMLButtonElement>('app-hinweis-box button')!.click();
-      await stabil();
-      expect(element.querySelector(':scope > .meldung')).toBeNull();
-      expect(zeilen(element)[1].querySelector('.meldung')?.textContent).toContain('„Neu“');
-      expect(Element.prototype.scrollIntoView).toHaveBeenCalledOnce();
-    });
-
-    it('zeigt und scrollt nichts beim Zurückblättern', async () => {
-      naviAus('popstate', STATE);
-      const { element } = await seite();
-      expect(element.querySelector('.meldung')).toBeNull();
-      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
-    });
+  it('springt beim Öffnen nicht zu einer Zeile', async () => {
+    vi.mocked(Element.prototype.scrollIntoView).mockClear();
+    await seite();
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
   });
 
   describe('Details', () => {
@@ -927,23 +886,25 @@ describe('VertraegeSeite', () => {
       expect(url()).toBe('/vertraege');
     });
 
-    it('ein Link auf einen unbekannten Vertrag zeigt oben einen Hinweis', async () => {
-      const { element, url } = await seite('/vertraege/gibt-es-nicht');
+    it('ein Link auf einen unbekannten Vertrag meldet es als Info', async () => {
+      const { url } = await seite('/vertraege/gibt-es-nicht');
       expect(url()).toBe('/vertraege');
-      expect(element.querySelector(':scope > .meldung')?.textContent).toContain(
-        'Diesen Vertrag gibt es nicht mehr.',
-      );
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'info',
+        titel: 'Diesen Vertrag gibt es nicht mehr.',
+      });
     });
 
-    it('zeigt die Meldung des offenen Vertrags im Panel statt an der Zeile', async () => {
-      aendern.mockReturnValue(of(JAEHRLICH));
+    it('meldet Gespeichertes als Toast, nicht in Panel oder Zeile, und lädt neu', async () => {
       const { element, instanz, stabil } = await seite('/vertraege/kfz');
       instanz().gespeichert(JAEHRLICH);
       await stabil();
-      expect(panel(element)?.querySelector('.meldung')?.textContent).toContain(
-        '„Kfz-Versicherung“ wurde gespeichert.',
-      );
-      expect(zeilen(element)[0].querySelector('.meldung')).toBeNull();
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'erfolg',
+        titel: '„Kfz-Versicherung“ wurde gespeichert.',
+      });
+      expect(auflisten).toHaveBeenCalledTimes(2);
+      expect(element.querySelector('app-hinweis-box')).toBeNull();
     });
   });
 
@@ -1233,9 +1194,10 @@ describe('VertraegeSeite', () => {
       expect(sheet(element)).toBeNull();
       expect(auflisten).toHaveBeenCalledTimes(2);
       expect(uebersicht).toHaveBeenCalledTimes(2);
-      expect(panel(element)?.querySelector('.meldung')?.textContent).toContain(
-        '„Kfz-Versicherung“ wurde gespeichert.',
-      );
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'erfolg',
+        titel: '„Kfz-Versicherung“ wurde gespeichert.',
+      });
     });
 
     it('aus der Liste geöffnet geht es danach zurück zur Liste', async () => {
@@ -1270,20 +1232,21 @@ describe('VertraegeSeite', () => {
       expect(auflisten).toHaveBeenCalledOnce();
     });
 
-    it('409: schließt, lädt neu und zeigt den Hinweis in den Details', async () => {
+    it('409: schließt, lädt neu und meldet es als Info', async () => {
       aendern.mockReturnValue(
         throwError(() => new HttpErrorResponse({ status: 409, error: { code: 'KONFLIKT' } })),
       );
-      const { element, sichern, url } = await geoeffnet();
+      const { sichern, url } = await geoeffnet();
       await sichern();
       expect(url()).toBe('/vertraege/kfz');
       expect(auflisten).toHaveBeenCalledTimes(2);
-      expect(panel(element)?.querySelector('.meldung [role="alert"]')?.textContent).toContain(
-        'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
-      );
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'info',
+        titel: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
+      });
     });
 
-    it('404: schließt zur Liste und zeigt den Hinweis oben', async () => {
+    it('404: schließt zur Liste und meldet es als Info', async () => {
       aendern.mockReturnValue(
         throwError(() => new HttpErrorResponse({ status: 404, error: { code: 'NICHT_GEFUNDEN' } })),
       );
@@ -1292,9 +1255,10 @@ describe('VertraegeSeite', () => {
       await sichern();
       expect(url()).toBe('/vertraege');
       expect(zeilen(element)).toHaveLength(2);
-      expect(element.querySelector(':scope > .meldung')?.textContent).toContain(
-        'Diesen Vertrag gibt es nicht mehr.',
-      );
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'info',
+        titel: 'Diesen Vertrag gibt es nicht mehr.',
+      });
     });
   });
 
@@ -1343,6 +1307,8 @@ describe('VertraegeSeite', () => {
       expect(uebersicht).toHaveBeenCalledTimes(2);
     });
 
+    const geloescht = (name: string) => ({ art: 'erfolg', titel: `„${name}“ wurde gelöscht.` });
+
     it('aus den Details: fragt, löscht und schließt sie', async () => {
       loeschen.mockReturnValue(of(undefined));
       auflisten
@@ -1355,60 +1321,59 @@ describe('VertraegeSeite', () => {
       schaltflaeche(dialog(element), 'Ja, löschen').click();
       await stabil();
       expect(url()).toBe('/vertraege');
-      expect(zeilen(element)[0].querySelector('.meldung')?.textContent).toContain(
-        '„Kfz-Versicherung“ wurde gelöscht.',
-      );
-      expect(element.textContent).not.toContain('Diesen Vertrag gibt es nicht mehr.');
+      expect(melden).toHaveBeenCalledExactlyOnceWith(geloescht('Kfz-Versicherung'));
     });
 
-    it('zeigt die Meldung über dem nächsten Vertrag', async () => {
+    it('meldet es als Toast und setzt den Fokus auf „…“ des nächsten Vertrags', async () => {
       loeschen.mockReturnValue(of(undefined));
       auflisten
         .mockReturnValueOnce(of([JAEHRLICH, BEENDET, PFLICHT]))
         .mockReturnValueOnce(of([BEENDET, PFLICHT]));
       const { element } = await bestaetigt();
-      const meldung = zeilen(element)[0].querySelector('.meldung');
-      expect(meldung?.textContent).toContain('„Kfz-Versicherung“ wurde gelöscht.');
-      expect(meldung?.classList.contains('unten')).toBe(false);
-      expect(meldung?.classList.contains('abgesetzt')).toBe(true);
+      expect(melden).toHaveBeenCalledExactlyOnceWith(geloescht('Kfz-Versicherung'));
+      expect(element.querySelector('app-hinweis-box')).toBeNull();
+      await vi.waitFor(() =>
+        expect(document.activeElement).toBe(knopf(element, 'Aktionen für Alt GmbH')),
+      );
     });
 
-    it('zeigt die Meldung beim letzten Vertrag unter dem davor', async () => {
+    it('beim letzten Vertrag geht der Fokus zum davor', async () => {
       loeschen.mockReturnValue(of(undefined));
       auflisten
         .mockReturnValueOnce(of([JAEHRLICH, BEENDET, PFLICHT]))
         .mockReturnValueOnce(of([JAEHRLICH, BEENDET]));
       const { element } = await bestaetigt('Beitragsservice');
-      const meldung = zeilen(element)[1].querySelector('.meldung');
-      expect(meldung?.textContent).toContain('„Beitragsservice“ wurde gelöscht.');
-      expect(meldung?.classList.contains('unten')).toBe(true);
-      expect(meldung?.classList.contains('abgesetzt')).toBe(true);
+      await vi.waitFor(() =>
+        expect(document.activeElement).toBe(knopf(element, 'Aktionen für Alt GmbH')),
+      );
     });
 
-    it('zeigt die Meldung oben, wenn die Liste danach leer ist', async () => {
+    it('ist die Liste danach leer, geht der Fokus zu „Ersten Vertrag anlegen“', async () => {
       loeschen.mockReturnValue(of(undefined));
       auflisten.mockReturnValueOnce(of([JAEHRLICH])).mockReturnValueOnce(of([]));
       const { element } = await bestaetigt();
-      expect(element.querySelector(':scope > .meldung')?.textContent).toContain('wurde gelöscht.');
       expect(element.textContent).toContain('Noch keine Verträge');
+      await vi.waitFor(() =>
+        expect(document.activeElement?.textContent).toContain('Ersten Vertrag anlegen'),
+      );
     });
 
-    it('404 gilt als gelöscht, ohne Fehlermeldung', async () => {
+    it('404 gilt als gelöscht', async () => {
       loeschen.mockReturnValue(fehlerAntwort(404, 'NICHT_GEFUNDEN'));
       auflisten.mockReturnValueOnce(of([JAEHRLICH, BEENDET])).mockReturnValueOnce(of([BEENDET]));
-      const { element } = await bestaetigt();
-      expect(element.querySelector('.meldung')?.textContent).toContain('wurde gelöscht.');
-      expect(element.querySelector('.meldung [role="alert"]')).toBeNull();
+      await bestaetigt();
+      expect(melden).toHaveBeenCalledExactlyOnceWith(geloescht('Kfz-Versicherung'));
       expect(auflisten).toHaveBeenCalledTimes(2);
     });
 
-    it('409: Hinweis an der Zeile, Vertrag bleibt, Liste neu geladen', async () => {
+    it('409: Info, Vertrag bleibt, Liste neu geladen', async () => {
       loeschen.mockReturnValue(fehlerAntwort(409, 'KONFLIKT'));
       const { element } = await bestaetigt();
-      expect(zeilen(element)[0].querySelector('.meldung [role="alert"]')?.textContent).toContain(
-        'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut löschen.',
-      );
-      expect(zeilen(element)[0].querySelector('.meldung.abgesetzt')).toBeNull();
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'info',
+        titel: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut löschen.',
+      });
+      expect(zeilen(element)).toHaveLength(3);
       expect(auflisten).toHaveBeenCalledTimes(2);
     });
 
@@ -1416,12 +1381,13 @@ describe('VertraegeSeite', () => {
       ['400', fehlerAntwort(400, 'ANFRAGE_UNGUELTIG')],
       ['500', fehlerAntwort(500, 'INTERNER_FEHLER')],
       ['keine Verbindung', fehlerAntwort(0)],
-    ])('%s: allgemeiner Text an der Zeile, ohne Neuladen', async (_, antwort) => {
+    ])('%s: Fehler-Toast mit allgemeinem Text, ohne Neuladen', async (_, antwort) => {
       loeschen.mockReturnValue(antwort);
       const { element } = await bestaetigt();
-      expect(zeilen(element)[0].querySelector('.meldung [role="alert"]')?.textContent).toContain(
-        'Der Vertrag konnte nicht gelöscht werden.',
-      );
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'fehler',
+        titel: 'Der Vertrag konnte nicht gelöscht werden. Bitte versuche es später erneut.',
+      });
       expect(auflisten).toHaveBeenCalledOnce();
       expect(knopf(element, 'Aktionen für Kfz-Versicherung').disabled).toBe(false);
     });

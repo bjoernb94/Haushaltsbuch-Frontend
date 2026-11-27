@@ -37,6 +37,16 @@ export async function abmelden(page: Page) {
     .click();
 }
 
+/** Die Toasts oben rechts (Live-Region, auch ohne Meldung im DOM). */
+export function toasts(page: Page) {
+  return page.getByRole('region', { name: 'Meldungen' });
+}
+
+/** Die Glocke in der Kopfzeile; ihr Name nennt die Zahl der ungelesenen Meldungen. */
+export function glocke(page: Page) {
+  return page.getByRole('banner').getByRole('button', { name: /^Benachrichtigungen/ });
+}
+
 /** Beispielangaben des Betreibers, dieselben wie bei `npm start` und in `docs/betrieb.md`. */
 export const INSTANZ = JSON.parse(readFileSync('beispiel/instanz.json', 'utf-8')) as {
   betreiber: { name: string; anschrift: string[]; email: string };

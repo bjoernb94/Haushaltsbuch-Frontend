@@ -1,5 +1,4 @@
 import {
-  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -40,8 +39,6 @@ const KONTO_UNVOLLSTAENDIG = 'KONTO_UNVOLLSTAENDIG';
 
 const HINWEIS_GESPERRT = 'Login gerade nicht möglich.';
 
-const HINWEIS_REGISTRIERT = 'Dein Konto wurde angelegt. Bitte melde dich an.';
-
 @Component({
   selector: 'app-login-seite',
   imports: [ReactiveFormsModule, RouterLink, AnmeldeRahmen, HinweisBox, SystemstatusLeiste],
@@ -56,9 +53,6 @@ export class LoginSeite {
 
   /** Seite, auf die der Nutzer vor der Anmeldung wollte (Query-Parameter). */
   readonly returnUrl = input<string>();
-
-  /** Gesetzt nach einer Registrierung, bei der die automatische Anmeldung gescheitert ist. */
-  readonly registriert = input(false, { transform: booleanAttribute });
 
   protected readonly formular = inject(NonNullableFormBuilder).group({
     email: ['', Validators.required],
@@ -84,12 +78,6 @@ export class LoginSeite {
   /** Hinweis auf den Support; gesperrt geht vor. */
   protected readonly supportHinweis = computed(
     () => !this.systemstatus.gesperrt() && this.kontoUnvollstaendig(),
-  );
-
-  protected readonly infoHinweis = computed(() =>
-    this.registriert() && !this.fehlerHinweis() && !this.supportHinweis()
-      ? HINWEIS_REGISTRIERT
-      : null,
   );
 
   /** „Zurück“ im Impressum führt wieder hierher, mit returnUrl. */

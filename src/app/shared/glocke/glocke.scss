@@ -1,12 +1,16 @@
 @use 'masse' as *;
 
+$handy: 640px;
+
 :host {
+  position: relative;
   display: block;
   flex: none;
 }
 
 // Wie der Knopf des Nutzermenüs: 44 px, Rand app-rand.
 .glocke {
+  position: relative;
   width: 44px;
   height: 44px;
   box-sizing: border-box;
@@ -28,4 +32,24 @@
     outline: 3px solid var(--app-gruen-fokus-rand);
     outline-offset: 2px;
   }
+}
+
+.zaehler {
+  position: absolute;
+  top: -$abstand-1;
+  right: -$abstand-1;
+  min-width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 0 $abstand-1;
+  border-radius: $radius-pille;
+  background: var(--app-fehler);
+  color: var(--app-flaeche);
+  font-size: $schrift-klein;
+  font-weight: 800;
+  // Zentriert in der 20 px hohen Pille.
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px var(--app-grund);
 }

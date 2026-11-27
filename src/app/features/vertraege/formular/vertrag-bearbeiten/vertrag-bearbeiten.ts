@@ -141,7 +141,7 @@ export class VertragBearbeiten {
     switch (problemCode(error)) {
       case 'KONFLIKT':
         this.ungespeichert.vergessen();
-        this.seite.konflikt(id);
+        this.seite.konflikt();
         this.abbrechen();
         break;
       case 'NICHT_GEFUNDEN':

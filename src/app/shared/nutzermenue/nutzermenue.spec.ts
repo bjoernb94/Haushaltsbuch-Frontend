@@ -5,6 +5,7 @@ import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ProfilAntwort } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
+import { Benachrichtigungen } from '../../core/benachrichtigungen/benachrichtigungen';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
 import { istEinstellungen, Nutzermenue } from './nutzermenue';
 
@@ -13,10 +14,13 @@ const MAX: ProfilAntwort = { vorname: 'Max', name: 'Muster', email: 'max@beispie
 describe('Nutzermenue', () => {
   const nutzer = signal<ProfilAntwort | null>(MAX);
   const abmelden = vi.fn(() => of<void>(undefined));
+  const benachrichtigungen = { leeren: vi.fn(), melden: vi.fn() };
 
   beforeEach(async () => {
     nutzer.set(MAX);
     abmelden.mockReset();
+    benachrichtigungen.leeren.mockClear();
+    benachrichtigungen.melden.mockClear();
     abmelden.mockReturnValue(of(undefined));
     await TestBed.configureTestingModule({
       imports: [Nutzermenue],
@@ -27,6 +31,7 @@ describe('Nutzermenue', () => {
           { path: 'einstellungen/profil', children: [] },
         ]),
         { provide: AuthService, useValue: { nutzer, abmelden } },
+        { provide: Benachrichtigungen, useValue: benachrichtigungen },
       ],
     }).compileComponents();
   });
@@ -137,6 +142,24 @@ describe('Nutzermenue', () => {
     await oeffnen();
     element.querySelector<HTMLButtonElement>('.abmelden')!.click();
     await vi.waitFor(() => expect(navigiert).toHaveBeenCalledWith('/login'));
+    expect(abmelden).toHaveBeenCalledOnce();
+  });
+
+  it('leert die Meldungen, solange die Sitzung besteht, und meldet danach die Abmeldung', async () => {
+    const { element, oeffnen } = await menue();
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    abmelden.mockImplementation(() => {
+      expect(benachrichtigungen.leeren).toHaveBeenCalledOnce();
+      return of(undefined);
+    });
+    await oeffnen();
+    element.querySelector<HTMLButtonElement>('.abmelden')!.click();
+    await vi.waitFor(() =>
+      expect(benachrichtigungen.melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'erfolg',
+        titel: 'Du wurdest abgemeldet.',
+      }),
+    );
     expect(abmelden).toHaveBeenCalledOnce();
   });
 
