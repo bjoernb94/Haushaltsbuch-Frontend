@@ -3,6 +3,13 @@ import { backendSimulieren, MAX, nutzerKnopf } from './backend-mock';
 
 const kontomenue = (page: Page) => page.getByRole('dialog', { name: 'Dein Konto' });
 
+/** Ab 901 px „Einstellungen ›“ vor dem Titel in der Kopfzeile. */
+const pfad = (page: Page) =>
+  page.getByRole('banner').getByRole('link', { name: 'Einstellungen', exact: true });
+
+/** „Zurück“ der Einstellungen steht nur bis 900 px in der Kopfzeile; sein Ziel ist die Herkunft. */
+const zurueck = (page: Page) => page.locator('app-kopfzeile a.zurueck');
+
 /** Von den Verträgen über das Kontomenü und den Abschnitt Konto zum Profil. */
 async function zumProfil(page: Page) {
   await page.goto('/vertraege');
@@ -12,7 +19,7 @@ async function zumProfil(page: Page) {
   await expect(page).toHaveURL(/\/einstellungen\/profil$/);
 }
 
-test('zeigt Name und E-Mail, „Zurück“ führt über die Einstellungen zur Herkunft', async ({
+test('zeigt Name und E-Mail, der Pfad führt zu den Einstellungen, die ihre Herkunft behalten', async ({
   page,
 }) => {
   await backendSimulieren(page, { angemeldet: true });
@@ -23,11 +30,11 @@ test('zeigt Name und E-Mail, „Zurück“ führt über die Einstellungen zur He
   const angaben = page.getByRole('region', { name: 'Persönliche Angaben' });
   await expect(angaben.getByRole('term')).toHaveText(['Vorname', 'Name', 'E-Mail-Adresse']);
   await expect(angaben.getByRole('definition')).toHaveText([MAX.vorname, MAX.name, MAX.email]);
+  await expect(page.getByRole('link', { name: 'Zurück zu Einstellungen' })).toBeHidden();
 
-  await page.getByRole('link', { name: 'Zurück zu Einstellungen' }).click();
+  await pfad(page).click();
   await expect(page).toHaveURL(/\/einstellungen$/);
-  await page.getByRole('link', { name: 'Zurück zu Verträge' }).click();
-  await expect(page).toHaveURL(/\/vertraege$/);
+  await expect(zurueck(page)).toHaveAttribute('aria-label', 'Zurück zu Verträge');
 });
 
 test('nach dem Neuladen und mit der Zurück-Taste des Browsers bleibt die Herkunft', async ({
@@ -40,15 +47,15 @@ test('nach dem Neuladen und mit der Zurück-Taste des Browsers bleibt die Herkun
 
   await page.goBack();
   await expect(page).toHaveURL(/\/einstellungen$/);
-  await expect(page.getByRole('link', { name: 'Zurück zu Verträge' })).toBeVisible();
+  await expect(zurueck(page)).toHaveAttribute('aria-label', 'Zurück zu Verträge');
 });
 
-test('direkt aufgerufen führt „Zurück“ zu den Einstellungen ohne Herkunft', async ({ page }) => {
+test('direkt aufgerufen führt der Pfad zu den Einstellungen ohne Herkunft', async ({ page }) => {
   await backendSimulieren(page, { angemeldet: true });
   await page.goto('/einstellungen/profil');
-  await page.getByRole('link', { name: 'Zurück zu Einstellungen' }).click();
+  await pfad(page).click();
   await expect(page).toHaveURL(/\/einstellungen$/);
-  await expect(page.getByRole('link', { name: 'Zurück zu Startseite' })).toBeVisible();
+  await expect(zurueck(page)).toHaveAttribute('aria-label', 'Zurück zu Startseite');
 });
 
 test('das Kontomenü markiert die Einstellungen, die das Profil als Herkunft bekommen', async ({
@@ -61,6 +68,7 @@ test('das Kontomenü markiert die Einstellungen, die das Profil als Herkunft bek
   await expect(einstellungen).toHaveAttribute('aria-current', 'page');
   await einstellungen.click();
   await expect(page).toHaveURL(/\/einstellungen$/);
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('link', { name: 'Zurück zu Profil' }).click();
   await expect(page).toHaveURL(/\/einstellungen\/profil$/);
 });

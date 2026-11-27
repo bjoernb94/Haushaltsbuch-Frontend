@@ -16,7 +16,7 @@ test.describe('bis 900 px', { tag: '@mobil' }, () => {
     const links = async (ziel: ReturnType<Page['locator']>) =>
       Math.round((await ziel.first().boundingBox())!.x);
     for (const [url, ziel] of [
-      ['/start', 'main h1'],
+      ['/start', 'main h2'],
       ['/vertraege', 'main h1'],
       ['/vertraege/neu', 'main input'],
       ['/einstellungen', 'main h1'],
@@ -40,6 +40,8 @@ test.describe('bis 900 px', { tag: '@mobil' }, () => {
     await page.goto('/vertraege');
     await expect(kopf(page)).toBeVisible();
     await expect(kopf(page).getByText('Haushaltsbuch')).toBeHidden();
+    await expect(kopf(page).getByRole('heading')).toBeHidden();
+    await expect(kopf(page).getByRole('button', { name: 'Benachrichtigungen' })).toBeVisible();
 
     const stil = await kopf(page).evaluate((el) => {
       const ebene = getComputedStyle(el, '::before');
@@ -177,13 +179,23 @@ test(
   },
 );
 
-test('ab 901 px keine Aktionen im Kopf, „Zurück“ steht im Inhalt', async ({ page }) => {
+test('ab 901 px trägt die Kopfzeile Titel und Hauptaktion, ohne „Zurück“ und „+“', async ({
+  page,
+}) => {
   await backendSimulieren(page, { angemeldet: true });
   await page.goto('/einstellungen');
-  await expect(page.getByRole('main').getByRole('link', { name: /Zurück/ })).toBeVisible();
-  await expect(kopf(page).getByRole('link')).toBeHidden();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Einstellungen');
+  await expect(kopf(page).getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Zurück/ })).toBeHidden();
 
   await page.goto('/vertraege');
-  await expect(page.getByRole('main').getByRole('link', { name: 'Neuer Vertrag' })).toBeVisible();
-  await expect(kopf(page).getByRole('link', { name: 'Neuer Vertrag' })).toBeHidden();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Verträge');
+  await expect(kopf(page).getByRole('link', { name: 'Neuer Vertrag' })).toHaveText('Neuer Vertrag');
+  await expect(kopf(page).getByRole('link', { name: 'Neuer Vertrag' })).toHaveCount(1);
+
+  // Bis 900 px umgekehrt: Titel im Inhalt, „+“ im Kopf.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toHaveText('Verträge');
+  await expect(kopf(page).getByRole('heading')).toBeHidden();
+  await expect(kopf(page).getByRole('link', { name: 'Neuer Vertrag' })).toHaveText('');
 });

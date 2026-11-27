@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { Komponente } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
 import { VertragService } from '../vertraege/vertrag.service';
+import { Seitenaktionen } from '../../shared/seitenaktionen/seitenaktionen';
 import { StartSeite } from './start-seite';
 
 describe('StartSeite', () => {
@@ -54,11 +55,13 @@ describe('StartSeite', () => {
   }
 
   const titel = (element: HTMLElement) =>
-    [...element.querySelectorAll('h2')].map((h2) => h2.textContent);
+    [...element.querySelectorAll('.raster h2')].map((h2) => h2.textContent);
 
-  it('begrüßt mit Vornamen und aktuellem Monat', async () => {
+  it('begrüßt mit Vornamen und aktuellem Monat, Titel „Übersicht“', async () => {
     const element = await seite();
-    expect(element.querySelector('h1')?.textContent).toBe('Willkommen, Max!');
+    expect(element.querySelector('h1')?.textContent).toBe('Übersicht');
+    expect(TestBed.inject(Seitenaktionen).aktionen().titel).toBe('Übersicht');
+    expect(element.querySelector('.kopf h2')?.textContent).toBe('Willkommen, Max!');
     expect(element.querySelector('.kopf p')?.textContent).toBe('Dein Überblick für November 2026.');
   });
 

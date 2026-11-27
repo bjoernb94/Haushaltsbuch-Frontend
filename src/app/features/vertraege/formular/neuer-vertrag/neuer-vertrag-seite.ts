@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { VertragKategorieAntwort } from '../../../../core/api/api';
 import { UngespeicherteEingaben } from '../../../../core/ungespeichert/ungespeicherte-eingaben';
 import { HinweisBox } from '../../../../shared/hinweis-box/hinweis-box';
@@ -15,7 +15,7 @@ import { VertragEingabe, VertragService } from '../../vertrag.service';
  */
 @Component({
   selector: 'app-neuer-vertrag-seite',
-  imports: [RouterLink, HinweisBox, VertragFormular],
+  imports: [HinweisBox, VertragFormular],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './neuer-vertrag-seite.html',
   styleUrl: './neuer-vertrag-seite.scss',
@@ -33,7 +33,11 @@ export class NeuerVertragSeite {
   protected readonly formularId = 'neuer-vertrag';
 
   constructor() {
-    seitenaktionenMelden(() => ({ eigeneLeiste: true }));
+    seitenaktionenMelden(() => ({
+      titel: 'Neuer Vertrag',
+      pfad: { ziel: '/vertraege', label: null, text: 'Verträge' },
+      eigeneLeiste: true,
+    }));
     this.laden();
   }
 

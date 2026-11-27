@@ -94,9 +94,9 @@ test.describe('Logo', () => {
     }
   });
 
-  test('Kopfzeile: 30 px, auf Startseite und Impressum', async ({ page }) => {
+  test('Kopfzeile: 30 px auf Impressum und Datenschutz', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true });
-    for (const pfad of ['/start', '/impressum']) {
+    for (const pfad of ['/impressum', '/datenschutz']) {
       await page.goto(pfad);
       await expect(logo(page)).toBeVisible();
       expect(await groesse(page)).toEqual([30, 30]);
@@ -105,7 +105,7 @@ test.describe('Logo', () => {
 
   test('Seitenleiste: 26 px in Grün, die Kopfzeile ohne Logo', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true });
-    await page.goto('/vertraege');
+    await page.goto('/start');
     const inLeiste = page.locator('app-hauptmenue app-logo svg');
     await expect(inLeiste).toBeVisible();
     const box = (await inLeiste.boundingBox())!;

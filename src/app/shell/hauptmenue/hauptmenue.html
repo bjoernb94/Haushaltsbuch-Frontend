@@ -9,10 +9,10 @@
       <span class="abschnitt">Komponenten</span>
     }
     @for (bereich of bereiche(); track bereich.pfad) {
-      @if (bereich.demnaechst) {
-        <div class="naveintrag demnaechst">
+      @if (bereich.inaktiv; as inaktiv) {
+        <div class="naveintrag inaktiv">
           <ng-container
-            *ngTemplateOutlet="navInhalt; context: { $implicit: bereich }"
+            *ngTemplateOutlet="navInhalt; context: { $implicit: bereich, status: inaktiv }"
           ></ng-container>
         </div>
       } @else {
@@ -20,6 +20,23 @@
       }
     }
   </div>
+  <div class="unten">
+    <a
+      class="naveintrag navlink"
+      [routerLink]="einstellungen"
+      [state]="einstellungenState()"
+      routerLinkActive
+      ariaCurrentWhenActive="page"
+    >
+      <ng-container
+        *ngTemplateOutlet="
+          navInhalt;
+          context: { $implicit: { label: 'Einstellungen', icon: einstellungenIcon } }
+        "
+      ></ng-container>
+    </a>
+  </div>
+  <p class="copyright">© Björn Bochmann</p>
 </nav>
 
 <ng-template #navLink let-eintrag>
@@ -33,7 +50,7 @@
   </a>
 </ng-template>
 
-<ng-template #navInhalt let-eintrag>
+<ng-template #navInhalt let-eintrag let-status="status">
   <svg
     width="20"
     height="20"
@@ -56,8 +73,8 @@
     } @else {
       {{ eintrag.label }}
     }
-    @if (eintrag.demnaechst) {
-      <span class="demnaechst-text">Demnächst verfügbar</span>
+    @if (status) {
+      <span class="status">{{ status }}</span>
     }
   </span>
 </ng-template>

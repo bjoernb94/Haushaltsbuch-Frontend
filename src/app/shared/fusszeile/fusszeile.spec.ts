@@ -33,24 +33,28 @@ describe('Fusszeile', () => {
     expect(element.querySelector('.status')?.textContent).toContain('Datenbank nicht erreichbar');
     expect(element.querySelector('nav')?.getAttribute('aria-label')).toBe('Rechtliches');
     expect(element.querySelector('.version')?.textContent).toContain('v0.1.0');
-    expect(element.classList.contains('mit-navigation')).toBe(false);
+    expect(element.classList.contains('app')).toBe(false);
   });
 
-  it('zeigt den Systemstatus nicht, wenn die Seite ihn selbst zeigt, und wird flach', async () => {
+  it('zeigt ohne Systemstatus auch keine Version', async () => {
     const fixture = TestBed.createComponent(Fusszeile);
-    fixture.componentRef.setInput('mitStatus', false);
+    fixture.componentRef.setInput('status', false);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('.status')).toBeNull();
+    expect(element.querySelector('.version')).toBeNull();
     expect(element.querySelector('.copyright')?.textContent).toBe('© Björn Bochmann');
-    expect(element.querySelector('.version')?.textContent).toContain('v0.1.0');
-    expect(element.classList.contains('flach')).toBe(true);
   });
 
-  it('kennzeichnet die Variante mit Seitennavigation', async () => {
+  it('zeigt in der Shell nur die rechtlichen Links', async () => {
     const fixture = TestBed.createComponent(Fusszeile);
-    fixture.componentRef.setInput('mitNavigation', true);
+    fixture.componentRef.setInput('variante', 'app');
     await fixture.whenStable();
-    expect((fixture.nativeElement as HTMLElement).classList.contains('mit-navigation')).toBe(true);
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.classList.contains('app')).toBe(true);
+    expect(element.querySelector('nav')?.getAttribute('aria-label')).toBe('Rechtliches');
+    expect(element.querySelector('.copyright')).toBeNull();
+    expect(element.querySelector('.status')).toBeNull();
+    expect(element.querySelector('.version')).toBeNull();
   });
 });

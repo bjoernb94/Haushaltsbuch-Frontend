@@ -22,6 +22,10 @@ async function zuDenKomponenten(page: Page) {
   await expect(page).toHaveURL(/\/einstellungen\/komponenten$/);
 }
 
+/** „Einstellungen ›“ vor dem Titel in der Kopfzeile. */
+const pfad = (page: Page) =>
+  page.getByRole('banner').getByRole('link', { name: 'Einstellungen', exact: true });
+
 test('Komponente ausschalten: Eintrag im Hauptmenü und Kachel verschwinden', async ({ page }) => {
   await backendSimulieren(page, {
     angemeldet: true,
@@ -41,8 +45,9 @@ test('Komponente ausschalten: Eintrag im Hauptmenü und Kachel verschwinden', as
   await expect(page.getByRole('status')).toContainText('Deine Komponenten wurden gespeichert.');
   await expect(speichern(page)).toBeDisabled();
   await expect(navigation(page).getByRole('link', { name: 'Verträge' })).toHaveCount(0);
+  await expect(navigation(page)).toContainText(/Verträge\s*Ausgeschaltet/);
 
-  await page.getByRole('link', { name: 'Zurück zu Einstellungen' }).click();
+  await pfad(page).click();
   await expect(page).toHaveURL(/\/einstellungen$/);
   await page.goto('/start');
   await expect(page.getByRole('region', { name: 'Vertragsübersicht' })).toHaveCount(0);
@@ -80,16 +85,20 @@ test('mit Änderungen fragt das Verlassen nach, „Weiter bearbeiten“ bleibt',
   await schalter(page, /Portfolio/).check();
 
   const dialog = page.getByRole('dialog', { name: 'Änderungen verwerfen?' });
-  await page.getByRole('link', { name: 'Zurück zu Einstellungen' }).click();
+  await pfad(page).click();
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Weiter bearbeiten' }).click();
   await expect(page).toHaveURL(/\/einstellungen\/komponenten$/);
   await expect(schalter(page, /Portfolio/)).toBeChecked();
 
-  await page.getByRole('link', { name: 'Zurück zu Einstellungen' }).click();
+  await pfad(page).click();
   await dialog.getByRole('button', { name: 'Verwerfen' }).click();
   await expect(page).toHaveURL(/\/einstellungen$/);
-  await expect(page.getByRole('link', { name: 'Zurück zu Verträge' })).toBeVisible();
+  // Im Verlauf zurück: Die Einstellungen behalten ihre Herkunft („Zurück“ bis 900 px).
+  await expect(page.locator('app-kopfzeile a.zurueck')).toHaveAttribute(
+    'aria-label',
+    'Zurück zu Verträge',
+  );
 });
 
 test('bei 409 lädt die Seite den aktuellen Stand und weist darauf hin', async ({ page }) => {

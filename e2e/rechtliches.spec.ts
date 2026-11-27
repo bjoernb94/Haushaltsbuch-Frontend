@@ -72,31 +72,23 @@ test('nach dem Neuladen bleibt die Herkunft', async ({ page }) => {
   await expect(zurueck(page)).toHaveAccessibleName('Zurück zu Neuer Vertrag');
 });
 
-test('Logo und Nutzer-Button stehen wie in der Shell', async ({ page }) => {
+test('Logo und Nutzermenü am Rand, „Zurück“ bündig mit dem Inhalt, der Text mittig', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1600, height: 900 });
   await backendSimulieren(page, { angemeldet: true });
-  await page.goto('/start');
-  const logo = await page
-    .getByRole('banner')
-    .getByText('Haushaltsbuch', { exact: true })
-    .boundingBox();
-  const knopf = await nutzerKnopf(page).boundingBox();
-  await recht(page, 'Impressum').click();
-  await expect(page).toHaveURL(/\/impressum$/);
-  expect(
-    await page.getByRole('banner').getByText('Haushaltsbuch', { exact: true }).boundingBox(),
-  ).toEqual(logo);
-  expect(await nutzerKnopf(page).boundingBox()).toEqual(knopf);
-});
-
-test('„Zurück“ steht am Rand der Startseite, der Text mittig', async ({ page }) => {
-  await page.setViewportSize({ width: 1600, height: 900 });
-  await backendSimulieren(page, { angemeldet: true });
-  await page.goto('/start');
-  const start = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
   for (const pfad of ['/impressum', '/datenschutz']) {
     await page.goto(pfad);
-    expect((await zurueck(page).boundingBox())!.x, pfad).toBe(start.x);
+    const logo = (await page
+      .getByRole('banner')
+      .getByText('Haushaltsbuch', { exact: true })
+      .boundingBox())!;
+    // Logo (30 px und 12 px Abstand vor dem Schriftzug) am linken Rand, wie das Nutzermenü am rechten.
+    expect(logo.x - 42, pfad).toBe(24);
+    expect((await zurueck(page).boundingBox())!.x, pfad).toBe(224);
+    const knopf = (await nutzerKnopf(page).boundingBox())!;
+    // Das Nutzermenü steht am rechten Fensterrand.
+    expect(Math.round(knopf.x + knopf.width), pfad).toBe(1600 - 24);
     const text = (await page.locator('main section').first().boundingBox())!;
     expect(text.width, pfad).toBeLessThanOrEqual(768);
     expect(Math.abs(text.x + text.width / 2 - 800), pfad).toBeLessThan(2);
@@ -163,12 +155,27 @@ test('Handy: alles passt in die Breite', { tag: '@mobil' }, async ({ page }) => 
   }
 });
 
-test('Impressum: Links mittig unter dem Systemstatus', async ({ page }) => {
+test('Impressum: ohne Session Links mittig unter dem Systemstatus, mit Version', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1600, height: 900 });
-  await backendSimulieren(page, { angemeldet: true });
+  await backendSimulieren(page);
   await page.goto('/impressum');
+  await expect(page.getByRole('contentinfo').locator('app-version-anzeige')).toBeVisible();
   const status = (await page.getByRole('status', { name: 'Systemstatus' }).boundingBox())!;
   const links = (await page.getByRole('navigation', { name: 'Rechtliches' }).boundingBox())!;
   expect(links.y).toBeGreaterThan(status.y);
   expect(Math.abs(links.x + links.width / 2 - (status.x + status.width / 2))).toBeLessThan(2);
+});
+
+test('Impressum: mit Session ohne Systemstatus und Version, die stehen in den Einstellungen', async ({
+  page,
+}) => {
+  await backendSimulieren(page, { angemeldet: true });
+  await page.goto('/impressum');
+  const fusszeile = page.getByRole('contentinfo');
+  await expect(fusszeile).toContainText('© Björn Bochmann');
+  await expect(fusszeile.getByRole('link', { name: 'Datenschutz' })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Systemstatus' })).toHaveCount(0);
+  await expect(fusszeile.locator('app-version-anzeige')).toHaveCount(0);
 });

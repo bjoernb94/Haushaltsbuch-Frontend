@@ -59,46 +59,35 @@ test('über 640 px hängt das Panel am Knopf, mit Vorname und Pfeil', async ({ p
 
   const knopf = (await nutzerKnopf(page).boundingBox())!;
   const box = (await panel(page).boundingBox())!;
-  expect(box.width).toBe(300);
+  expect(box.width).toBe(280);
   expect(box.y).toBeGreaterThanOrEqual(knopf.y + knopf.height);
   expect(Math.round(box.x + box.width)).toBe(Math.round(knopf.x + knopf.width));
   await expect(panel(page).locator('.griff')).toBeHidden();
 });
 
-test('der Knopf steht auf Seiten mit Kopfzeile an derselben Stelle', async ({ page }) => {
+test('Glocke und Knopf stehen am rechten Rand der Kopfzeile, auch auf dem Impressum', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1600, height: 800 });
-  const start = (await nutzerKnopf(page).boundingBox())!;
-  expect(1600 - (start.x + start.width)).toBeGreaterThan(24);
+  await page.goto('/vertraege');
+  const glocke = page.getByRole('banner').getByRole('button', { name: 'Benachrichtigungen' });
+  const knopf = (await nutzerKnopf(page).boundingBox())!;
+  const box = (await glocke.boundingBox())!;
+  // Am rechten Fensterrand, unabhängig vom Inhalt.
+  expect(Math.round(knopf.x + knopf.width)).toBe(1600 - 24);
+  expect(box.x + box.width + 8).toBe(knopf.x);
+  expect(box.y).toBe(knopf.y);
+  await expect(page.locator('app-nutzermenue')).toHaveCount(1);
+
+  // Vorerst ohne Funktion (#49).
+  await glocke.click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
   await page.goto('/impressum');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-
-  expect(await nutzerKnopf(page).boundingBox()).toEqual(start);
-});
-
-test('mit Seitenleiste sitzt der Knopf unten in ihr, das Panel öffnet nach oben', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/vertraege');
-  const leiste = (await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox())!;
-  const knopf = (await nutzerKnopf(page).boundingBox())!;
-  expect(knopf.x).toBe(10);
-  expect(knopf.width).toBe(212);
-  expect(knopf.x + knopf.width).toBeLessThan(leiste.width);
-  expect(Math.round(knopf.y + knopf.height)).toBe(800 - 12);
-  await expect(nutzerKnopf(page).locator('.vorname')).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeVisible();
-  await expect(page.locator('app-nutzermenue')).toHaveCount(1);
-
-  await nutzerKnopf(page).click();
-
-  const box = (await panel(page).boundingBox())!;
-  expect(box.x).toBe(knopf.x);
-  expect(box.y + box.height).toBeLessThan(knopf.y);
-  await expect(panel(page)).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(nutzerKnopf(page)).toBeFocused();
+  const imImpressum = (await nutzerKnopf(page).boundingBox())!;
+  expect(Math.round(imImpressum.x + imImpressum.width)).toBe(1600 - 24);
+  expect(imImpressum.y).toBe(knopf.y);
 });
 
 test(

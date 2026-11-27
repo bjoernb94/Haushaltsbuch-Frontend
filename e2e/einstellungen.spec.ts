@@ -40,7 +40,10 @@ test('über das Kontomenü erreichbar, mit Status, Version und Umgebung, zurück
   ).toHaveAttribute('aria-current', 'page');
   await page.keyboard.press('Escape');
 
+  // Ab 901 px ohne „Zurück“, die Seitenleiste führt weiter; bis 900 px steht es in der Kopfzeile.
   const zurueck = page.getByRole('link', { name: 'Zurück zu Verträge' });
+  await expect(zurueck).toBeHidden();
+  await page.setViewportSize({ width: 390, height: 844 });
   await zurueck.click();
   await expect(page).toHaveURL(/\/vertraege$/);
 });
@@ -61,6 +64,7 @@ test('zeigt nicht erreichbare Dienste; die Fußzeile der Shell zeigt keinen Stat
 
 test('ohne Herkunft zurück zur Startseite', async ({ page }) => {
   await backendSimulieren(page, { angemeldet: true });
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/einstellungen');
   await page.getByRole('link', { name: 'Zurück zu Startseite' }).click();
   await expect(page).toHaveURL(/\/start$/);

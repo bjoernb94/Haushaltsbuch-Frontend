@@ -40,7 +40,7 @@ Backend, die Gründe in den
 Login, Registrierung und die Fußzeile der App fragen den Systemstatus beim Öffnen und dann alle
 30&nbsp;s ab. Ist das Backend nicht erreichbar, gelten auch Datenbank und Anmeldeserver als nicht
 erreichbar. Fehlt ein Dienst, sind Login und Registrierung gesperrt; in der App zeigen ihn nur die
-Einstellungen (Kontomenü), Impressum und Datenschutz in der Fußzeile.
+Einstellungen, Impressum und Datenschutz ohne Session in der Fußzeile.
 
 ### Ungespeicherte Eingaben
 
@@ -62,16 +62,26 @@ Das Design im Canvas „Haushaltsbuch“ ist maßgeblich (ADR 0020, siehe [Konve
 
 ### Layout
 
-- **Ab 901 px:** Die angemeldeten Bereiche haben eine mitlaufende Seitenleiste mit Logo
-  (`shell/hauptmenue`). Die Kopfzeile klappt dort ein, nur das Nutzermenü wandert ans untere Ende der
-  Seitenleiste. Die Startseite kommt ohne Navigation aus (Route-Data `ohneNavigation`), ihre Kacheln
-  navigieren, und sie behält die grüne Kopfzeile.
-- **Bis 900 px:** Jede Seite hat eine mitlaufende, durchscheinende Kopfzeile ohne Logo. Die Shell ergänzt
-  die Tab-Leiste (auch auf der Startseite) und blendet ihre Fußzeile aus.
-- **Seitenaktionen:** „Zurück“ und „+“ stehen bis 900 px in der Kopfzeile. Seiten melden sie mit
-  `seitenaktionenMelden()` (`shared/seitenaktionen`), ihr eigenes „Zurück“ ist dort ausgeblendet. Meldet
-  eine Seite `eigeneLeiste` (Neuer Vertrag: Abbrechen | Sichern), bekommt sie weder Kopfzeile noch
-  Tab-Leiste.
+- **Ab 901 px:** Alle Seiten der Shell, auch die Startseite, haben links eine mitlaufende Seitenleiste
+  (`shell/hauptmenue`) mit Logo, allen Bereichen (ausgeschaltete und noch nicht verfügbare gedimmt, ohne
+  Link), unten „Einstellungen“ und dem Copyright. Daneben steht eine mitlaufende, durchscheinende Kopfzeile:
+  der Seitentitel (die `h1`), optional mit Pfad davor („Einstellungen ›“), und die Hauptaktion als kleiner
+  Primärknopf stehen bündig mit dem Inhalt. Der hat links und rechts denselben Abstand: höchstens
+  1152&nbsp;px breit, mittig neben der Seitenleiste, mindestens 24&nbsp;px (`raender.neben-seitenleiste`).
+  Glocke (`shared/glocke`, Funktion mit #49) und Nutzermenü stehen am rechten Fensterrand; wo der Seitenteil
+  davor endet, misst `kopfAusrichten()`. Einen Trennstrich gibt es nur, wenn die Hauptaktion direkt neben der
+  Glocke steht. Die Fußzeile
+  der Shell zeigt nur Impressum und Datenschutz, mittig zur ganzen Seite. Version und Systemstatus stehen in
+  den Einstellungen, die Umgebung zeigt der Streifen.
+- **Bis 900 px:** Jede Seite hat eine mitlaufende, durchscheinende Kopfzeile ohne Logo und Titel. Die Shell
+  ergänzt die Tab-Leiste und blendet ihre Fußzeile aus; die Einstellungen erreicht man über das Nutzermenü.
+- **Seitenaktionen:** Seiten melden Titel, Pfad, „Zurück“ und Hauptaktion mit `seitenaktionenMelden()`
+  (`shared/seitenaktionen`). Ihre eigene `h1` trägt die Klasse `nur-mobil`, so gibt es je Breite genau eine.
+  „Zurück“ und „+“ stehen nur bis 900 px in der Kopfzeile, Titel, Pfad und Hauptaktion ab 901 px. Meldet
+  eine Seite `eigeneLeiste` (Neuer Vertrag: Abbrechen | Sichern), bekommt sie bis 900 px weder Kopfzeile
+  noch Tab-Leiste.
+- **Impressum und Datenschutz** haben die Kopfzeile mit Logo am linken Rand (Variante `einfach`), „Zurück“
+  im Inhalt und eine Fußzeile mit Copyright; ohne Session auch mit Systemstatus und Version.
 
 ### Verträge
 
@@ -88,9 +98,10 @@ bewusst nicht. Neuer Vertrag (`/vertraege/neu`) ist eine eigene Seite.
 
 ### Einstellungen
 
-Die Einstellungen (`/einstellungen`, über das Kontomenü) führen mit „Zurück“ zur Herkunft, ohne sie zur
-Startseite. Ihre Unterseiten (`/einstellungen/profil`, `/einstellungen/komponenten`, eigene Routen in
-`einstellungen.routes.ts`) zählen nicht dazu und führen mit „Zurück“ immer zu den Einstellungen
+Die Einstellungen (`/einstellungen`, über Seitenleiste und Kontomenü) führen bis 900 px mit „Zurück“ zur
+Herkunft, ohne sie zur Startseite; ab 901 px gibt es dort kein „Zurück“. Ihre Unterseiten
+(`/einstellungen/profil`, `/einstellungen/komponenten`, eigene Routen in `einstellungen.routes.ts`) zählen
+nicht dazu und führen mit „Zurück“ bzw. ab 901 px mit dem Pfad „Einstellungen ›“ immer zu den Einstellungen
 (`zurueckZuEinstellungen()`):
 
 - Von den Einstellungen geöffnet (State `intern`) geht „Zurück“ im Verlauf zurück (`shared/zurueck-link`),

@@ -1,32 +1,10 @@
-<a
-  class="zurueck"
-  [appZurueckLink]="zurueck.ziel"
-  [verlauf]="zurueck.verlauf ?? false"
-  [attr.aria-label]="zurueck.label"
->
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M15 18l-6-6 6-6"></path>
-  </svg>
-  Einstellungen
-</a>
-
 <div class="spalte">
   @if (erfolg()) {
     <app-hinweis-box text="Deine Komponenten wurden gespeichert." art="erfolg" />
   }
 
   <div class="titel">
-    <h1>Komponenten</h1>
+    <h1 class="nur-mobil">Komponenten</h1>
     <p>
       Wähle, welche Bereiche im Haushaltsbuch angezeigt werden. Mindestens eine Komponente muss
       aktiv sein. Deine Daten bleiben erhalten, wenn du eine Komponente ausschaltest.

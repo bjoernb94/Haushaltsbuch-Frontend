@@ -16,13 +16,13 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: $abstand-2 $abstand-4;
+}
 
-  :host(.mit-navigation) & {
-    max-width: none;
-    padding-top: $abstand-4;
-    border-top: 1px solid var(--app-trenner);
-    @include raender.wie-ohne-navigation;
-  }
+// In der Shell: nur die Links, mittig zur ganzen Seite.
+:host(.app) .fusszeile {
+  max-width: none;
+  padding: $abstand-3 $abstand-6;
+  border-top: 1px solid var(--app-trenner);
 }
 
 .copyright {
@@ -50,22 +50,13 @@
   justify-self: end;
 }
 
-@media (min-width: 901px) {
-  :host(.flach) .fusszeile {
-    padding-top: $abstand-3;
-    padding-bottom: $abstand-3;
-  }
-}
-
 @media (max-width: 640px) {
-  .fusszeile,
-  :host(.mit-navigation) .fusszeile {
+  .fusszeile {
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: $abstand-2;
     padding-top: $abstand-6;
-    border-top: 0;
     text-align: center;
   }
 

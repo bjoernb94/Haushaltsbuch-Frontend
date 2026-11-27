@@ -219,14 +219,6 @@ describe('Nutzermenue', () => {
     });
   });
 
-  it('kennzeichnet die Variante in der Seitenleiste', async () => {
-    const { fixture, element } = await menue();
-    expect(element.classList.contains('seitenleiste')).toBe(false);
-    fixture.componentRef.setInput('seitenleiste', true);
-    await fixture.whenStable();
-    expect(element.classList.contains('seitenleiste')).toBe(true);
-  });
-
   it('erkennt die Einstellungen, auch mit Query', () => {
     expect(istEinstellungen('/einstellungen')).toBe(true);
     expect(istEinstellungen('/einstellungen?x=1')).toBe(true);

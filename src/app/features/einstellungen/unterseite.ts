@@ -13,10 +13,11 @@ const INTERN = 'intern';
 export const UNTERSEITE_STATE = { [INTERN]: true };
 
 /**
- * „Zurück“ einer Unterseite (Injection-Kontext): immer zu den Einstellungen, von dort geöffnet im Verlauf
- * zurück, damit deren „Zurück“ weiter zur ursprünglichen Herkunft führt. Meldet es auch der Kopfzeile.
+ * Meldet Titel, Pfad „Einstellungen ›“ (ab 901 px) und „Zurück“ (bis 900 px) einer Unterseite der
+ * Kopfzeile (Injection-Kontext). Beide führen immer zu den Einstellungen, von dort geöffnet im Verlauf
+ * zurück, damit deren „Zurück“ weiter zur ursprünglichen Herkunft führt.
  */
-export function zurueckZuEinstellungen(): Seitenaktion {
+export function zurueckZuEinstellungen(titel: string): Seitenaktion {
   const intern = !!(inject(Location).getState() as Record<string, unknown> | null)?.[INTERN];
   const zurueck: Seitenaktion = {
     ziel: EINSTELLUNGEN,
@@ -24,6 +25,10 @@ export function zurueckZuEinstellungen(): Seitenaktion {
     text: 'Einstellungen',
     verlauf: intern,
   };
-  seitenaktionenMelden(() => ({ zurueck }));
+  seitenaktionenMelden(() => ({
+    titel,
+    pfad: { ...zurueck, label: null, text: 'Einstellungen' },
+    zurueck,
+  }));
   return zurueck;
 }

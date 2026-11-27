@@ -39,7 +39,7 @@ test.describe('CSP', () => {
     await page.getByLabel('Passwort', { exact: true }).fill('geheim123');
     await page.getByRole('button', { name: 'Login' }).click();
     await expect(page).toHaveURL(/\/start$/);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Willkommen');
+    await expect(page.getByRole('heading', { name: 'Willkommen, Max!' })).toBeVisible();
     expect(fehler).toEqual([]);
   });
 

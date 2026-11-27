@@ -12,7 +12,7 @@ import { istRechtlich } from '../../../shared/rechtliche-links/rechtliche-links'
 
 /**
  * Rahmen für Impressum und Datenschutz: erreichbar mit und ohne Session. Mit Session zeigt die
- * Kopfzeile das Nutzermenü. „Zurück“ führt zur Herkunft, ohne sie zum Login bzw. zur Startseite.
+ * Kopfzeile Glocke und Nutzermenü. „Zurück“ führt zur Herkunft, ohne sie zum Login bzw. zur Startseite.
  */
 @Component({
   selector: 'app-rechtlicher-rahmen',
@@ -24,6 +24,9 @@ import { istRechtlich } from '../../../shared/rechtliche-links/rechtliche-links'
 export class RechtlicherRahmen {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+
+  /** Ohne Session zeigt die Fußzeile Systemstatus und Version; mit Session stehen sie in den Einstellungen. */
+  protected readonly angemeldet = this.auth.angemeldet;
 
   /** Bleibt auch beim Neuladen im Verlauf des Browsers erhalten. */
   private readonly herkunft = herkunftAus(inject(Location).getState(), istRechtlich);

@@ -1,10 +1,11 @@
 import { Location } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { provideRouter, Router, UrlTree } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { NEVER, of } from 'rxjs';
 import { Systemstatus, SystemstatusService } from '../../core/systemstatus/systemstatus.service';
 import { VersionService } from '../../core/version/version.service';
+import { Seitenaktionen } from '../../shared/seitenaktionen/seitenaktionen';
 import { EinstellungenSeite } from './einstellungen-seite';
 
 describe('EinstellungenSeite', () => {
@@ -112,8 +113,10 @@ describe('EinstellungenSeite', () => {
     ['//boese.example', '/start', 'Zurück zu Startseite'],
   ])('führt mit Herkunft %s zurück zu %s', async (herkunft, ziel, label) => {
     const element = await seite({ herkunft });
-    const zurueck = element.querySelector<HTMLAnchorElement>('a.zurueck')!;
-    expect(zurueck.getAttribute('href')).toBe(ziel);
-    expect(zurueck.getAttribute('aria-label')).toBe(label);
+    expect(element.querySelector('a.zurueck')).toBeNull();
+    const aktionen = TestBed.inject(Seitenaktionen).aktionen();
+    expect(aktionen.titel).toBe('Einstellungen');
+    expect(TestBed.inject(Router).serializeUrl(aktionen.zurueck!.ziel as UrlTree)).toBe(ziel);
+    expect(aktionen.zurueck?.label).toBe(label);
   });
 });

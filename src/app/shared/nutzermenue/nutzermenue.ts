@@ -6,8 +6,8 @@ import {
   effect,
   ElementRef,
   inject,
-  input,
   model,
+  Signal,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -25,8 +25,29 @@ export function istEinstellungen(url: string): boolean {
 }
 
 /**
- * Knopf mit den Initialen des Nutzers, öffnet Name, E-Mail, „Einstellungen“ und „Abmelden“; bis 640 px
- * als Bottom-Sheet, in der Seitenleiste nach oben. Nicht modal wie im Design, daher schließt auch das
+ * State für Links auf die Einstellungen (Injection-Kontext): die aktuelle Seite als Herkunft, wie bei
+ * den rechtlichen Links. Auf den Einstellungen selbst bleibt die ursprüngliche Herkunft.
+ */
+export function einstellungenStateBeobachten(): Signal<Record<string, unknown>> {
+  const router = inject(Router);
+  const location = inject(Location);
+  const url = toSignal(
+    router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => router.url),
+    ),
+    { initialValue: router.url },
+  );
+  return computed(() => ({
+    [HERKUNFT]: istEinstellungen(url())
+      ? herkunftAus(location.getState(), istEinstellungen)
+      : url(),
+  }));
+}
+
+/**
+ * Knopf mit den Initialen des Nutzers in der Kopfzeile, öffnet Name, E-Mail, „Einstellungen“ und
+ * „Abmelden“; bis 640 px als Bottom-Sheet. Nicht modal wie im Design, daher schließt auch das
  * Verlassen per Tab. Liegt nicht in der Shell, weil auch Seiten außerhalb sie zeigen. Eine Rückfrage
  * zum Abmelden stellt der {@code VerwerfenDialog} der Shell; außerhalb gibt es keine Formulare, die
  * fragen müssten.
@@ -37,16 +58,11 @@ export function istEinstellungen(url: string): boolean {
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './nutzermenue.html',
   styleUrl: './nutzermenue.scss',
-  host: { '[class.seitenleiste]': 'seitenleiste()' },
 })
 export class Nutzermenue {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly ungespeichert = inject(UngespeicherteEingaben);
-  private readonly location = inject(Location);
-
-  /** Ab 901 px unten in der Seitenleiste statt in der Kopfzeile. */
-  readonly seitenleiste = input(false);
 
   private readonly knopf = viewChild<ElementRef<HTMLButtonElement>>('knopf');
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
@@ -56,25 +72,8 @@ export class Nutzermenue {
   /** Offen oder zu; die Kopfzeile hebt sich bis 900 px, solange es offen ist. */
   readonly offen = model(false);
 
-  private readonly url = toSignal(
-    this.router.events.pipe(
-      filter((e) => e instanceof NavigationEnd),
-      map(() => this.router.url),
-    ),
-    { initialValue: this.router.url },
-  );
-
   protected readonly einstellungen = EINSTELLUNGEN;
-
-  /** Wie bei den rechtlichen Links: Auf den Einstellungen selbst bleibt die ursprüngliche Herkunft. */
-  protected readonly einstellungenState = computed(() => {
-    const url = this.url();
-    return {
-      [HERKUNFT]: istEinstellungen(url)
-        ? herkunftAus(this.location.getState(), istEinstellungen)
-        : url,
-    };
-  });
+  protected readonly einstellungenState = einstellungenStateBeobachten();
 
   protected readonly initialen = computed(() => {
     const nutzer = this.nutzer();

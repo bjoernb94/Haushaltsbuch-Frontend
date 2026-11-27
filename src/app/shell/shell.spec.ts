@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, Routes } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -10,7 +10,7 @@ import { Seitenaktionen } from '../shared/seitenaktionen/seitenaktionen';
 import { Shell } from './shell';
 
 const ROUTEN: Routes = [
-  { path: 'start', data: { ohneNavigation: true }, children: [] },
+  { path: 'start', children: [] },
   { path: 'vertraege', children: [] },
 ];
 
@@ -34,6 +34,7 @@ describe('Shell', () => {
             komponentenFehler,
             komponentenLaden,
             nutzer: signal({ vorname: 'Max', name: 'Muster', email: 'max@beispiel.de' }),
+            angemeldet: computed(() => true),
           },
         },
         {
@@ -57,63 +58,82 @@ describe('Shell', () => {
       a.getAttribute('href'),
     );
 
-  it('zeigt Kopfzeile, Nutzermenü und Navigation', async () => {
+  const eintraege = (element: HTMLElement) =>
+    [...element.querySelectorAll('nav[aria-label="Hauptmenü"] .naveintrag')].map((e) =>
+      e.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+
+  it('zeigt Kopfzeile mit Glocke und Nutzermenü und die Navigation', async () => {
     komponenten.set(['VERTRAGSUEBERSICHT']);
     const element = await shell();
-    expect(element.querySelector('header')?.textContent).toContain('Haushaltsbuch');
-    expect(element.querySelector('header button')?.getAttribute('aria-label')).toBe(
+    expect(element.querySelector('header .logo')).toBeNull();
+    expect(element.querySelector('header app-glocke')).not.toBeNull();
+    expect(element.querySelector('header .nutzer-knopf')?.getAttribute('aria-label')).toBe(
       'Konto von Max Muster',
     );
-    expect(element.querySelector('nav[aria-label="Hauptmenü"]')).not.toBeNull();
-    expect(element.querySelector('footer nav')?.getAttribute('aria-label')).toBe('Rechtliches');
-    expect(element.querySelector('nav[aria-label="Hauptmenü"]')?.textContent).toContain(
-      'Komponenten',
-    );
-    expect(links(element)).toEqual(['/start', '/vertraege']);
+    expect(element.querySelectorAll('app-nutzermenue')).toHaveLength(1);
+    const navigation = element.querySelector('nav[aria-label="Hauptmenü"]');
+    expect(navigation?.textContent).toContain('Haushaltsbuch');
+    expect(navigation?.textContent).toContain('Komponenten');
+    expect(navigation?.querySelector('.copyright')?.textContent).toBe('© Björn Bochmann');
+    expect(links(element)).toEqual(['/start', '/vertraege', '/einstellungen']);
   });
 
-  it('blendet nicht gebuchte Bereiche und den leeren Abschnitt aus', async () => {
+  it('zeigt nicht gebuchte Bereiche gedimmt als ausgeschaltet, ohne Link', async () => {
     const element = await shell();
-    expect(links(element)).toEqual(['/start']);
-    expect(element.querySelector('nav[aria-label="Hauptmenü"]')?.textContent).not.toContain(
-      'Komponenten',
-    );
-    expect(element.querySelector('nav[aria-label="Hauptmenü"]')?.textContent).not.toContain(
-      'Demnächst',
-    );
+    expect(links(element)).toEqual(['/start', '/einstellungen']);
+    expect(eintraege(element)).toEqual([
+      'Übersicht',
+      'FinanzübersichtFinanzenAusgeschaltet',
+      'Verträge Ausgeschaltet',
+      'VersorgungsverträgeVersorgungAusgeschaltet',
+      'Portfolio Ausgeschaltet',
+      'Einstellungen',
+    ]);
+    expect(element.querySelectorAll('nav[aria-label="Hauptmenü"] .inaktiv')).toHaveLength(4);
   });
 
   it('zeigt gebuchte, noch nicht verfügbare Bereiche ohne Link', async () => {
     komponenten.set(['PORTFOLIO']);
     const element = await shell();
-    expect(links(element)).toEqual(['/start']);
-    const eintrag = element.querySelector('.demnaechst');
-    expect(eintrag?.textContent).toContain('Portfolio');
-    expect(eintrag?.textContent).toContain('Demnächst verfügbar');
+    expect(links(element)).toEqual(['/start', '/einstellungen']);
+    expect(eintraege(element)).toContain('Portfolio Demnächst verfügbar');
   });
 
   it('nennt lange Bereiche mit Lang- und Kurzform', async () => {
     komponenten.set(['FINANZUEBERSICHT']);
-    const eintrag = (await shell()).querySelector('.demnaechst');
+    const eintrag = (await shell()).querySelector('.inaktiv');
     expect(eintrag?.querySelector('.lang')?.textContent).toBe('Finanzübersicht');
     expect(eintrag?.querySelector('.kurz')?.textContent).toBe('Finanzen');
   });
 
-  it('richtet das Layout nach der Route, die Tab-Leiste gibt es immer', async () => {
+  it('zeigt ohne geladene Komponenten keine Bereiche', async () => {
+    komponentenFehler.set(true);
+    const element = await shell();
+    expect(eintraege(element)).toEqual(['Übersicht', 'Einstellungen']);
+    expect(element.querySelector('nav[aria-label="Hauptmenü"]')?.textContent).not.toContain(
+      'Komponenten',
+    );
+  });
+
+  it('zeigt die Seitenleiste auf allen Seiten, auch auf der Startseite', async () => {
     const harness = await RouterTestingHarness.create();
     const fixture = TestBed.createComponent(Shell);
-    const shellElement = fixture.nativeElement as HTMLElement;
-    const mitNavigation = () =>
-      shellElement.querySelector('.seite')!.classList.contains('mit-navigation');
+    const element = fixture.nativeElement as HTMLElement;
 
     await harness.navigateByUrl('/start');
     await fixture.whenStable();
-    expect(mitNavigation()).toBe(false);
-    expect(shellElement.querySelector('nav[aria-label="Hauptmenü"]')).not.toBeNull();
+    expect(element.querySelector('nav[aria-label="Hauptmenü"]')).not.toBeNull();
+    expect(element.querySelector('a[href="/start"]')?.getAttribute('aria-current')).toBe('page');
+  });
 
-    await harness.navigateByUrl('/vertraege');
-    await fixture.whenStable();
-    expect(mitNavigation()).toBe(true);
+  it('zeigt Titel und Hauptaktion der Seite in der Kopfzeile', async () => {
+    TestBed.inject(Seitenaktionen).melden(
+      signal({ titel: 'Verträge', neu: { ziel: '/vertraege/neu', text: 'Neuer Vertrag' } }),
+    );
+    const element = await shell();
+    expect(element.querySelector('header h1')?.textContent).toBe('Verträge');
+    expect(element.querySelector('header .hauptaktion')?.textContent?.trim()).toBe('Neuer Vertrag');
   });
 
   it('lässt Kopf und Tab-Leiste weg, solange eine Seite eine eigene Leiste meldet', async () => {
@@ -157,29 +177,11 @@ describe('Shell', () => {
     expect((await shell()).querySelector('.ladefehler')).toBeNull();
   });
 
-  it('zeigt in der Fußzeile das Copyright, den Systemstatus nur auf den Einstellungen', async () => {
+  it('zeigt in der Fußzeile nur die rechtlichen Links', async () => {
     const fusszeile = (await shell()).querySelector('footer');
-    expect(fusszeile?.textContent).toContain('© Björn Bochmann');
+    expect(fusszeile?.querySelector('nav')?.getAttribute('aria-label')).toBe('Rechtliches');
+    expect(fusszeile?.textContent).not.toContain('©');
     expect(fusszeile?.textContent).not.toContain('Datenbank');
-  });
-
-  it('setzt das Kontomenü nur mit Navigation in die Seitenleiste', async () => {
-    const harness = await RouterTestingHarness.create();
-    const fixture = TestBed.createComponent(Shell);
-    const element = fixture.nativeElement as HTMLElement;
-    const inSeitenleiste = () =>
-      element.querySelector('app-kopfzeile')!.classList.contains('seitenleiste');
-
-    await harness.navigateByUrl('/start');
-    await fixture.whenStable();
-    expect(inSeitenleiste()).toBe(false);
-
-    await harness.navigateByUrl('/vertraege');
-    await fixture.whenStable();
-    expect(inSeitenleiste()).toBe(true);
-    expect(element.querySelectorAll('app-nutzermenue')).toHaveLength(1);
-    expect(element.querySelector('nav[aria-label="Hauptmenü"]')?.textContent).toContain(
-      'Haushaltsbuch',
-    );
+    expect(fusszeile?.querySelector('app-version-anzeige')).toBeNull();
   });
 });

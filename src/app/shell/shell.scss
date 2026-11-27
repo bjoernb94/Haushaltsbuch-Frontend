@@ -1,58 +1,76 @@
 @use '../shared/layout/raender';
 @use 'masse' as *;
 
+// Wie der Rahmen im Canvas: Die Kopfzeile spannt bis zur Fußzeile, damit sie beim Scrollen oben stehen
+// bleibt (sticky bleibt im eigenen Bereich), und ist so hoch wie ihre Zeile.
 .seite {
   min-height: calc(100vh - var(--app-streifen-hoehe, 0px));
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
 }
 
-.rumpf {
-  flex: 1 0 auto;
-  width: 100%;
-  display: flex;
-  align-items: stretch;
-}
-
-.spalte {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
+app-kopfzeile {
+  grid-column: -2 / -1;
+  grid-row: 1 / 4;
+  align-self: start;
 }
 
 main {
-  flex: 1 0 auto;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  grid-column: -2 / -1;
+  grid-row: 2;
+  min-width: 0;
   box-sizing: border-box;
-  padding: $abstand-10 $abstand-6 $abstand-12;
+  padding: $abstand-8 $abstand-6 $abstand-12;
   @include raender.handy;
+  @include raender.neben-seitenleiste;
+}
 
-  .mit-navigation & {
-    max-width: none;
-    padding-top: $abstand-8;
-    @include raender.wie-ohne-navigation;
-  }
+app-fusszeile {
+  grid-column: 1 / -1;
+  grid-row: 3;
 }
 
 .ladefehler {
+  display: block;
   margin-bottom: $abstand-6;
 }
 
-// Die Startseite hat ab 901 px keine Navigation, bis 900 px aber die Tab-Leiste wie alle anderen.
+// Die Seitenleiste liegt über der Fußzeile, die unter ihr durchläuft: Impressum und Datenschutz stehen
+// so mittig zur ganzen Seite.
 @media (min-width: 901px) {
-  .seite:not(.mit-navigation) app-hauptmenue {
-    display: none;
+  .seite {
+    // Breite der Seitenleiste und Höhe der Kopfzeile (Layoutmaße des Rahmens).
+    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-rows: 60px 1fr auto;
+  }
+
+  // Über der Fußzeile, aber unter den Hintergründen offener Menüs im Inhalt (ein Klick in die Leiste
+  // schließt sie).
+  app-hauptmenue {
+    position: relative;
+    z-index: 1;
+    grid-column: 1;
+    grid-row: 1 / 4;
   }
 }
 
 // Platz für die Tab-Leiste. Die Fußzeile bleibt im DOM: Sie fragt den Systemstatus ab, von dem das
 // Laden der Version abhängt. Impressum und Datenschutz erreicht man über die Einstellungen.
+// Ohne Raster: Die Kopfzeile bleibt so über die ganze Seite stehen, die Tab-Leiste ist fixiert.
 @media (max-width: 900px) {
   .seite {
+    display: flex;
+    flex-direction: column;
     padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
+  app-kopfzeile {
+    align-self: stretch;
+  }
+
+  main {
+    flex: 1 0 auto;
   }
 
   app-fusszeile {

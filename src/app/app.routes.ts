@@ -41,7 +41,6 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'start' },
       {
         path: 'start',
-        data: { ohneNavigation: true },
         loadChildren: () => import('./features/start/start.routes').then((m) => m.START_ROUTES),
       },
       {

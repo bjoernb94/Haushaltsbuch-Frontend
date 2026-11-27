@@ -1,38 +1,89 @@
 <header class="kopfzeile">
-  <div class="kopfzeile-innen">
-    @if (aktionen().zurueck; as zurueck) {
-      <a
-        class="aktion zurueck"
-        [appZurueckLink]="zurueck.ziel"
-        [verlauf]="zurueck.verlauf ?? false"
-        [attr.aria-label]="zurueck.label"
+  @if (aktionen().zurueck; as zurueck) {
+    <a
+      class="zurueck"
+      [appZurueckLink]="zurueck.ziel"
+      [verlauf]="zurueck.verlauf ?? false"
+      [attr.aria-label]="zurueck.label"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
       >
+        <path d="M15 18l-6-6 6-6"></path>
+      </svg>
+      {{ zurueck.text ?? 'Zurück' }}
+    </a>
+  }
+  <!-- Bündig mit dem Inhalt; Glocke und Nutzermenü stehen ab 901 px am rechten Rand. -->
+  <div class="seitenteil">
+    @if (variante() === 'einfach') {
+      <div class="logo">
+        <app-logo />
+        <span>Haushaltsbuch</span>
+      </div>
+    } @else if (aktionen().titel; as titel) {
+      <div class="titel">
+        @if (aktionen().pfad; as pfad) {
+          <a
+            class="pfad"
+            [appZurueckLink]="pfad.ziel"
+            [verlauf]="pfad.verlauf ?? false"
+            [attr.aria-label]="pfad.label"
+            >{{ pfad.text }}</a
+          >
+          <svg
+            class="pfad-pfeil"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 6l6 6-6 6"></path>
+          </svg>
+        }
+        <h1>{{ titel }}</h1>
+      </div>
+    }
+    <span class="luecke"></span>
+    @if (aktionen().neu; as neu) {
+      <a class="plus" [routerLink]="neu.ziel" [attr.aria-label]="neu.text">
         <svg
-          width="20"
-          height="20"
+          width="26"
+          height="26"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
           stroke-linecap="round"
-          stroke-linejoin="round"
           aria-hidden="true"
         >
-          <path d="M15 18l-6-6 6-6"></path>
+          <path d="M12 5v14"></path>
+          <path d="M5 12h14"></path>
         </svg>
-        {{ zurueck.text ?? 'Zurück' }}
       </a>
-    }
-    <div class="logo">
-      <app-logo />
-      <span>Haushaltsbuch</span>
-    </div>
-    <div class="rechts">
-      @if (aktionen().neu; as neu) {
-        <a class="aktion neu" [routerLink]="neu.ziel" [attr.aria-label]="neu.label">
+      @if (variante() === 'app') {
+        <a
+          class="hauptaktion"
+          [routerLink]="neu.ziel"
+          [attr.title]="neu.taste ? neu.text + ' (' + neu.taste.toUpperCase() + ')' : null"
+          [attr.aria-keyshortcuts]="neu.taste ?? null"
+        >
           <svg
-            width="26"
-            height="26"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -43,9 +94,18 @@
             <path d="M12 5v14"></path>
             <path d="M5 12h14"></path>
           </svg>
+          {{ neu.text }}
         </a>
       }
-      <app-nutzermenue [seitenleiste]="seitenleiste()" [(offen)]="menueOffen" />
-    </div>
+    }
   </div>
+  @if (aktionen().neu && variante() === 'app' && angemeldet()) {
+    <span class="trenner" aria-hidden="true"></span>
+  }
+  @if (angemeldet()) {
+    <div #rechts class="rechts">
+      <app-glocke />
+      <app-nutzermenue [(offen)]="menueOffen" />
+    </div>
+  }
 </header>

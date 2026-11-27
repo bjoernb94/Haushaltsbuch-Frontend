@@ -8,8 +8,8 @@
   border-right: 1px solid var(--app-trenner);
 }
 
-// Bleibt beim Scrollen stehen. Unten Platz für das Kontomenü, das die Kopfzeile hierher setzt. Die Höhe
-// ohne den Streifen der Umgebung, sonst ragt die Leiste oben am Seitenanfang unten aus dem Fenster.
+// Bleibt beim Scrollen stehen. Die Höhe ohne den Streifen der Umgebung, sonst ragt die Leiste oben am
+// Seitenanfang unten aus dem Fenster.
 .seitennavigation {
   position: sticky;
   top: 0;
@@ -18,8 +18,7 @@
   height: calc(100vh - var(--app-streifen-hoehe, 0px));
   overflow-y: auto;
   box-sizing: border-box;
-  // Unten Platz für das Nutzermenü, das am unteren Rand der Leiste steht (Layoutmaß, keine Skala).
-  padding: $abstand-4 $abstand-3 84px;
+  padding: $abstand-4 $abstand-3;
   display: flex;
   flex-direction: column;
 }
@@ -105,7 +104,7 @@
   display: none;
 }
 
-.demnaechst {
+.inaktiv {
   padding-block: $abstand-2;
   color: var(--app-text-gedaempft);
 
@@ -114,7 +113,23 @@
   }
 }
 
-.demnaechst-text {
+// Unten in der Leiste, durch eine Linie abgesetzt; bis 900 px über das Nutzermenü.
+.unten {
+  margin-top: auto;
+  padding-top: $abstand-3;
+  border-top: 1px solid var(--app-trenner);
+}
+
+.copyright {
+  margin: 0;
+  padding-top: $abstand-3;
+  font-size: $schrift-klein;
+  line-height: 16px;
+  color: var(--app-text-gedaempft);
+  text-align: center;
+}
+
+.status {
   display: block;
   font-size: $schrift-klein;
   line-height: 16px;
@@ -151,8 +166,14 @@
   }
 
   .marke,
-  .abschnitt {
+  .abschnitt,
+  .unten,
+  .copyright {
     display: none;
+  }
+
+  .inaktiv {
+    opacity: 0.7;
   }
 
   .naveintrag {
@@ -187,7 +208,7 @@
   }
 
   // Passt in der Leiste nicht; bleibt für Screenreader.
-  .demnaechst-text {
+  .status {
     position: absolute;
     width: 1px;
     height: 1px;

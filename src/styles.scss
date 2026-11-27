@@ -111,3 +111,11 @@ a {
   white-space: nowrap;
   border: 0;
 }
+
+// Ab 901 px tragen Titel und Hauptaktion die Kopfzeile der Shell (Seitenaktionen); so gibt es je Breite
+// eine h1.
+@media (min-width: 901px) {
+  .nur-mobil {
+    display: none !important;
+  }
+}

@@ -132,7 +132,10 @@ export class VertraegeSeite {
   private ladevorgang?: Subscription;
 
   constructor() {
-    seitenaktionenMelden(() => ({ neu: { ziel: NEU, label: 'Neuer Vertrag' } }));
+    seitenaktionenMelden(() => ({
+      titel: 'Verträge',
+      neu: { ziel: NEU, text: 'Neuer Vertrag', taste: 'n' },
+    }));
     this.laden(!!this.meldung());
 
     // Zur offenen Zeile scrollen (z. B. nach einem geteilten Link). Nach dem Schließen geht der Fokus,

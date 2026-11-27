@@ -1,69 +1,192 @@
 @use 'masse' as *;
 
-// Nutzer-Button auf hellem Grund: neben der Seitenleiste und bis 900 px.
-@mixin hell {
-  --knopf-rand: var(--app-rand);
-  --knopf-text: var(--app-text);
-  --knopf-hover: var(--app-seitenleiste-hover);
-  --knopf-fokus: var(--app-gruen-fokus-rand);
-  --initialen-grund: var(--app-gruen);
-  --initialen-text: var(--app-flaeche);
-}
-
+// Sticky; bleibt in der Shell über die ganze Spalte stehen (siehe dort).
 :host {
+  position: sticky;
+  top: 0;
+  z-index: 12;
   display: block;
 }
 
-.kopfzeile {
-  background: var(--app-gruen);
-  color: var(--app-grund);
+// Offenes Nutzermenü: über die Tab-Leiste heben, sonst läge sie über dem Hintergrund des Menüs.
+:host(.menue-offen) {
+  z-index: 40;
 }
 
-.kopfzeile-innen {
-  max-width: 1200px;
-  margin: 0 auto;
+.kopfzeile {
+  position: relative;
+  isolation: isolate;
+  // Layoutmaß des Rahmens (Canvas: --kopf-hoehe).
+  height: 60px;
   box-sizing: border-box;
-  padding: $abstand-4 $abstand-6;
+  padding: 0 $abstand-6;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: $abstand-4;
+  gap: $abstand-2;
+  border-bottom: 1px solid var(--app-glas-rand);
+  color: var(--app-text);
+
+  // Unschärfe auf eigener Ebene: Am Kopf selbst würde sie das Nutzermenü (position: fixed) einsperren.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--app-glas-dicht);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+}
+
+.luecke {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// Titel und Hauptaktion: bündig mit dem Inhalt, der wie hier höchstens 1152 px breit und mittig steht
+// (raender.neben-seitenleiste; Prozent der Kopfzeile ohne ihren Rand). Rechts misst die Komponente, wie
+// weit er vor Glocke und Nutzermenü endet (--kopf-luecke).
+.seitenteil {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: $abstand-2;
+}
+
+@media (min-width: 901px) {
+  .seitenteil {
+    margin-left: max(0px, calc(50% - 576px));
+    margin-right: var(--kopf-luecke, 0px);
+  }
+
+  // Impressum und Datenschutz: das Logo am linken Rand, gegenüber Glocke und Nutzermenü.
+  :host(:not(.app)) .seitenteil {
+    margin-left: 0;
+  }
+
+  // Mit Abstand zur Glocke braucht es keinen Trennstrich.
+  :host(.getrennt) .trenner {
+    display: none;
+  }
+}
+
+.rechts {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: $abstand-2;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: $abstand-3;
-  font-size: $schrift-titel;
+  font-size: $schrift-abschnitt;
   font-weight: 800;
 
   app-logo {
     width: 30px;
     height: 30px;
+    color: var(--app-gruen);
   }
 }
 
-.rechts {
+.titel {
   min-width: 0;
-  margin-left: auto;
   display: flex;
   align-items: center;
-  gap: $abstand-1;
+  gap: $abstand-2;
+  font-size: $schrift-titel-gross;
+  // Zeilenhöhe des Titels, keine Skala.
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+
+  h1 {
+    min-width: 0;
+    margin: 0;
+    font: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
-// Nur bis 900 px; darüber stehen „Zurück“ und „Neuer Vertrag“ im Inhalt.
-.aktion {
+.pfad {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--app-text-gedaempft);
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--app-text);
+    text-decoration: underline;
+  }
+}
+
+.pfad-pfeil {
+  flex: none;
+  color: var(--app-text-gedaempft);
+}
+
+.pfad,
+.zurueck,
+.plus,
+.hauptaktion {
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: 2px;
+    border-radius: $radius-klein;
+  }
+}
+
+// Knopf „primär, klein“ des Design Systems: nur in Kopfzeilen.
+.hauptaktion {
+  flex: none;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 0 $abstand-4;
+  display: inline-flex;
+  align-items: center;
+  gap: $abstand-2;
+  border: 1.5px solid var(--app-gruen);
+  border-radius: $radius-mittel;
+  background: var(--app-gruen);
+  color: var(--app-flaeche);
+  font-size: $schrift-text;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    border-color: var(--app-gruen-dunkel);
+    background: var(--app-gruen-dunkel);
+    color: var(--app-flaeche);
+  }
+
+  &:focus-visible {
+    border-radius: $radius-mittel;
+  }
+}
+
+.trenner {
+  flex: none;
+  width: 1px;
+  height: 28px;
+  margin: 0 $abstand-1;
+  background: var(--app-trenner);
+}
+
+// Nur bis 900 px.
+.zurueck,
+.plus {
   display: none;
+  flex: none;
   min-height: 44px;
   align-items: center;
   color: var(--app-gruen);
   text-decoration: none;
-
-  &:focus-visible {
-    outline: 3px solid var(--app-gruen-fokus-rand);
-    outline-offset: 1px;
-  }
 }
 
 .zurueck {
@@ -73,7 +196,7 @@
   font-weight: 600;
 }
 
-.neu {
+.plus {
   width: 44px;
   justify-content: center;
   border-radius: $radius-pille;
@@ -83,70 +206,27 @@
   }
 }
 
-@media (min-width: 901px) {
-  :host(.seitenleiste) {
-    @include hell;
-
-    .kopfzeile {
-      background: none;
-    }
-
-    .kopfzeile-innen {
-      height: 0;
-      padding: 0;
-    }
-
-    .logo {
-      display: none;
-    }
-  }
-}
-
-// Bleibt oben stehen und lässt den Inhalt durchscheinen.
+// Ohne Logo und Titel, dafür mit „Zurück“ und „+“; durchscheinender als ab 901 px.
 @media (max-width: 900px) {
-  :host {
-    @include hell;
-
-    position: sticky;
-    top: 0;
-    z-index: 12;
-  }
-
-  // Offenes Kontomenü: über die Tab-Leiste heben, sonst läge sie über dem Hintergrund des Menüs.
-  :host(.menue-offen) {
-    z-index: 40;
-  }
-
   .kopfzeile {
-    position: relative;
-    isolation: isolate;
-    border-bottom: 1px solid var(--app-glas-rand);
-    background: none;
-    color: var(--app-text);
-
-    // Unschärfe auf eigener Ebene: Am Kopf selbst würde sie das Kontomenü (position: fixed) einsperren.
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      background: var(--app-glas);
-      backdrop-filter: saturate(180%) blur(20px);
-    }
-  }
-
-  .kopfzeile-innen {
+    height: auto;
     min-height: 52px;
     padding: calc(#{$abstand-2} + env(safe-area-inset-top)) $abstand-3 $abstand-2;
-    flex-wrap: nowrap;
-    gap: $abstand-2;
+
+    &::before {
+      background: var(--app-glas);
+    }
   }
 
-  .logo {
+  .logo,
+  .titel,
+  .hauptaktion,
+  .trenner {
     display: none;
   }
 
-  .aktion {
+  .zurueck,
+  .plus {
     display: inline-flex;
   }
 }
