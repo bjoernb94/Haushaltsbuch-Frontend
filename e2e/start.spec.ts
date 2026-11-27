@@ -71,7 +71,7 @@ test.describe('Finanzübersicht', () => {
     expect(letzte).toBeLessThanOrEqual(platz + 0.5);
   });
 
-  test('zeigt auf dem Handy 5 Buchungen', async ({ page }) => {
+  test('zeigt auf dem Handy 5 Buchungen', { tag: '@mobil' }, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
     await page.goto('/start');
@@ -80,7 +80,7 @@ test.describe('Finanzübersicht', () => {
   });
 });
 
-test('passt auf dem Handy in die Breite', async ({ page }) => {
+test('passt auf dem Handy in die Breite', { tag: '@mobil' }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await backendSimulieren(page, { angemeldet: true });
   await page.goto('/start');

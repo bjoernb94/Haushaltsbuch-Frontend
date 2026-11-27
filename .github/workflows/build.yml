@@ -152,14 +152,17 @@ jobs:
       contents: read
       checks: write
     timeout-minutes: 15
-    # Jeder Job ist ein eigener Runner. Firefox ist am langsamsten, deshalb auf zwei Jobs verteilt.
+    # Jeder Job ist ein eigener Runner. Firefox und WebKit sind am langsamsten, deshalb auf je zwei Jobs
+    # verteilt. Die Handy-Projekte (nur Tests mit @mobil) laufen im Job ihrer Engine mit.
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { browser: chromium, teil: 1, teile: 1 }
+          - { browser: chromium, mobil: mobile-chrome, teil: 1, teile: 1 }
           - { browser: firefox, teil: 1, teile: 2 }
           - { browser: firefox, teil: 2, teile: 2 }
+          - { browser: webkit, mobil: mobile-safari, teil: 1, teile: 2 }
+          - { browser: webkit, mobil: mobile-safari, teil: 2, teile: 2 }
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -167,7 +170,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run e2e -- --project=${{ matrix.browser }} --shard=${{ matrix.teil }}/${{ matrix.teile }}
+      - run: >-
+          npm run e2e -- --project=${{ matrix.browser }}
+          ${{ matrix.mobil && format('--project={0}', matrix.mobil) || '' }}
+          --shard=${{ matrix.teil }}/${{ matrix.teile }}
         env:
           # Der Runner setzt HOME auf ein Verzeichnis, das nicht root gehört; damit startet Firefox nicht.
           HOME: /root

@@ -576,7 +576,7 @@ test.describe('Vertrag bearbeiten', () => {
       expect(dialoge).toEqual(['beforeunload']);
     });
 
-    test('der Dialog passt auf ein schmales Display', async ({ page }) => {
+    test('der Dialog passt auf ein schmales Display', { tag: '@mobil' }, async ({ page }) => {
       await page.setViewportSize({ width: 320, height: 700 });
       await page.goto('/vertraege/kfz/bearbeiten');
       await sheet(page).getByLabel('Notiz').fill('Meine Eingabe');
@@ -614,25 +614,34 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(sheet(page).getByRole('button', { name: 'Sichern' })).toBeInViewport();
   });
 
-  test('auf dem Handy: Vollbild aus den Details, Sichern in der Leiste', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
-    await details(page, KFZ).getByRole('button', { name: 'Bearbeiten' }).click();
-    await expect(sheet(page)).toBeVisible();
-    expect(await sheet(page).boundingBox()).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
-      390,
-    );
-    await tabsEinzeilig(sheet(page).getByRole('tablist'));
+  test(
+    'auf dem Handy: Vollbild aus den Details, Sichern in der Leiste',
+    { tag: '@mobil' },
+    async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
+      await details(page, KFZ).getByRole('button', { name: 'Bearbeiten' }).click();
+      await expect(sheet(page)).toBeVisible();
+      expect(await sheet(page).boundingBox()).toMatchObject({
+        x: 0,
+        y: 0,
+        width: 390,
+        height: 844,
+      });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        390,
+      );
+      await tabsEinzeilig(sheet(page).getByRole('tablist'));
 
-    await sheet(page).getByLabel('Notiz').fill('Vom Handy');
-    const anfrage = await speichernUndAnfrageLesen(page);
-    expect(anfrage.notiz).toBe('Vom Handy');
-    await expect(details(page, KFZ).locator('.meldung').getByRole('status')).toContainText(
-      'wurde gespeichert',
-    );
-  });
+      await sheet(page).getByLabel('Notiz').fill('Vom Handy');
+      const anfrage = await speichernUndAnfrageLesen(page);
+      expect(anfrage.notiz).toBe('Vom Handy');
+      await expect(details(page, KFZ).locator('.meldung').getByRole('status')).toContainText(
+        'wurde gespeichert',
+      );
+    },
+  );
 });
 
 test.describe('Vertrag mit automatischen Preisen bearbeiten', () => {

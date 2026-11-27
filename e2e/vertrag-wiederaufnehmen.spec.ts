@@ -150,25 +150,27 @@ test.describe('Vertrag wieder aufnehmen', () => {
     await expect(zeile(page, MOBILFUNK)).toContainText('Seit 15.01.2024');
   });
 
-  test('bis 900 px im Vollbild mit Leiste „Abbrechen | Wieder aufnehmen | Sichern“', async ({
-    page,
-  }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/vertraege/alt/wiederaufnehmen');
-    const box = dialog(page, MOBILFUNK);
-    await expect(box).toBeVisible();
-    expect(await box.boundingBox()).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
-    await expect(box.getByRole('heading', { level: 2 })).toBeHidden();
-    await expect(box.locator('.name')).toHaveText(MOBILFUNK);
-    await expect(box.locator('.aktionen')).toBeHidden();
-    await box.getByLabel('Verlängerung *').selectOption('ZAHLUNGSINTERVALL');
-    await box.locator('.leiste').getByRole('button', { name: 'Sichern' }).click();
-    await expect(box).toBeHidden();
-    await expect(
-      page.getByText('„Mobilfunk GmbH“ wird ab 01.09.2026 wieder aufgenommen.'),
-    ).toBeVisible();
-  });
+  test(
+    'bis 900 px im Vollbild mit Leiste „Abbrechen | Wieder aufnehmen | Sichern“',
+    { tag: '@mobil' },
+    async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto('/vertraege/alt/wiederaufnehmen');
+      const box = dialog(page, MOBILFUNK);
+      await expect(box).toBeVisible();
+      expect(await box.boundingBox()).toMatchObject({ x: 0, y: 0, width: 390, height: 844 });
+      await expect(box.getByRole('heading', { level: 2 })).toBeHidden();
+      await expect(box.locator('.name')).toHaveText(MOBILFUNK);
+      await expect(box.locator('.aktionen')).toBeHidden();
+      await box.getByLabel('Verlängerung *').selectOption('ZAHLUNGSINTERVALL');
+      await box.locator('.leiste').getByRole('button', { name: 'Sichern' }).click();
+      await expect(box).toBeHidden();
+      await expect(
+        page.getByText('„Mobilfunk GmbH“ wird ab 01.09.2026 wieder aufgenommen.'),
+      ).toBeVisible();
+    },
+  );
 
   test('am Desktop ein Dialog in der Fenstermitte, höchstens 480 px breit', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 1000 });

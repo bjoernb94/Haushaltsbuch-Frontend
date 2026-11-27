@@ -75,7 +75,7 @@ test('von den Einstellungen ins Impressum und zurück', async ({ page }) => {
   await expect(page).toHaveURL(/\/einstellungen$/);
 });
 
-test('auf dem Handy über das Kontomenü erreichbar', async ({ page }) => {
+test('auf dem Handy über das Kontomenü erreichbar', { tag: '@mobil' }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await backendSimulieren(page, { angemeldet: true });
   await page.goto('/start');

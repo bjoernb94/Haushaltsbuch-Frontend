@@ -163,16 +163,18 @@ test.describe('Neuer Vertrag', () => {
     ).toBeVisible();
   });
 
-  test('zeigt die Erfolgsmeldung im sichtbaren Bereich, auch vom Ende des Formulars aus', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 390, height: 700 });
-    await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
-    await page.goto('/vertraege/neu');
-    await pflichtfelderFuellen(page);
-    await speichernUndAnfrageLesen(page, 'Sichern');
-    await expect(page.getByText('„Neuer Anbieter“ wurde gespeichert.')).toBeInViewport();
-  });
+  test(
+    'zeigt die Erfolgsmeldung im sichtbaren Bereich, auch vom Ende des Formulars aus',
+    { tag: '@mobil' },
+    async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 700 });
+      await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
+      await page.goto('/vertraege/neu');
+      await pflichtfelderFuellen(page);
+      await speichernUndAnfrageLesen(page, 'Sichern');
+      await expect(page.getByText('„Neuer Anbieter“ wurde gespeichert.')).toBeInViewport();
+    },
+  );
 
   test.describe('holt den neuen Vertrag in einer langen Liste ins Bild', () => {
     const VIELE = Array.from({ length: 40 }, (_, i) => ({
@@ -214,20 +216,24 @@ test.describe('Neuer Vertrag', () => {
       await expect(page.locator('app-vertrag-zeile').last()).toBeInViewport({ ratio: 1 });
     });
 
-    test('Handy: Die feste Navigation verdeckt die Zeile nicht', async ({ page }) => {
-      await page.setViewportSize({ width: 390, height: 900 });
-      await anlegen(page, 'Sichern');
-      const zeile = page.locator('app-vertrag-zeile').last();
-      await expect(zeile.locator('.meldung')).toBeFocused();
-      const navigation = await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox();
-      await expect
-        .poll(async () => {
-          const box = await zeile.boundingBox();
-          return box!.y + box!.height;
-        })
-        .toBeLessThanOrEqual(navigation!.y);
-      await expect(meldung(page)).toBeInViewport();
-    });
+    test(
+      'Handy: Die feste Navigation verdeckt die Zeile nicht',
+      { tag: '@mobil' },
+      async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 900 });
+        await anlegen(page, 'Sichern');
+        const zeile = page.locator('app-vertrag-zeile').last();
+        await expect(zeile.locator('.meldung')).toBeFocused();
+        const navigation = await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox();
+        await expect
+          .poll(async () => {
+            const box = await zeile.boundingBox();
+            return box!.y + box!.height;
+          })
+          .toBeLessThanOrEqual(navigation!.y);
+        await expect(meldung(page)).toBeInViewport();
+      },
+    );
 
     test('Zurückblättern scrollt nicht erneut', async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -728,33 +734,35 @@ test.describe('Neuer Vertrag', () => {
       expect((await zusammenfassung.boundingBox())!.x).toBeGreaterThan(formular.x + formular.width);
     });
 
-    test('auf dem Handy (390 px) gleich breite Segmente in einer Zeile, auch mit Fehlern', async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width: 390, height: 844 });
-      const tabs = page.getByRole('tablist', { name: 'Bereiche des Vertrags' });
-      await expect(tabs.getByRole('tab')).toHaveText([
-        'Allgemein',
-        'Kosten',
-        'Preisverlauf',
-        'Laufzeit',
-      ]);
-      await tabsEinzeilig(tabs);
-      const breiten = await tabs
-        .getByRole('tab')
-        .evaluateAll((t) => t.map((e) => Math.round(e.getBoundingClientRect().width)));
-      expect(new Set(breiten).size).toBe(1);
+    test(
+      'auf dem Handy (390 px) gleich breite Segmente in einer Zeile, auch mit Fehlern',
+      { tag: '@mobil' },
+      async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        const tabs = page.getByRole('tablist', { name: 'Bereiche des Vertrags' });
+        await expect(tabs.getByRole('tab')).toHaveText([
+          'Allgemein',
+          'Kosten',
+          'Preisverlauf',
+          'Laufzeit',
+        ]);
+        await tabsEinzeilig(tabs);
+        const breiten = await tabs
+          .getByRole('tab')
+          .evaluateAll((t) => t.map((e) => Math.round(e.getBoundingClientRect().width)));
+        expect(new Set(breiten).size).toBe(1);
 
-      // Fehler zeigen einen Punkt statt der Zahl; die Anzahl steht im Namen.
-      await tab(page, 'Preisverlauf');
-      await page.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
-      await page.getByRole('button', { name: 'Sichern' }).click();
-      await expect(tabs.getByRole('tab', { name: /^Preisverlauf.*2 Fehler$/ })).toBeVisible();
-      await expect(tabs.getByRole('tab', { name: /^Kosten.*3 Fehler$/ })).toBeVisible();
-      await tabsEinzeilig(tabs);
-    });
+        // Fehler zeigen einen Punkt statt der Zahl; die Anzahl steht im Namen.
+        await tab(page, 'Preisverlauf');
+        await page.getByRole('switch', { name: 'Preis steigt regelmäßig' }).check();
+        await page.getByRole('button', { name: 'Sichern' }).click();
+        await expect(tabs.getByRole('tab', { name: /^Preisverlauf.*2 Fehler$/ })).toBeVisible();
+        await expect(tabs.getByRole('tab', { name: /^Kosten.*3 Fehler$/ })).toBeVisible();
+        await tabsEinzeilig(tabs);
+      },
+    );
 
-    test('bis 900 px ohne Zusammenfassung', async ({ page }) => {
+    test('bis 900 px ohne Zusammenfassung', { tag: '@mobil' }, async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
       await expect(page.getByLabel('Anbieter *')).toBeVisible();
       await expect(page.getByRole('complementary', { name: 'Zusammenfassung' })).toBeHidden();
@@ -767,12 +775,16 @@ test.describe('Neuer Vertrag', () => {
     await expect(page).toHaveURL(/\/start$/);
   });
 
-  test('passt auf ein schmales Display ohne seitliches Scrollen', async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 700 });
-    await backendSimulieren(page, { angemeldet: true });
-    await page.goto('/vertraege/neu');
-    await expect(page.getByLabel('Anbieter *')).toBeVisible();
-    const breite = await page.evaluate(() => document.documentElement.scrollWidth);
-    expect(breite).toBeLessThanOrEqual(320);
-  });
+  test(
+    'passt auf ein schmales Display ohne seitliches Scrollen',
+    { tag: '@mobil' },
+    async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 700 });
+      await backendSimulieren(page, { angemeldet: true });
+      await page.goto('/vertraege/neu');
+      await expect(page.getByLabel('Anbieter *')).toBeVisible();
+      const breite = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(breite).toBeLessThanOrEqual(320);
+    },
+  );
 });

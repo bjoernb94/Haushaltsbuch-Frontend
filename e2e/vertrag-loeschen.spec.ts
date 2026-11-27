@@ -207,7 +207,7 @@ test.describe('Vertrag löschen', () => {
     await expect(details.getByRole('button', { name: 'Vertrag löschen' })).toBeFocused();
   });
 
-  test('auf dem Handy passt alles in die Breite', async ({ page }) => {
+  test('auf dem Handy passt alles in die Breite', { tag: '@mobil' }, async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 700 });
     await page.goto('/vertraege/kfz');
     await page

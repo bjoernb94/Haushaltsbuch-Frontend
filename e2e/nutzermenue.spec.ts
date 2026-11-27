@@ -101,24 +101,28 @@ test('mit Seitenleiste sitzt der Knopf unten in ihr, das Panel öffnet nach oben
   await expect(nutzerKnopf(page)).toBeFocused();
 });
 
-test('bis 640 px nur Initialen, das Panel als Bottom-Sheet', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 800 });
-  await expect(nutzerKnopf(page).locator('.vorname')).toBeHidden();
-  await expect(nutzerKnopf(page).locator('.pfeil')).toBeHidden();
-  const knopf = (await nutzerKnopf(page).boundingBox())!;
-  expect(knopf.width).toBeGreaterThanOrEqual(44);
-  expect(knopf.height).toBeGreaterThanOrEqual(44);
+test(
+  'bis 640 px nur Initialen, das Panel als Bottom-Sheet',
+  { tag: '@mobil' },
+  async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await expect(nutzerKnopf(page).locator('.vorname')).toBeHidden();
+    await expect(nutzerKnopf(page).locator('.pfeil')).toBeHidden();
+    const knopf = (await nutzerKnopf(page).boundingBox())!;
+    expect(knopf.width).toBeGreaterThanOrEqual(44);
+    expect(knopf.height).toBeGreaterThanOrEqual(44);
 
-  await nutzerKnopf(page).click();
+    await nutzerKnopf(page).click();
 
-  const box = (await panel(page).boundingBox())!;
-  expect(box.x).toBe(0);
-  expect(box.width).toBe(390);
-  expect(Math.round(box.y + box.height)).toBe(800);
-  await expect(panel(page).locator('.griff')).toBeVisible();
-});
+    const box = (await panel(page).boundingBox())!;
+    expect(box.x).toBe(0);
+    expect(box.width).toBe(390);
+    expect(Math.round(box.y + box.height)).toBe(800);
+    await expect(panel(page).locator('.griff')).toBeVisible();
+  },
+);
 
-test('lange E-Mail-Adressen brechen um', async ({ page }) => {
+test('lange E-Mail-Adressen brechen um', { tag: '@mobil' }, async ({ page }) => {
   await page.unrouteAll();
   await backendSimulieren(page, { angemeldet: true });
   const email = `${'sehr.lange.adresse.'.repeat(6)}@beispiel.de`;
