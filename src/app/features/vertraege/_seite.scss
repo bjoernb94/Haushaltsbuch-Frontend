@@ -12,22 +12,6 @@
     flex-direction: column;
   }
 
-  .zurueck {
-    align-self: flex-start;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    gap: $abstand-2;
-    font-size: $schrift-text;
-    font-weight: 700;
-    text-decoration: none;
-
-    // Bis 900 px führt die Tab-Leiste bzw. die Leiste der Seite zurück.
-    @media (max-width: 900px) {
-      display: none;
-    }
-  }
-
   h1 {
     margin: 0;
     line-height: 1.2;

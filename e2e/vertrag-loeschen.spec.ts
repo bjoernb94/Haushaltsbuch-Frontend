@@ -37,12 +37,6 @@ test.describe('Vertrag löschen', () => {
     await page.goto('/vertraege');
   });
 
-  test('der Untertitel nennt jetzt alle drei Aktionen', async ({ page }) => {
-    await expect(
-      page.getByText('Lege Verträge an, bearbeite sie oder entferne sie.'),
-    ).toBeVisible();
-  });
-
   test('der Dialog nennt den Vertrag, „Abbrechen“ hat den ersten Fokus', async ({ page }) => {
     let anfragen = 0;
     page.on('request', (r) => {

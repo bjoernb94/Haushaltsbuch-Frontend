@@ -6,6 +6,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
 import { AuthService, KOMPONENTEN_URL } from '../../../core/auth/auth.service';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
+import { Seitenaktionen } from '../../../shared/seitenaktionen/seitenaktionen';
 import { KomponentenSeite } from './komponenten-seite';
 
 const problem = (status: number, code: string) => ({
@@ -208,10 +209,11 @@ describe('KomponentenSeite', () => {
     },
   );
 
-  it('führt mit „Zurück“ zu den Einstellungen', async () => {
-    const s = await geladen();
-    const zurueck = s.element.querySelector<HTMLAnchorElement>('a.zurueck')!;
-    expect(zurueck.getAttribute('href')).toBe('/einstellungen');
-    expect(zurueck.getAttribute('aria-label')).toBe('Zurück zu Einstellungen');
+  it('meldet Titel und Pfad „Einstellungen“', async () => {
+    await geladen();
+    const aktionen = TestBed.inject(Seitenaktionen).aktionen();
+    expect(aktionen.titel).toBe('Komponenten');
+    expect(aktionen.pfad).toMatchObject({ ziel: '/einstellungen', text: 'Einstellungen' });
+    expect(aktionen.zurueck?.label).toBe('Zurück zu Einstellungen');
   });
 });

@@ -1,6 +1,9 @@
 import { expect, Page, test } from '@playwright/test';
 import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
 
+/** Titel der Kacheln; die Begrüßung darüber ist auch eine h2. */
+const kacheltitel = (page: Page) => page.locator('.raster').getByRole('heading', { level: 2 });
+
 test('zeigt verfügbare Kacheln mit Link und die übrigen ausgegraut', async ({ page }) => {
   const aufrufe: string[] = [];
   page.on('request', (anfrage) => {
@@ -11,8 +14,9 @@ test('zeigt verfügbare Kacheln mit Link und die übrigen ausgegraut', async ({ 
   await backendSimulieren(page, { angemeldet: true });
   await page.goto('/start');
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen, Max!');
-  await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Übersicht');
+  await expect(page.getByRole('heading', { name: 'Willkommen, Max!' })).toBeVisible();
+  await expect(kacheltitel(page)).toHaveText([
     'Finanzübersicht',
     'Vertragsübersicht',
     'Versorgungsverträge',
@@ -30,7 +34,7 @@ test('zeigt nur Kacheln gebuchter Komponenten', async ({ page }) => {
   await backendSimulieren(page, { angemeldet: true, komponenten: ['PORTFOLIO'] });
   await page.goto('/start');
 
-  await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Portfolio']);
+  await expect(kacheltitel(page)).toHaveText(['Portfolio']);
   await expect(page.getByRole('link', { name: 'Alle Verträge' })).toHaveCount(0);
 });
 
@@ -40,14 +44,15 @@ test('ohne geladene Komponenten bleibt nur der Hinweis', async ({ page }) => {
   await page.goto('/start');
 
   await expect(page.getByRole('alert')).toBeVisible();
-  await expect(page.getByRole('heading', { level: 2 })).toHaveCount(0);
+  await expect(kacheltitel(page)).toHaveCount(0);
 });
 
 test.describe('Finanzübersicht', () => {
   const finanzen = (page: Page) => page.getByRole('region', { name: 'Finanzübersicht' });
 
   test('füllt neben der Vertragskachel den Platz, ohne gestreckte Zeilen', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
+    // Zwei Kacheln nebeneinander erst, wenn neben der Seitenleiste 2 × 480 px Platz sind.
+    await page.setViewportSize({ width: 1600, height: 900 });
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
     await page.goto('/start');
     await expect(page.getByRole('region', { name: 'Vertragsübersicht' })).toContainText(
@@ -63,12 +68,17 @@ test.describe('Finanzübersicht', () => {
       .locator('app-finanz-kachel section, app-vertrag-kachel section')
       .evaluateAll((e) => e.map((k) => k.getBoundingClientRect().bottom));
     expect(finanz).toBe(vertrag);
-    // Keine angeschnittene Zeile (Bruchteile eines Pixels sind Rundung).
-    const { platz, letzte } = await finanzen(page).evaluate((e) => ({
-      platz: e.querySelector('.platz')!.getBoundingClientRect().bottom,
-      letzte: [...e.querySelectorAll('.zeile')].at(-1)!.getBoundingClientRect().bottom,
-    }));
-    expect(letzte).toBeLessThanOrEqual(platz + 0.5);
+    // Keine angeschnittene Zeile (Bruchteile eines Pixels sind Rundung). Die Kachel misst nach dem Layout
+    // (ResizeObserver) und beginnt mit den Zeilen für „allein“; WebKit misst etwas später.
+    await expect
+      .poll(() =>
+        finanzen(page).evaluate(
+          (e) =>
+            [...e.querySelectorAll('.zeile')].at(-1)!.getBoundingClientRect().bottom -
+            e.querySelector('.platz')!.getBoundingClientRect().bottom,
+        ),
+      )
+      .toBeLessThanOrEqual(0.5);
   });
 
   test('zeigt auf dem Handy 5 Buchungen', { tag: '@mobil' }, async ({ page }) => {
@@ -85,7 +95,7 @@ test('passt auf dem Handy in die Breite', { tag: '@mobil' }, async ({ page }) =>
   await backendSimulieren(page, { angemeldet: true });
   await page.goto('/start');
 
-  await expect(page.getByRole('heading', { level: 2 })).toHaveCount(4);
+  await expect(kacheltitel(page)).toHaveCount(4);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   await expect(page.getByRole('navigation', { name: 'Hauptmenü' })).toBeVisible();
 });
@@ -185,7 +195,7 @@ test.describe('Vertragskachel', () => {
     await backendSimulieren(page, { angemeldet: true, komponenten: ['PORTFOLIO'] });
     await page.goto('/start');
 
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Portfolio']);
+    await expect(kacheltitel(page)).toHaveText(['Portfolio']);
     expect(aufrufe).toBe(0);
   });
 
@@ -228,7 +238,7 @@ test.describe('Vertragskachel', () => {
     });
     await page.goto('/start');
 
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Portfolio']);
+    await expect(kacheltitel(page)).toHaveText(['Portfolio']);
     await expect(page.getByRole('alert')).toHaveCount(0);
     await expect(page).toHaveURL(/\/start$/);
   });

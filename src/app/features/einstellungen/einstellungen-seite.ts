@@ -11,8 +11,9 @@ import { UNTERSEITE_STATE } from './unterseite';
 
 /**
  * Einstellungen: Konto (Profil, Komponenten), Systemstatus, Version und Umgebung, rechtliche Links. Der
- * Systemstatus steht in der Shell nur hier. „Zurück“ führt zur Herkunft, ohne sie zur Startseite; die
- * Unterseiten kehren im Verlauf hierher zurück, damit sie erhalten bleibt.
+ * Systemstatus steht in der Shell nur hier. „Zurück“ (bis 900 px in der Kopfzeile; darüber führt die
+ * Seitenleiste weiter) führt zur Herkunft, ohne sie zur Startseite; die Unterseiten kehren im Verlauf
+ * hierher zurück, damit sie erhalten bleibt.
  */
 @Component({
   selector: 'app-einstellungen-seite',
@@ -30,8 +31,8 @@ export class EinstellungenSeite {
   /** Bleibt auch beim Neuladen im Verlauf des Browsers erhalten. */
   private readonly herkunft = herkunftAus(inject(Location).getState(), istEinstellungen);
 
-  protected readonly zurueck = this.router.parseUrl(this.herkunft ?? STARTSEITE);
-  protected readonly zurueckLabel = zurueckLabel(this.router.serializeUrl(this.zurueck));
+  private readonly zurueck = this.router.parseUrl(this.herkunft ?? STARTSEITE);
+  private readonly zurueckLabel = zurueckLabel(this.router.serializeUrl(this.zurueck));
 
   protected readonly unterseiteState = UNTERSEITE_STATE;
 
@@ -49,6 +50,9 @@ export class EinstellungenSeite {
   });
 
   constructor() {
-    seitenaktionenMelden(() => ({ zurueck: { ziel: this.zurueck, label: this.zurueckLabel } }));
+    seitenaktionenMelden(() => ({
+      titel: 'Einstellungen',
+      zurueck: { ziel: this.zurueck, label: this.zurueckLabel },
+    }));
   }
 }

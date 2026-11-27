@@ -10,12 +10,12 @@ $handy: $abstand-4;
   }
 }
 
-// Mit Seitenleiste (232 px) sollen Inhalt und Fußzeile dieselben Ränder haben wie ohne: 1152 px
-// breit und mittig im Fenster, solange das neben die Leiste passt. Prozent beziehen sich auf die
-// Spalte neben der Leiste; 50 % davon sind die halbe Fensterbreite minus 116 px.
-@mixin wie-ohne-navigation {
+// Neben der Seitenleiste (232 px): links und rechts derselbe Abstand, höchstens 1152 px breit und mittig in
+// der Spalte neben der Leiste, mindestens 24 px. Die Kopfzeile hat dieselben Ränder: Der Titel steht bündig
+// mit dem Inhalt links, das Nutzermenü rechts.
+@mixin neben-seitenleiste {
   @media (min-width: 901px) {
-    padding-left: max(#{$abstand-6}, calc(50% - 692px));
-    padding-right: max(#{$abstand-6}, calc(50% - 460px));
+    padding-left: max(#{$abstand-6}, calc(50% - 576px));
+    padding-right: max(#{$abstand-6}, calc(50% - 576px));
   }
 }

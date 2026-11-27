@@ -7,9 +7,7 @@ function navigation(page: Page) {
   return page.getByRole('navigation', { name: 'Hauptmenü' });
 }
 
-test('Navigation zeigt nur gebuchte Bereiche, noch nicht verfügbare ohne Link', async ({
-  page,
-}) => {
+test('Navigation verlinkt gebuchte Bereiche, die übrigen stehen ohne Link da', async ({ page }) => {
   await backendSimulieren(page, {
     angemeldet: true,
     komponenten: ['VERTRAGSUEBERSICHT', 'PORTFOLIO'],
@@ -19,8 +17,9 @@ test('Navigation zeigt nur gebuchte Bereiche, noch nicht verfügbare ohne Link',
   await expect(navigation(page).getByRole('link', { name: 'Verträge' })).toBeVisible();
   await expect(navigation(page).getByRole('link', { name: 'Portfolio' })).toHaveCount(0);
   await expect(navigation(page)).toContainText(/Portfolio\s*Demnächst verfügbar/);
-  await expect(navigation(page)).not.toContainText('Finanz');
-  await expect(navigation(page)).not.toContainText('Versorgung');
+  await expect(navigation(page)).toContainText(/Finanzübersicht.*Ausgeschaltet/);
+  await expect(navigation(page)).toContainText(/Versorgungsverträge.*Ausgeschaltet/);
+  await expect(navigation(page).getByRole('link', { name: /Finanz|Versorgung/ })).toHaveCount(0);
 });
 
 for (const { titel, pfad, komponenten } of [
@@ -43,13 +42,14 @@ test('nach einem Ladefehler hilft „Erneut versuchen“', async ({ page }) => {
   await page.goto('/start');
 
   await expect(page.getByRole('alert')).toHaveText('Deine Bereiche konnten nicht geladen werden.');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Willkommen, Max!');
-  await expect(navigation(page)).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Willkommen, Max!' })).toBeVisible();
+  await expect(navigation(page).getByRole('link')).toHaveText(['Übersicht', 'Einstellungen']);
 
   scheitert = false;
   await page.getByRole('button', { name: 'Erneut versuchen' }).click();
 
   await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(navigation(page).getByRole('link', { name: 'Verträge' })).toBeVisible();
 });
 
 test('direkter Aufruf versucht es nach einem Ladefehler erneut', async ({ page }) => {

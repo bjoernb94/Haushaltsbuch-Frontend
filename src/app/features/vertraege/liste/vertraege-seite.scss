@@ -11,71 +11,11 @@ h1 {
   font-size: $schrift-seitentitel;
 }
 
-.titel {
-  display: flex;
-  flex-direction: column;
-  gap: $abstand-2;
-
-  p {
-    margin: 0;
-    font-size: $schrift-eingabe;
-    color: var(--app-text-gedaempft);
-  }
-}
-
 .meldung:focus {
   outline: none;
 }
 
-.kopf {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: $abstand-4;
-
-  .knopf {
-    flex: none;
-    gap: $abstand-2;
-    padding: 0 $abstand-5;
-  }
-}
-
-// Bis 900 px steht „Neuer Vertrag“ als „+“ in der Kopfzeile. Darüber bleibt die Leiste beim Scrollen
-// stehen, kompakter und durchscheinend.
-@media (max-width: 900px) {
-  .kopf .knopf {
-    display: none;
-  }
-}
-
 @media (min-width: 901px) {
-  .kopf {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    align-items: center;
-    padding: $abstand-3 0;
-    border-bottom: 1px solid var(--app-glas-rand);
-    background: var(--app-glas-dicht);
-    backdrop-filter: saturate(180%) blur(20px);
-
-    h1 {
-      font-size: $schrift-titel-gross;
-    }
-
-    p {
-      font-size: $schrift-beschriftung;
-    }
-
-    .knopf {
-      height: 36px;
-      padding: 0 $abstand-4;
-      border-radius: $radius-mittel;
-      font-size: $schrift-beschriftung;
-    }
-  }
-
   .liste-und-details {
     display: flex;
     align-items: flex-start;

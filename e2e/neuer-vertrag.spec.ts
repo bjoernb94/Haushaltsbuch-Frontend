@@ -26,6 +26,15 @@ async function speichernUndAnfrageLesen(page: Page, knopf = 'Vertrag speichern')
   return (await anfrage).postDataJSON();
 }
 
+/** Wege zurück zur Liste: „Abbrechen“ im Formular und ab 901 px der Pfad „Verträge ›“ im Kopf. */
+const VERLASSEN = [
+  ['Abbrechen', (page: Page) => page.getByRole('button', { name: 'Abbrechen' })],
+  [
+    'Pfad Verträge',
+    (page: Page) => page.getByRole('banner').getByRole('link', { name: 'Verträge' }),
+  ],
+] as const;
+
 test.describe('Neuer Vertrag', () => {
   test('„Neuer Vertrag“ in der Liste führt zum Formular, der Bereich bleibt markiert', async ({
     page,
@@ -67,21 +76,18 @@ test.describe('Neuer Vertrag', () => {
       expect(abgemeldet).toBe(true);
     });
 
-    for (const [name, rolle] of [
-      ['Abbrechen', 'button'],
-      ['Zurück zu Verträgen', 'link'],
-    ] as const) {
+    for (const [name, ziel] of VERLASSEN) {
       test(`${name} fragt nach, „Weiter bearbeiten“ bleibt`, async ({ page }) => {
         await backendSimulieren(page, { angemeldet: true });
         await page.goto('/vertraege/neu');
         await page.getByLabel('Anbieter *').fill('Halb getippt');
 
-        await page.getByRole(rolle, { name }).click();
+        await ziel(page).click();
         await dialog(page).getByRole('button', { name: 'Weiter bearbeiten' }).click();
         await expect(page).toHaveURL(/\/vertraege\/neu$/);
         await expect(page.getByLabel('Anbieter *')).toHaveValue('Halb getippt');
 
-        await page.getByRole(rolle, { name }).click();
+        await ziel(page).click();
         await dialog(page).getByRole('button', { name: 'Verwerfen' }).click();
         await expect(page).toHaveURL(/\/vertraege$/);
       });
@@ -98,14 +104,11 @@ test.describe('Neuer Vertrag', () => {
   });
 
   test.describe('verlässt das Formular ohne Anfrage', () => {
-    for (const [name, rolle] of [
-      ['Abbrechen', 'button'],
-      ['Zurück zu Verträgen', 'link'],
-    ] as const) {
+    for (const [name, ziel] of VERLASSEN) {
       test(name, async ({ page }) => {
         await backendSimulieren(page, { angemeldet: true });
         await page.goto('/vertraege/neu');
-        await page.getByRole(rolle, { name }).click();
+        await ziel(page).click();
         await expect(page).toHaveURL(/\/vertraege$/);
         await expect(page.getByText('Noch keine Verträge')).toBeVisible();
       });

@@ -123,7 +123,11 @@ describe('NeuerVertragSeite', () => {
     it('meldet der Shell eine eigene Leiste, bis die Seite geht', async () => {
       const { fixture } = await erstellen({ kategorien: () => NEVER });
       const aktionen = TestBed.inject(Seitenaktionen).aktionen;
-      expect(aktionen().eigeneLeiste).toBe(true);
+      expect(aktionen()).toEqual({
+        titel: 'Neuer Vertrag',
+        pfad: { ziel: '/vertraege', label: null, text: 'Verträge' },
+        eigeneLeiste: true,
+      });
       fixture.destroy();
       expect(aktionen()).toEqual({});
     });

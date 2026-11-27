@@ -233,11 +233,11 @@ test.describe('Seite Verträge', () => {
     await expect(page.locator('app-vertrag-zeile')).toHaveCount(BEISPIEL_VERTRAEGE.length);
   });
 
-  test('die Werkzeugleiste bleibt am Desktop beim Scrollen oben', async ({ page }) => {
+  test('Titel und „Neuer Vertrag“ bleiben am Desktop in der Kopfzeile oben', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 600 });
     await backendSimulieren(page, { angemeldet: true, vertraege: BEISPIEL_VERTRAEGE });
     await page.goto('/vertraege');
-    const neu = page.getByRole('main').getByRole('link', { name: 'Neuer Vertrag' });
+    const neu = page.getByRole('banner').getByRole('link', { name: 'Neuer Vertrag' });
     await expect(neu).toHaveAttribute('aria-keyshortcuts', 'n');
     await expect(neu).toHaveAttribute('title', 'Neuer Vertrag (N)');
     await page.mouse.wheel(0, 1500);

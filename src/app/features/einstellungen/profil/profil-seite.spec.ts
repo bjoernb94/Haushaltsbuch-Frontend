@@ -1,4 +1,3 @@
-import { Location } from '@angular/common';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -46,29 +45,25 @@ describe('ProfilSeite', () => {
     ]);
   });
 
-  it('führt direkt aufgerufen vorwärts zu den Einstellungen, auch in der Kopfzeile', async () => {
-    const element = await seite();
-    const zurueck = element.querySelector<HTMLAnchorElement>('a.zurueck')!;
-    expect(zurueck.textContent?.trim()).toBe('Einstellungen');
-    expect(zurueck.getAttribute('href')).toBe('/einstellungen');
-    expect(zurueck.getAttribute('aria-label')).toBe('Zurück zu Einstellungen');
-    expect(TestBed.inject(Seitenaktionen).aktionen().zurueck).toEqual({
+  it('meldet Titel, Pfad und „Zurück“ vorwärts zu den Einstellungen, wenn direkt aufgerufen', async () => {
+    await seite();
+    const zurueck = {
       ziel: '/einstellungen',
       label: 'Zurück zu Einstellungen',
       text: 'Einstellungen',
       verlauf: false,
+    };
+    expect(TestBed.inject(Seitenaktionen).aktionen()).toEqual({
+      titel: 'Profil',
+      pfad: { ...zurueck, label: null },
+      zurueck,
     });
-
-    zurueck.click();
-    await vi.waitFor(() => expect(TestBed.inject(Router).url).toBe('/einstellungen'));
   });
 
   it('geht von den Einstellungen aus geöffnet im Verlauf zurück', async () => {
-    const element = await seite(UNTERSEITE_STATE);
-    const back = vi.spyOn(TestBed.inject(Location), 'back').mockImplementation(() => undefined);
-    expect(TestBed.inject(Seitenaktionen).aktionen().zurueck?.verlauf).toBe(true);
-
-    element.querySelector<HTMLAnchorElement>('a.zurueck')!.click();
-    expect(back).toHaveBeenCalledOnce();
+    await seite(UNTERSEITE_STATE);
+    const aktionen = TestBed.inject(Seitenaktionen).aktionen();
+    expect(aktionen.zurueck?.verlauf).toBe(true);
+    expect(aktionen.pfad?.verlauf).toBe(true);
   });
 });

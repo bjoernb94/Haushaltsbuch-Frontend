@@ -9,6 +9,7 @@ import { NEVER, of, Subject, throwError } from 'rxjs';
 import { VertragAntwort, VertragsuebersichtAntwort } from '../../../core/api/api';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { VERTRAEGE_ROUTES } from '../vertraege.routes';
+import { Seitenaktionen } from '../../../shared/seitenaktionen/seitenaktionen';
 import { VertraegeSeite } from './vertraege-seite';
 import {
   INFO_KALENDERJAHR,
@@ -452,12 +453,13 @@ describe('VertraegeSeite', () => {
       expect(element.querySelector('.kennzahlen')).not.toBeNull();
     });
 
-    it('nennt das Kürzel für „Neuer Vertrag“', async () => {
-      const neu = [...(await seite()).element.querySelectorAll('.kopf a')].find(
-        (a) => text(a) === 'Neuer Vertrag',
-      )!;
-      expect(neu.getAttribute('aria-keyshortcuts')).toBe('n');
-      expect(neu.getAttribute('title')).toBe('Neuer Vertrag (N)');
+    it('meldet Titel und „Neuer Vertrag“ mit Kürzel an die Kopfzeile', async () => {
+      const { element } = await seite();
+      expect(element.querySelector('h1')?.textContent).toBe('Verträge');
+      expect(TestBed.inject(Seitenaktionen).aktionen()).toEqual({
+        titel: 'Verträge',
+        neu: { ziel: '/vertraege/neu', text: 'Neuer Vertrag', taste: 'n' },
+      });
     });
 
     it('ein älterer Ladevorgang überschreibt keinen neueren', async () => {

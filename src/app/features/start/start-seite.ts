@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, LOCALE_ID } from '@angular/core';
 import { Komponente } from '../../core/api/api';
 import { AuthService } from '../../core/auth/auth.service';
+import { seitenaktionenMelden } from '../../shared/seitenaktionen/seitenaktionen';
 import { FinanzKachel } from './finanz-kachel/finanz-kachel';
 import { Kachel } from './kachel/kachel';
 import { VertragKachel } from './vertrag-kachel/vertrag-kachel';
@@ -23,6 +24,10 @@ export class StartSeite {
     month: 'long',
     year: 'numeric',
   }).format(new Date());
+
+  constructor() {
+    seitenaktionenMelden(() => ({ titel: 'Übersicht' }));
+  }
 
   protected gebucht(komponente: Komponente): boolean {
     return this.auth.komponenten().includes(komponente);

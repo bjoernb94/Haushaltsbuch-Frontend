@@ -41,18 +41,24 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
 ## Architecture
 
 - Standalone components, signals, `OnPush`, zoneless (ADR 0017); `strict` and `strictTemplates` are on.
-- `core/` services without UI, `features/` lazy-loaded pages (one folder per backend module, plus
-  `anmeldung/` for login/registration, `start/` and `einstellungen/`), `shared/` components used by several areas,
-  `shell/` layout of the logged-in area (lazy, so login and registration do not load it), header and footer in
-  `shared/kopfzeile` and `shared/fusszeile` (also used by imprint and privacy policy). From 901 px `/start` has
-  no navigation (route data `ohneNavigation`), its tiles navigate, and keeps the green header; all other areas
-  use `shell/hauptmenue`, a sticky sidebar with logo. There the header collapses and only the user menu
-  (`shared/nutzermenue`, one instance) moves to the bottom of the sidebar. Up to 900 px every page has a sticky,
-  translucent header without logo (blur on its own layer so the fixed menu is not trapped; raised above the tab
-  bar while the menu is open), the shell adds the tab bar (also on `/start`) and hides its footer. Page actions
-  in that header ("Zurück", "+") come from `shared/seitenaktionen`: pages call `seitenaktionenMelden()`, the
-  content's own "Zurück" is hidden there. A page reporting `eigeneLeiste` (new contract: Abbrechen | Sichern)
-  gets neither header nor tab bar.
+- `core/` services without UI, `features/` lazy-loaded pages (one folder per backend module, plus `anmeldung/` for
+  login/registration, `start/` and `einstellungen/`), `shared/` components used by several areas, `shell/` layout of
+  the logged-in area (lazy, so login and registration do not load it), header and footer in `shared/kopfzeile` and
+  `shared/fusszeile` (also used by imprint and privacy policy). All shell pages, `/start` included, look the same:
+  from 901 px `shell/hauptmenue` is a sticky sidebar with logo, every area (switched off and not yet available ones
+  dimmed, without a link), "Einstellungen" at the bottom and the copyright; next to it a sticky, translucent header
+  (blur on its own layer so menus are not trapped) with the page title (the page's `h1`), optionally a path
+  ("Einstellungen ›") and the main action as a small primary button, flush with the content, which has the same
+  margin left and right (at most 1152 px, centred next to the sidebar, at least 24 px:
+  `raender.neben-seitenleiste`); bell (`shared/glocke`, no function until #49) and user menu (`shared/nutzermenue`,
+  one instance) sit at the right edge, 24 px in. `kopfAusrichten()` measures where the page part ends; a divider
+  only when the main action sits right next to the bell. The shell footer shows only the legal links, centred under
+  the sidebar. Imprint and privacy policy use the header variant `einfach` (logo at the left edge instead of title).
+  Pages report title, path and main action via `seitenaktionenMelden()` (`shared/seitenaktionen`) and keep their own
+  `h1` with class `nur-mobil`. Up to 900 px every page has a sticky, translucent header without logo and title, with
+  "Zurück", "+" (main action), bell and user menu (raised above the tab bar while the menu is open); the shell adds
+  the tab bar and hides its footer. A page reporting `eigeneLeiste` (new contract: Abbrechen | Sichern) gets neither
+  header nor tab bar up to 900 px.
 - API types come from the backend's OpenAPI description: `core/api/api.generated.ts` (checked in, never edit by
   hand), named aliases in `core/api/api.ts`. After an API change in the backend, run `npm run api:typen` and commit
   the result. HTTP stays `HttpClient` with interceptors, no generated client.
@@ -62,23 +68,24 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   sets the `OHNE_ANMELDE_UMLEITUNG` context token or the user is already on `/login` (keeps the `returnUrl`).
   Never redirect to Keycloak.
 - Booked components: `AuthService` loads them with the user (`GET /api/nutzer/ich/komponenten`). The navigation
-  shows booked areas only, not yet available ones (`verfuegbar` in `core/komponenten`) without a link;
-  `bereichGuard` sends everything else to `/start`. A failed load keeps the user logged in, the shell then shows a
-  hint with "Erneut versuchen". 403 `KEIN_ZUGRIFF` reloads them in `authInterceptor` and goes to `/start`.
+  links booked, available areas only; switched off and not yet available ones (`verfuegbar` in `core/komponenten`)
+  stay without a link; `bereichGuard` sends everything else to `/start`. A failed load keeps the user logged in,
+  the shell then shows a hint with "Erneut versuchen" (and no areas in the navigation). 403 `KEIN_ZUGRIFF`
+  reloads them in `authInterceptor` and goes to `/start`.
   `/einstellungen/komponenten` loads them itself with their `version` and changes them via `PUT` (409
   `KONFLIKT`: reload, hint); after saving it calls `komponentenLaden()` so navigation and start page follow.
 - System status: `systemstatusBeobachten()` (injection context) polls `/actuator/health/systemstatus` every
   30 s. No answer within 5 s (e.g. while the DB check waits for the pool) → all three services count as
   unreachable (reveals nothing about the setup); a 503 still carries the component status. The last known
   status survives page changes. Login and registration lock while anything is down; in the shell only the
-  settings page (`/einstellungen`, via the user menu) shows it, imprint and privacy policy in their footer. The
+  settings page (`/einstellungen`) shows it, imprint and privacy policy in their footer without a session. The
   shell footer still polls (without showing it) because version loading depends on it.
-- Version and stage: the footer (login, registration, shell) shows the frontend version from `package.json`
-  (never missing) and the backend's stage from `/actuator/info` (public, see backend `docs/api.md`); outside
-  `PROD` a stripe sits above every page, its height in `--app-streifen-hoehe`. `core/version` loads the info
-  once the system status reaches the backend and retries until it gets an answer; without one only the
-  badge and stripe are missing. Commit and build time (frontend via `--define` in the image build, backend
-  from the info) are for the imprint only.
+- Version and stage: login and registration (imprint and privacy policy without a session) show the frontend
+  version from `package.json` (never missing) and the backend's stage from `/actuator/info` (public, see backend
+  `docs/api.md`) in their footer, the shell only on the settings page; outside `PROD` a stripe sits above every
+  page, its height in `--app-streifen-hoehe`. `core/version` loads the info once the system status reaches the
+  backend and retries until it gets an answer; without one only the badge and stripe are missing. Commit and
+  build time (frontend via `--define` in the image build, backend from the info) are for the imprint only.
 - Imprint and privacy policy (`/impressum`, `/datenschutz`, `features/rechtliches`): reachable with and without
   a session, no guard; they check the session themselves (user menu, target of "Zurück"). The links
   (`shared/rechtliche-links`) pass the current page as `herkunft` in the navigation state (`shared/herkunft`),
@@ -93,9 +100,9 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   closes one (logout must ask before the session ends). Redirects that must happen (401, 403) and a successful save
   call `vergessen()` first. Tab close and reload only get the browser's own dialog.
 - Settings subpages (`/einstellungen/profil`, `/einstellungen/komponenten`, routes in `einstellungen.routes.ts`)
-  are not part of the settings for `herkunft`: their "Zurück" always leads to `/einstellungen` via
-  `zurueckZuEinstellungen()`, going back in history (`shared/zurueck-link`) when the settings opened them (state
-  `intern`), so the settings keep their own origin.
+  are not part of the settings for `herkunft`: their "Zurück" (from 901 px the path "Einstellungen ›") always
+  leads to `/einstellungen` via `zurueckZuEinstellungen()`, going back in history (`shared/zurueck-link`) when
+  the settings opened them (state `intern`), so the settings keep their own origin.
 - Contracts: details (`/vertraege/:id`, tab in `?tab=`) and editing (`/vertraege/:id/bearbeiten`) are child
   routes of the list page, which loads the data and hands it down; desktop: panel next to the list and a modal
   sheet (native `dialog`), up to 900 px full screen. Closing goes back in history when the page opened the entry

@@ -1,27 +1,5 @@
-<a
-  class="zurueck"
-  [appZurueckLink]="zurueck.ziel"
-  [verlauf]="zurueck.verlauf ?? false"
-  [attr.aria-label]="zurueck.label"
->
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M15 18l-6-6 6-6"></path>
-  </svg>
-  Einstellungen
-</a>
-
 <div class="spalte">
-  <h1>Profil</h1>
+  <h1 class="nur-mobil">Profil</h1>
 
   @if (nutzer(); as profil) {
     <div class="person">

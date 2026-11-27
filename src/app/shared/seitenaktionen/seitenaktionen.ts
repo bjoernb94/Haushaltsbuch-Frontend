@@ -11,12 +11,25 @@ export interface Seitenaktion {
   verlauf?: boolean;
 }
 
-/** Was eine Seite bis 900 px im Kopf anbietet. */
+/** Hauptaktion der Seite, z. B. „Neuer Vertrag“. */
+export interface Hauptaktion {
+  ziel: string | UrlTree;
+  /** Ab 901 px Text des Knopfs, bis 900 px Beschriftung des „+“. */
+  text: string;
+  /** Tastenkürzel, das die Seite selbst behandelt; nur für Tooltip und {@code aria-keyshortcuts}. */
+  taste?: string;
+}
+
+/** Was eine Seite in der Kopfzeile anbietet. */
 export interface Aktionen {
-  /** Links im Kopf, statt „Zurück“ im Inhalt. */
+  /** Ab 901 px der Seitentitel (die {@code h1}); bis 900 px trägt ihn die Seite selbst. */
+  titel?: string;
+  /** Ab 901 px die übergeordnete Seite vor dem Titel, z. B. „Einstellungen ›“. */
+  pfad?: Seitenaktion & { text: string };
+  /** Bis 900 px links im Kopf, statt „Zurück“ im Inhalt. */
   zurueck?: Seitenaktion;
-  /** „+“ rechts im Kopf, z. B. „Neuer Vertrag“. */
-  neu?: Seitenaktion;
+  /** Ab 901 px kleiner Primärknopf rechts, bis 900 px „+“. */
+  neu?: Hauptaktion;
   /** Die Seite bringt bis 900 px eine eigene Leiste mit; Kopf und Tab-Leiste entfallen dann. */
   eigeneLeiste?: boolean;
 }

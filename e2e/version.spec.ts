@@ -30,11 +30,16 @@ test('außerhalb von PROD steht der Streifen über der Seite, ohne dass sie scro
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(900);
 });
 
-test('die Shell zeigt Version und Streifen', async ({ page }) => {
+test('die Shell zeigt den Streifen, die Version nur in den Einstellungen', async ({ page }) => {
   await backendSimulieren(page, { angemeldet: true, stage: 'DEV' });
   await page.goto('/vertraege');
-  await expect(page.locator('footer app-version-anzeige')).toContainText(`v${version}`);
   await expect(streifen(page)).toBeVisible();
+  await expect(page.getByRole('contentinfo')).toContainText('Impressum');
+  await expect(page.locator('app-version-anzeige')).toHaveCount(0);
+
+  await page.goto('/einstellungen');
+  await expect(page.getByRole('region', { name: 'App' })).toContainText(version);
+  await expect(page.getByRole('region', { name: 'App' })).toContainText('DEV');
 });
 
 test('die Seitenleiste beginnt unter dem Streifen und passt ins Fenster', async ({ page }) => {

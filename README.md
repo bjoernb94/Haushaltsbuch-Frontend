@@ -112,12 +112,11 @@ src/app/
                    und die Bausteine der Tabs (Preisliste, Einmalkosten, Preissteigerung, Zusammenfassung)
                    oben: Service, Routen und vertrag-texte.ts
   shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, chip/, format/, formular/, fusszeile/,
-               herkunft/, hinweis-box/, in-den-blick/, info-knopf/, kopfzeile/, layout/, logo/,
+               glocke/, herkunft/, hinweis-box/, in-den-blick/, info-knopf/, kopfzeile/, layout/, logo/,
                nutzermenue/, rechtliche-links/, seitenaktionen/, systemstatus-leiste/, tabliste/,
                version-anzeige/, verwerfen-dialog/, zustaende/
-  shell/       Rahmen der angemeldeten Bereiche (hauptmenue/ als Seitenleiste, bis 900 px als Tab-Leiste,
-               Fußzeile); die Startseite kommt ab 901 px ohne Navigation aus (Route-Data ohneNavigation)
-               und behält die Kopfzeile
+  shell/       Rahmen der angemeldeten Bereiche, auf allen Seiten gleich: hauptmenue/ als Seitenleiste,
+               bis 900 px als Tab-Leiste, daneben Kopfzeile mit Titel und Hauptaktion, Fußzeile
 src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile
 ```
 

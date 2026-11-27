@@ -1,28 +1,20 @@
-<div
-  class="seite"
-  [class.mit-navigation]="mitNavigation()"
-  [class.eigene-leiste]="aktionen().eigeneLeiste"
->
-  <app-kopfzeile [seitenleiste]="mitNavigation()" />
+<div class="seite" [class.eigene-leiste]="aktionen().eigeneLeiste">
+  <app-hauptmenue />
+  <app-kopfzeile variante="app" />
 
-  <div class="rumpf">
-    <app-hauptmenue />
+  <main>
+    @if (komponentenFehler()) {
+      <app-hinweis-box
+        class="ladefehler"
+        text="Deine Bereiche konnten nicht geladen werden."
+        aktionText="Erneut versuchen"
+        (aktion)="komponentenLaden()"
+      />
+    }
+    <router-outlet />
+  </main>
 
-    <div class="spalte">
-      <main>
-        @if (komponentenFehler()) {
-          <app-hinweis-box
-            class="ladefehler"
-            text="Deine Bereiche konnten nicht geladen werden."
-            aktionText="Erneut versuchen"
-            (aktion)="komponentenLaden()"
-          />
-        }
-        <router-outlet />
-      </main>
-      <app-fusszeile [mitNavigation]="mitNavigation()" [mitStatus]="false" />
-    </div>
-  </div>
+  <app-fusszeile variante="app" />
 </div>
 
 <app-verwerfen-dialog />

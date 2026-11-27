@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { AuthService } from '../../../core/auth/auth.service';
 import { initialen } from '../../../shared/nutzermenue/initialen';
-import { ZurueckLink } from '../../../shared/zurueck-link/zurueck-link';
 import { zurueckZuEinstellungen } from '../unterseite';
 
 /**
@@ -10,7 +9,6 @@ import { zurueckZuEinstellungen } from '../unterseite';
  */
 @Component({
   selector: 'app-profil-seite',
-  imports: [ZurueckLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profil-seite.html',
   styleUrl: './profil-seite.scss',
@@ -23,5 +21,7 @@ export class ProfilSeite {
     return nutzer ? initialen(nutzer.vorname, nutzer.name) : '';
   });
 
-  protected readonly zurueck = zurueckZuEinstellungen();
+  constructor() {
+    zurueckZuEinstellungen('Profil');
+  }
 }

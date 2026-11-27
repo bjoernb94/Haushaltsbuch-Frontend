@@ -14,7 +14,6 @@ import { problemCode } from '../../../core/fehler/problem';
 import { KOMPONENTEN } from '../../../core/komponenten/komponente';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { HinweisBox } from '../../../shared/hinweis-box/hinweis-box';
-import { ZurueckLink } from '../../../shared/zurueck-link/zurueck-link';
 import { zurueckZuEinstellungen } from '../unterseite';
 import { KomponentenService } from './komponenten.service';
 
@@ -36,7 +35,7 @@ const MELDUNGEN: Record<Meldung, string> = {
  */
 @Component({
   selector: 'app-komponenten-seite',
-  imports: [HinweisBox, ZurueckLink],
+  imports: [HinweisBox],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './komponenten-seite.html',
   styleUrl: './komponenten-seite.scss',
@@ -47,7 +46,6 @@ export class KomponentenSeite {
   private readonly ungespeichert = inject(UngespeicherteEingaben);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly zurueck = zurueckZuEinstellungen();
   protected readonly komponenten = KOMPONENTEN;
 
   protected readonly zustand = signal<'laedt' | 'fehler' | 'da'>('laedt');
@@ -70,6 +68,7 @@ export class KomponentenSeite {
   });
 
   constructor() {
+    zurueckZuEinstellungen('Komponenten');
     effect(() => this.ungespeichert.melden(this.geaendert()));
     this.destroyRef.onDestroy(() => this.ungespeichert.melden(false));
     this.laden();
