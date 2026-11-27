@@ -104,8 +104,8 @@
   }
   @if (angemeldet()) {
     <div #rechts class="rechts">
-      <app-glocke />
-      <app-nutzermenue [(offen)]="menueOffen" />
+      <app-glocke [(offen)]="glockeOffen" />
+      <app-nutzermenue [(offen)]="nutzerOffen" />
     </div>
   }
 </header>

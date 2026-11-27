@@ -50,7 +50,7 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   (blur on its own layer so menus are not trapped) with the page title (the page's `h1`), optionally a path
   ("Einstellungen ›") and the main action as a small primary button, flush with the content, which has the same
   margin left and right (at most 1152 px, centred next to the sidebar, at least 24 px:
-  `raender.neben-seitenleiste`); bell (`shared/glocke`, no function until #49) and user menu (`shared/nutzermenue`,
+  `raender.neben-seitenleiste`); bell (`shared/glocke`, see notifications) and user menu (`shared/nutzermenue`,
   one instance) sit at the right edge, 24 px in. `kopfAusrichten()` measures where the page part ends; a divider
   only when the main action sits right next to the bell. The shell footer shows only the legal links, centred under
   the sidebar. Imprint and privacy policy use the header variant `einfach` (logo at the left edge instead of title).
@@ -80,12 +80,14 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   status survives page changes. Login and registration lock while anything is down; in the shell only the
   settings page (`/einstellungen`) shows it, imprint and privacy policy in their footer without a session. The
   shell footer still polls (without showing it) because version loading depends on it.
-- Version and stage: login and registration (imprint and privacy policy without a session) show the frontend
-  version from `package.json` (never missing) and the backend's stage from `/actuator/info` (public, see backend
+- Version and stage: login and registration (imprint and privacy policy without a session) show the frontend version
+  from `package.json` (never missing) and the backend's stage from `/actuator/info` (public, see backend
   `docs/api.md`) in their footer, the shell only on the settings page; outside `PROD` a stripe sits above every
-  page, its height in `--app-streifen-hoehe`. `core/version` loads the info once the system status reaches the
-  backend and retries until it gets an answer; without one only the badge and stripe are missing. Commit and
-  build time (frontend via `--define` in the image build, backend from the info) are for the imprint only.
+  page, its height in `--app-streifen-hoehe`; it stays on top while scrolling (sticky), and the sticky header,
+  sidebar and own bars sit below it, so nothing moves when it would scroll away. `core/version` loads the info once
+  the system status reaches the backend and retries until it gets an answer; without one only the badge and stripe
+  are missing. Commit and build time (frontend via `--define` in the image build, backend from the info) are for the
+  imprint only.
 - Imprint and privacy policy (`/impressum`, `/datenschutz`, `features/rechtliches`): reachable with and without
   a session, no guard; they check the session themselves (user menu, target of "Zurück"). The links
   (`shared/rechtliche-links`) pass the current page as `herkunft` in the navigation state (`shared/herkunft`),
@@ -95,6 +97,17 @@ serve a stale bundle; restart it, or run Playwright against a fresh `ng serve --
   (`/tree/<commit>` when the commit is known), `quellcode` in `instanz.json` replaces them. Placeholder data
   in `beispiel/instanz.json` is served by the dev server only (development build assets) and used by the E2E
   mock, the image check and `docs/betrieb.md`.
+- Notifications (`core/benachrichtigungen`): feedback after actions goes to `Benachrichtigungen.melden()` (art,
+  title, optional text, link, `dauerhaft`), never into the page; the page does not scroll or move focus to it.
+  Toasts (`shared/benachrichtigungen`, once in `App` so the live region exists before the first message; `fehler` as
+  `alert`, else `status`) sit top right under the bell, up to 900 px full width under the header, without header
+  (login, registration) further up; always the same gap below whatever carries `data-kopf` (measured every frame
+  while toasts show). Success 5 s, info 6 s, warning 8 s with a time bar, errors and `dauerhaft` stay; hover or
+  focus pause. At most 3; expired ones go unread into the centre behind the bell (`shared/glocke`), closed ones
+  read; at most 50 entries. Before login only toasts (8 s, no centre); they vanish on login. The centre lives in
+  `sessionStorage`, bound to the user's email (another user discards it); logout calls `leeren()` before the session
+  ends, a 401 hides it until the same user logs in again. What stays on the page: field errors, the error box above
+  a form, load errors with "Erneut versuchen", the 409 hint on the components page.
 - Unsaved input: a form reports changes to `core/ungespeichert`. Leaving asks via the dialog in the shell:
   `ungespeichertGuard` (`canDeactivate`) on routes with a form, `bestaetigen()` for anything else that leaves or
   closes one (logout must ask before the session ends). Redirects that must happen (401, 403) and a successful save
@@ -149,7 +162,8 @@ Details in `docs/entwicklung.md`, section "Konventionen". ADRs are in the backen
 - A feature is one folder per backend module with service and pages, inside grouped by UI area (`liste/`,
   `details/`, `formular/`), no file over 400 lines; checklist in `docs/entwicklung.md` "Fachbereich anlegen".
   Services hold no business data (ADR 0018): pages load it when opened and reload after changes, so nothing is
-  left for the next user after logout. Exempt: session data in `AuthService` and the system status.
+  left for the next user after logout. Exempt: session data in `AuthService`, the system status and the
+  notification centre (`sessionStorage` of the tab, cleared on logout).
 - Every page with data has loading, error (with "Erneut versuchen") and empty states.
 
 ## Tests

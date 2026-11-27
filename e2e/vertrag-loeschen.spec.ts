@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
+import { backendSimulieren, BEISPIEL_VERTRAEGE, toasts } from './backend-mock';
 
 const KFZ = 'Kfz-Versicherung';
 const ERSTE_NACH_KFZ = 'Fitnessstudio am Park';
@@ -71,55 +71,34 @@ test.describe('Vertrag löschen', () => {
     await expect(page.getByText('Laufende Verträge5')).toBeVisible();
   });
 
-  test('die Meldung steht über dem nächsten Vertrag, die Position bleibt', async ({ page }) => {
+  test('meldet es als Toast, die Seite springt nicht, der Fokus geht zum nächsten Vertrag', async ({
+    page,
+  }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 1280, height: 500 });
     await mehr(page, 'Rundfunkbeitrag').scrollIntoViewIfNeeded();
-    await loeschenBestaetigen(page, 'Rundfunkbeitrag');
+    await loeschenFragen(page, 'Rundfunkbeitrag');
+    const vorher = await page.evaluate(() => window.scrollY);
+    await dialog(page, 'Rundfunkbeitrag').getByRole('button', { name: 'Ja, löschen' }).click();
 
-    const meldung = page
-      .getByRole('status')
-      .filter({ hasText: '„Rundfunkbeitrag“ wurde gelöscht.' });
-    await expect(meldung).toBeInViewport();
-    await expect(zeile(page, 'Sprachschule').getByRole('status')).toContainText('wurde gelöscht');
-    // Die Werkzeugleiste steht am Desktop immer oben, die Kennzahlen nicht.
-    await expect(page.getByText('Laufende Verträge')).not.toBeInViewport();
+    const toast = toasts(page).getByRole('status');
+    await expect(toast).toHaveText('Erfolg: „Rundfunkbeitrag“ wurde gelöscht.');
+    await expect(toast).toBeInViewport();
+    await expect(page.locator('app-vertrag-zeile')).toHaveCount(BEISPIEL_VERTRAEGE.length - 1);
+    await expect(mehr(page, 'Sprachschule')).toBeFocused();
+    expect(await page.evaluate(() => window.scrollY)).toBe(vorher);
+    await expect(page.locator('app-vertrag-zeile').getByRole('status')).toHaveCount(0);
   });
 
-  test('beim letzten Vertrag steht die Meldung unter dem davor', async ({ page }) => {
+  test('beim letzten Vertrag geht der Fokus zum davor', async ({ page }) => {
     await loeschenBestaetigen(page, LETZTE);
-    const davor = zeile(page, 'Zeitschriften-Abo');
-    await expect(davor.getByRole('status')).toContainText(`„${LETZTE}“ wurde gelöscht.`);
-    const meldung = await davor.getByRole('status').boundingBox();
-    const name = await davor.locator('.name').boundingBox();
-    expect(meldung!.y).toBeGreaterThan(name!.y);
+    await expect(toasts(page)).toContainText(`„${LETZTE}“ wurde gelöscht.`);
+    await expect(mehr(page, 'Zeitschriften-Abo')).toBeFocused();
   });
 
-  test('die Lösch-Meldung ist durch einen Trenner vom Vertrag abgesetzt', async ({ page }) => {
-    const rand = (name: string, seite: 'Top' | 'Bottom') =>
-      zeile(page, name)
-        .locator('.meldung')
-        .evaluate((e, s) => getComputedStyle(e)[`border${s}Width` as 'borderTopWidth'], seite);
-
-    await loeschenBestaetigen(page, 'Rundfunkbeitrag');
-    await expect(zeile(page, 'Sprachschule').getByRole('status')).toBeVisible();
-    expect(await rand('Sprachschule', 'Bottom')).toBe('1px');
-
-    await loeschenBestaetigen(page, LETZTE);
-    await expect(zeile(page, 'Zeitschriften-Abo').getByRole('status')).toBeVisible();
-    expect(await rand('Zeitschriften-Abo', 'Top')).toBe('1px');
-
-    await mehr(page, KFZ).click();
-    await page.getByRole('menuitem', { name: 'Bearbeiten …' }).click();
-    await page
-      .getByRole('dialog', { name: 'Vertrag bearbeiten' })
-      .getByRole('button', { name: 'Sichern' })
-      .click();
-    await expect(zeile(page, KFZ).getByRole('status')).toBeVisible();
-    expect(await rand(KFZ, 'Bottom')).toBe('0px');
-  });
-
-  test('der letzte verbleibende Vertrag: Meldung oben und Leerzustand', async ({ page }) => {
+  test('der letzte verbleibende Vertrag: Leerzustand, Fokus auf „Ersten Vertrag anlegen“', async ({
+    page,
+  }) => {
     for (const name of [
       KFZ,
       ERSTE_NACH_KFZ,
@@ -131,11 +110,13 @@ test.describe('Vertrag löschen', () => {
       'Zeitschriften-Abo',
     ]) {
       await loeschenBestaetigen(page, name);
-      await expect(page.getByText(`„${name}“ wurde gelöscht.`)).toBeVisible();
+      await expect(toasts(page).getByText(`„${name}“ wurde gelöscht.`)).toBeVisible();
     }
+    // Höchstens drei Toasts, die übrigen stehen im Center.
+    expect(await toasts(page).getByRole('status').count()).toBeLessThanOrEqual(3);
     await loeschenBestaetigen(page, LETZTE);
     await expect(page.getByText('Noch keine Verträge')).toBeVisible();
-    await expect(page.getByRole('status').filter({ hasText: `„${LETZTE}“` })).toBeInViewport();
+    await expect(page.getByRole('link', { name: 'Ersten Vertrag anlegen' })).toBeFocused();
   });
 
   test('404 gilt als gelöscht, ohne Fehlermeldung', async ({ page }) => {
@@ -152,13 +133,13 @@ test.describe('Vertrag löschen', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('409: Hinweis an der Zeile, der Vertrag bleibt', async ({ page }) => {
+  test('409: Info-Toast, der Vertrag bleibt', async ({ page }) => {
     await page.route('/api/vertraege/kfz?version=0', (route) =>
       route.fulfill(problem(409, 'KONFLIKT')),
     );
     await loeschenBestaetigen(page);
-    await expect(zeile(page, KFZ).getByRole('alert')).toHaveText(
-      'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut löschen.',
+    await expect(toasts(page).getByRole('status')).toHaveText(
+      'Info: Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut löschen.',
     );
     await expect(page.locator('app-vertrag-zeile')).toHaveCount(BEISPIEL_VERTRAEGE.length);
   });
@@ -172,13 +153,15 @@ test.describe('Vertrag löschen', () => {
       { times: 1 },
     );
     await loeschenBestaetigen(page);
-    await expect(zeile(page, KFZ).getByRole('alert')).toHaveText(
-      'Der Vertrag konnte nicht gelöscht werden. Bitte versuche es später erneut.',
+    // Fehler bleiben stehen, bis man sie schließt.
+    await expect(toasts(page).getByRole('alert')).toHaveText(
+      'Fehler: Der Vertrag konnte nicht gelöscht werden. Bitte versuche es später erneut.',
     );
     await expect(page.getByText('English detail')).toHaveCount(0);
 
     await loeschenBestaetigen(page);
-    await expect(page.getByText(`„${KFZ}“ wurde gelöscht.`)).toBeVisible();
+    await expect(toasts(page).getByText(`„${KFZ}“ wurde gelöscht.`)).toBeVisible();
+    await expect(toasts(page).getByRole('alert')).toHaveCount(1);
   });
 
   test('aus den Details: fragt, löscht und schließt sie', async ({ page }) => {

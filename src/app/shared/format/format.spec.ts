@@ -2,6 +2,7 @@ import { LOCALE_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BetraegePipe, BetragPipe } from './betrag.pipe';
 import { datumText, DatumPipe } from './datum.pipe';
+import { vergangenText } from './vergangen';
 import { zeitpunktText } from './zeitpunkt';
 
 describe('Formatierung', () => {
@@ -70,5 +71,17 @@ describe('Formatierung', () => {
     it('gibt einen ungültigen Wert unverändert zurück', () => {
       expect(zeitpunktText('kein Datum', 'de-DE')).toBe('kein Datum');
     });
+  });
+
+  it('nennt, wie lange etwas her ist', () => {
+    const jetzt = new Date(2026, 10, 27, 12, 0).getTime();
+    const minuten = (n: number) => jetzt - n * 60_000;
+    expect(vergangenText(minuten(0.5), jetzt, 'de-DE')).toBe('Gerade eben');
+    expect(vergangenText(minuten(5), jetzt, 'de-DE')).toBe('Vor 5 Min.');
+    expect(vergangenText(minuten(59), jetzt, 'de-DE')).toBe('Vor 59 Min.');
+    expect(vergangenText(minuten(60), jetzt, 'de-DE')).toBe('Vor 1 Std.');
+    expect(vergangenText(minuten(23 * 60 + 59), jetzt, 'de-DE')).toBe('Vor 23 Std.');
+    expect(vergangenText(minuten(30 * 60), jetzt, 'de-DE')).toBe('Gestern');
+    expect(vergangenText(minuten(3 * 24 * 60), jetzt, 'de-DE')).toBe('24.11.2026');
   });
 });

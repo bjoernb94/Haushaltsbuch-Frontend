@@ -7,6 +7,7 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { NEVER, of, throwError } from 'rxjs';
 import { VertragAntwort, VertragsuebersichtAntwort } from '../../core/api/api';
+import { Benachrichtigungen } from '../../core/benachrichtigungen/benachrichtigungen';
 import { UngespeicherteEingaben } from '../../core/ungespeichert/ungespeicherte-eingaben';
 import { VERTRAEGE_ROUTES } from './vertraege.routes';
 import { VertragService } from './vertrag.service';
@@ -180,6 +181,8 @@ function fehler(status: number, code: string, felder: unknown[] = []) {
 }
 
 describe('Vertrag wieder aufnehmen', () => {
+  const melden = vi.fn();
+  beforeEach(() => melden.mockClear());
   const auflisten = vi.fn();
   const uebersicht = vi.fn();
   const wiederaufnehmen = vi.fn();
@@ -210,6 +213,7 @@ describe('Vertrag wieder aufnehmen', () => {
           provide: VertragService,
           useValue: { auflisten, uebersicht, wiederaufnehmen, vorschau: () => NEVER },
         },
+        { provide: Benachrichtigungen, useValue: { melden } },
       ],
     }).compileComponents();
     TestBed.inject(Router).setUpLocationChangeListener();
@@ -433,11 +437,9 @@ describe('Vertrag wieder aufnehmen', () => {
       expect(fehlerText('verlaengerung')).toBeDefined();
     });
 
-    it('200: schickt die Werte, schließt, lädt neu und meldet in den Details', async () => {
+    it('200: schickt die Werte, schließt, lädt neu und meldet es', async () => {
       wiederaufnehmen.mockReturnValue(of(STREAMING));
-      const { setzen, absenden, url, dialog, panel } = await seite(
-        '/vertraege/stream/wiederaufnehmen',
-      );
+      const { setzen, absenden, url, dialog } = await seite('/vertraege/stream/wiederaufnehmen');
       await setzen('laufzeitende', '2027-11-30');
       await setzen('kuendigungsfristMonate', '1');
       await setzen('betrag', '15,99');
@@ -456,9 +458,10 @@ describe('Vertrag wieder aufnehmen', () => {
       expect(url()).toBe('/vertraege/stream');
       expect(dialog()).toBeNull();
       expect(auflisten).toHaveBeenCalledTimes(2);
-      expect(text(panel()!.querySelector('.meldung'))).toBe(
-        '„Streamingdienst“ wird ab 24.11.2026 wieder aufgenommen.',
-      );
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'erfolg',
+        titel: '„Streamingdienst“ wird ab 24.11.2026 wieder aufgenommen.',
+      });
     });
 
     it('400: Fehler nach Regel am Feld, Fokus aufs erste', async () => {
@@ -492,34 +495,37 @@ describe('Vertrag wieder aufnehmen', () => {
       );
     });
 
-    it('409 KONFLIKT: schließt, lädt neu, Hinweis wie beim Bearbeiten', async () => {
+    it('409 KONFLIKT: schließt, lädt neu, Info wie beim Bearbeiten', async () => {
       wiederaufnehmen.mockReturnValue(fehler(409, 'KONFLIKT'));
-      const { absenden, url, panel } = await seite('/vertraege/stream/wiederaufnehmen');
+      const { absenden, url } = await seite('/vertraege/stream/wiederaufnehmen');
       await absenden();
       expect(url()).toBe('/vertraege/stream');
       expect(auflisten).toHaveBeenCalledTimes(2);
-      expect(text(panel()!.querySelector('.meldung'))).toBe(
-        'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
-      );
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'info',
+        titel: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
+      });
     });
 
-    it('409 WIEDERAUFNAHME_NICHT_MOEGLICH: schließt, lädt neu, Hinweis', async () => {
+    it('409 WIEDERAUFNAHME_NICHT_MOEGLICH: schließt, lädt neu, Fehler-Toast', async () => {
       wiederaufnehmen.mockReturnValue(fehler(409, 'WIEDERAUFNAHME_NICHT_MOEGLICH'));
-      const { absenden, url, panel } = await seite('/vertraege/stream/wiederaufnehmen');
+      const { absenden, url } = await seite('/vertraege/stream/wiederaufnehmen');
       await absenden();
       expect(url()).toBe('/vertraege/stream');
       expect(auflisten).toHaveBeenCalledTimes(2);
-      expect(text(panel()!.querySelector('.meldung'))).toBe(
-        'Der Vertrag kann nicht mehr wieder aufgenommen werden.',
-      );
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'fehler',
+        titel: 'Der Vertrag kann nicht mehr wieder aufgenommen werden.',
+      });
     });
 
-    it('ein Link auf einen laufenden Vertrag schließt mit demselben Hinweis', async () => {
-      const { url, panel } = await seite('/vertraege/musik/wiederaufnehmen');
+    it('ein Link auf einen laufenden Vertrag schließt mit demselben Fehler-Toast', async () => {
+      const { url } = await seite('/vertraege/musik/wiederaufnehmen');
       expect(url()).toBe('/vertraege/musik');
-      expect(text(panel()!.querySelector('.meldung'))).toBe(
-        'Der Vertrag kann nicht mehr wieder aufgenommen werden.',
-      );
+      expect(melden).toHaveBeenCalledExactlyOnceWith({
+        art: 'fehler',
+        titel: 'Der Vertrag kann nicht mehr wieder aufgenommen werden.',
+      });
     });
 
     it('Esc und ein Klick daneben schließen über die Route', async () => {

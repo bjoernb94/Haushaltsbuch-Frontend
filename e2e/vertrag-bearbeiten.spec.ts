@@ -1,6 +1,6 @@
 import { expect, Page, test } from '@playwright/test';
 import { VertragAntwort } from '../src/app/core/api/api';
-import { backendSimulieren, BEISPIEL_VERTRAEGE, tabsEinzeilig } from './backend-mock';
+import { backendSimulieren, BEISPIEL_VERTRAEGE, tabsEinzeilig, toasts } from './backend-mock';
 
 const KFZ = 'Kfz-Versicherung';
 const FITNESS = 'Fitnessstudio am Park';
@@ -271,7 +271,7 @@ test.describe('Vertrag bearbeiten', () => {
     expect(Math.round(box.x + box.width / 2)).toBe(640);
   });
 
-  test('ohne Änderung bleiben alle Felder gleich, Meldung an der Zeile', async ({ page }) => {
+  test('ohne Änderung bleiben alle Felder gleich, danach ein Toast', async ({ page }) => {
     await bearbeiten(page);
     expect(await speichernUndAnfrageLesen(page)).toEqual({
       version: 0,
@@ -300,14 +300,13 @@ test.describe('Vertrag bearbeiten', () => {
     // Aus der Liste geöffnet, geht es zur Liste zurück.
     await expect(page).toHaveURL(/\/vertraege$/);
     await expect(sheet(page)).toHaveCount(0);
-    const meldung = zeile(page, KFZ).getByText(`„${KFZ}“ wurde gespeichert.`);
-    await expect(meldung).toBeVisible();
+    const meldung = toasts(page).getByRole('status');
+    await expect(meldung).toHaveText(`Erfolg: „${KFZ}“ wurde gespeichert.`);
     await expect(meldung).toBeInViewport();
+    await expect(zeile(page, KFZ).getByRole('status')).toHaveCount(0);
   });
 
-  test('aus den Details geöffnet, geht es zu den Details zurück, mit der Meldung dort', async ({
-    page,
-  }) => {
+  test('aus den Details geöffnet, geht es zu den Details zurück, mit Toast', async ({ page }) => {
     await page.getByRole('button', { name: `Details zu ${KFZ} anzeigen` }).click();
     await details(page, KFZ).getByRole('button', { name: 'Bearbeiten' }).click();
     await expect(page).toHaveURL(/\/vertraege\/kfz\/bearbeiten$/);
@@ -315,10 +314,8 @@ test.describe('Vertrag bearbeiten', () => {
     await speichernUndAnfrageLesen(page);
 
     await expect(page).toHaveURL(/\/vertraege\/kfz$/);
-    await expect(details(page, KFZ).locator('.meldung').getByRole('status')).toHaveText(
-      `„${KFZ}“ wurde gespeichert.`,
-    );
-    await expect(zeile(page, KFZ).getByRole('status')).toHaveCount(0);
+    await expect(toasts(page)).toContainText(`„${KFZ}“ wurde gespeichert.`);
+    await expect(details(page, KFZ).locator('app-hinweis-box')).toHaveCount(0);
 
     // Bearbeiten liegt nicht mehr im Verlauf.
     await page.goBack();
@@ -394,7 +391,7 @@ test.describe('Vertrag bearbeiten', () => {
     await expect(page).toHaveURL(/\/bearbeiten$/);
   });
 
-  test('409: Hinweis an der Zeile, Sheet zu, Stand neu geladen', async ({ page }) => {
+  test('409: Info-Toast, Sheet zu, Stand neu geladen', async ({ page }) => {
     const formular = await bearbeiten(page);
     await formular.getByLabel('Notiz').fill('Meine Eingabe');
     await page.route('/api/vertraege/kfz', (route) =>
@@ -408,15 +405,13 @@ test.describe('Vertrag bearbeiten', () => {
     await sheet(page).getByRole('button', { name: 'Sichern' }).click();
     await neu;
 
-    await expect(
-      zeile(page, KFZ).getByText(
-        'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
-      ),
-    ).toBeVisible();
+    await expect(toasts(page).getByRole('status')).toHaveText(
+      'Info: Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
+    );
     await expect(sheet(page)).toHaveCount(0);
   });
 
-  test('404: Hinweis oben, Zeile fehlt nach dem Neuladen', async ({ page }) => {
+  test('404: Info-Toast, Zeile fehlt nach dem Neuladen', async ({ page }) => {
     await bearbeiten(page);
     await page.route('/api/vertraege/kfz', (route) =>
       route.fulfill({
@@ -432,10 +427,9 @@ test.describe('Vertrag bearbeiten', () => {
 
     await expect(page).toHaveURL(/\/vertraege$/);
     await expect(page.locator('app-vertrag-zeile')).toHaveCount(BEISPIEL_VERTRAEGE.length - 1);
-    await expect(
-      page.getByRole('alert').filter({ hasText: 'Diesen Vertrag gibt es nicht mehr.' }),
-    ).toBeVisible();
-    await expect(page.locator('app-vertrag-zeile').getByRole('alert')).toHaveCount(0);
+    await expect(toasts(page).getByRole('status')).toHaveText(
+      'Info: Diesen Vertrag gibt es nicht mehr.',
+    );
   });
 
   test.describe('Änderungen verwerfen', () => {
@@ -549,7 +543,7 @@ test.describe('Vertrag bearbeiten', () => {
     test('nach dem Speichern kein Dialog beim Weitergehen', async ({ page }) => {
       await mitAenderung(page);
       await sheet(page).getByRole('button', { name: 'Sichern' }).click();
-      await expect(zeile(page, KFZ).getByText('wurde gespeichert')).toBeVisible();
+      await expect(toasts(page).getByText('wurde gespeichert')).toBeVisible();
       await page
         .getByRole('navigation', { name: 'Hauptmenü' })
         .getByRole('link', { name: 'Übersicht' })
@@ -637,9 +631,11 @@ test.describe('Vertrag bearbeiten', () => {
       await sheet(page).getByLabel('Notiz').fill('Vom Handy');
       const anfrage = await speichernUndAnfrageLesen(page);
       expect(anfrage.notiz).toBe('Vom Handy');
-      await expect(details(page, KFZ).locator('.meldung').getByRole('status')).toContainText(
-        'wurde gespeichert',
-      );
+      const toast = toasts(page).getByRole('status');
+      await expect(toast).toContainText('wurde gespeichert');
+      // Über die volle Breite unter der Kopfzeile.
+      const box = (await toast.boundingBox())!;
+      expect([box.x, Math.round(box.width)]).toEqual([16, 358]);
     },
   );
 });

@@ -97,8 +97,8 @@ Code geändert und geprüft und passt zu jedem Release-Tag
 
 ```
 src/app/
-  core/        Dienste ohne eigene Oberfläche: api/, auth/, fehler/, instanz/, komponenten/,
-               systemstatus/, ungespeichert/, version/
+  core/        Dienste ohne eigene Oberfläche: api/, auth/, benachrichtigungen/, fehler/, instanz/,
+               komponenten/, systemstatus/, ungespeichert/, version/
   features/    Seiten, lazy geladen
     anmeldung/   login/, registrierung/ und ihr gemeinsamer anmelde-rahmen/
     einstellungen/ Konto, Systemstatus, Version und Umgebung, rechtliche Links (über das Kontomenü),
@@ -111,10 +111,11 @@ src/app/
       formular/    Formular mit je einer Komponente pro Tab, Prüfung, Neuer Vertrag, Bearbeiten
                    und die Bausteine der Tabs (Preisliste, Einmalkosten, Preissteigerung, Zusammenfassung)
                    oben: Service, Routen und vertrag-texte.ts
-  shared/      Bausteine für mehrere Bereiche: bestaetigen-dialog/, chip/, format/, formular/, fusszeile/,
-               glocke/, herkunft/, hinweis-box/, in-den-blick/, info-knopf/, kopfzeile/, layout/, logo/,
-               nutzermenue/, rechtliche-links/, seitenaktionen/, systemstatus-leiste/, tabliste/,
-               version-anzeige/, verwerfen-dialog/, zustaende/
+  shared/      Bausteine für mehrere Bereiche: benachrichtigungen/ (Toasts), bestaetigen-dialog/, chip/,
+               format/, formular/, fusszeile/, glocke/ (mit Meldungscenter), herkunft/, hinweis-box/,
+               in-den-blick/, info-knopf/, kopfzeile/, layout/, logo/, nutzermenue/, rechtliche-links/,
+               seitenaktionen/, systemstatus-leiste/, tabliste/, version-anzeige/, verwerfen-dialog/,
+               zustaende/
   shell/       Rahmen der angemeldeten Bereiche, auf allen Seiten gleich: hauptmenue/ als Seitenleiste,
                bis 900 px als Tab-Leiste, daneben Kopfzeile mit Titel und Hauptaktion, Fußzeile
 src/styles.scss          Farb-Tokens (--app-*) des Designs und Grundstile

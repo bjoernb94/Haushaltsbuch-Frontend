@@ -1,0 +1,31 @@
+@use 'masse' as *;
+
+:host {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pille;
+}
+
+:host(.erfolg) {
+  background: var(--app-gruen-hell);
+  color: var(--app-erfolg);
+}
+
+:host(.info) {
+  background: var(--app-info-grund);
+  color: var(--app-info-text);
+}
+
+:host(.warnung) {
+  background: var(--app-warnung-grund);
+  color: var(--app-warnung-text);
+}
+
+:host(.fehler) {
+  background: var(--app-fehler-grund);
+  color: var(--app-fehler);
+}

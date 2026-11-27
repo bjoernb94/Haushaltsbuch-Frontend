@@ -1,0 +1,286 @@
+@use 'masse' as *;
+
+$handy: 640px;
+
+:host {
+  display: contents;
+}
+
+.hintergrund {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 31;
+  width: min(400px, calc(100vw - 24px));
+  max-height: min(560px, calc(100vh - 96px));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--app-trenner);
+  border-radius: $radius-gross;
+  background: var(--app-flaeche);
+  box-shadow: 0 12px 32px var(--app-schatten-menue);
+  color: var(--app-text);
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.griff {
+  display: none;
+}
+
+.kopf {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $abstand-2;
+  padding: $abstand-3 $abstand-2 $abstand-3 $abstand-5;
+}
+
+.ueberschrift {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-halb;
+
+  h2 {
+    margin: 0;
+    font-size: $schrift-abschnitt;
+    line-height: 1.3;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+    font-size: $schrift-hinweis;
+    font-weight: 500;
+    color: var(--app-text-gedaempft);
+  }
+}
+
+.kopf-aktionen {
+  display: flex;
+  align-items: center;
+  gap: $abstand-1;
+}
+
+.text-knopf,
+.symbol-knopf {
+  border: 0;
+  border-radius: $radius-feld;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--app-seitenleiste-hover);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--app-gruen-fokus-rand);
+    outline-offset: -3px;
+  }
+}
+
+.text-knopf {
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 $abstand-3;
+  color: var(--app-gruen);
+  font-size: $schrift-beschriftung;
+  font-weight: 700;
+
+  &.gedaempft {
+    color: var(--app-text-gedaempft);
+  }
+}
+
+.symbol-knopf {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-text-gedaempft);
+
+  &.gelesen {
+    color: var(--app-gruen);
+  }
+}
+
+.liste {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: $abstand-3;
+    padding: $abstand-3 $abstand-2 $abstand-3 $abstand-4;
+    border-top: 1px solid var(--app-trenner-innen);
+    background: var(--app-flaeche);
+
+    &.ungelesen {
+      background: var(--app-details-grund);
+    }
+  }
+}
+
+.inhalt {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: $abstand-1;
+  display: flex;
+  flex-direction: column;
+  gap: $abstand-halb;
+}
+
+.titel {
+  margin: 0;
+  font-size: $schrift-text;
+  line-height: 1.4;
+  font-weight: 600;
+
+  .ungelesen & {
+    font-weight: 800;
+  }
+}
+
+.punkt {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0 $abstand-2 $abstand-halb 0;
+  border-radius: $radius-pille;
+  background: var(--app-gruen);
+  vertical-align: middle;
+}
+
+.text {
+  margin: 0;
+  font-size: $schrift-beschriftung;
+  line-height: 1.45;
+  color: var(--app-text-gedaempft);
+}
+
+.fuss {
+  margin-top: $abstand-halb;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $abstand-1 $abstand-4;
+}
+
+.wann {
+  font-size: $schrift-hinweis;
+  font-weight: 500;
+  color: var(--app-text-gedaempft);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: $schrift-beschriftung;
+  font-weight: 700;
+}
+
+.aktionen {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+
+.unten {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: $abstand-1 $abstand-2;
+  border-top: 1px solid var(--app-trenner-innen);
+}
+
+.leer {
+  padding: $abstand-8 $abstand-6 $abstand-10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $abstand-2;
+  text-align: center;
+  border-top: 1px solid var(--app-trenner-innen);
+}
+
+.leer-symbol {
+  width: 48px;
+  height: 48px;
+  margin-bottom: $abstand-1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-pille;
+  background: var(--app-grund);
+  color: var(--app-text-gedaempft);
+}
+
+.leer-titel {
+  margin: 0;
+  font-size: $schrift-eingabe;
+  font-weight: 800;
+}
+
+.leer-text {
+  margin: 0;
+  font-size: $schrift-beschriftung;
+  line-height: 1.45;
+  color: var(--app-text-gedaempft);
+}
+
+// Blatt von unten, wie das Nutzermenü.
+@media (max-width: $handy) {
+  .hintergrund {
+    background: var(--app-abdunkeln);
+  }
+
+  .panel {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: 85vh;
+    padding-bottom: env(safe-area-inset-bottom);
+    border: 0;
+    border-radius: $radius-gross $radius-gross 0 0;
+    box-shadow: 0 -8px 32px var(--app-schatten-blatt);
+  }
+
+  .griff {
+    display: block;
+    flex: none;
+    margin: $abstand-3 auto 0;
+    width: 40px;
+    height: 4px;
+    border-radius: $radius-klein;
+    background: var(--app-rand);
+  }
+}

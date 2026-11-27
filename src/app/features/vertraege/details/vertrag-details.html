@@ -54,15 +54,9 @@
       <app-hinweis-box
         text="Der Vertrag konnte nicht geladen werden."
         aktionText="Erneut versuchen"
-        (aktion)="seite.laden(true)"
+        (aktion)="seite.laden()"
       />
     } @else if (vertrag()) {
-      @if (meldung(); as hinweis) {
-        <div class="meldung" tabindex="-1">
-          <app-hinweis-box [art]="hinweis.art" [text]="hinweis.text" />
-        </div>
-      }
-
       @if (ende(); as text) {
         <app-wiederaufnahme-leiste [text]="text" (wiederaufnehmen)="wiederaufnehmen()" />
       }

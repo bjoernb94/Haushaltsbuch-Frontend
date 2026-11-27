@@ -79,9 +79,9 @@ test('Glocke und Knopf stehen am rechten Rand der Kopfzeile, auch auf dem Impres
   expect(box.y).toBe(knopf.y);
   await expect(page.locator('app-nutzermenue')).toHaveCount(1);
 
-  // Vorerst ohne Funktion (#49).
   await glocke.click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Benachrichtigungen' })).toBeVisible();
+  await page.keyboard.press('Escape');
 
   await page.goto('/impressum');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

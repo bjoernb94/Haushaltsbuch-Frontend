@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { VertragKategorieAntwort } from '../../../../core/api/api';
+import { Benachrichtigungen } from '../../../../core/benachrichtigungen/benachrichtigungen';
 import { UngespeicherteEingaben } from '../../../../core/ungespeichert/ungespeicherte-eingaben';
 import { HinweisBox } from '../../../../shared/hinweis-box/hinweis-box';
 import { seitenaktionenMelden } from '../../../../shared/seitenaktionen/seitenaktionen';
@@ -10,7 +11,7 @@ import { vertragName } from '../../vertrag-texte';
 import { VertragEingabe, VertragService } from '../../vertrag.service';
 
 /**
- * Legt einen Vertrag an und kehrt mit einer Meldung zur Liste zurück, die dort neu lädt. Bis 900 px
+ * Legt einen Vertrag an, meldet es und kehrt zur Liste zurück, die beim Öffnen neu lädt. Bis 900 px
  * mit eigener Leiste oben (Abbrechen, Sichern) statt Kopfzeile und Tab-Leiste.
  */
 @Component({
@@ -25,6 +26,7 @@ export class NeuerVertragSeite {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly ungespeichert = inject(UngespeicherteEingaben);
+  private readonly benachrichtigungen = inject(Benachrichtigungen);
 
   protected readonly kategorien = signal<VertragKategorieAntwort[] | null>(null);
   protected readonly ladefehler = signal(false);
@@ -61,15 +63,11 @@ export class NeuerVertragSeite {
       .subscribe({
         next: (vertrag) => {
           this.ungespeichert.vergessen();
-          // Die Liste holt Meldung und Zeile selbst ins Bild. Scrollte der Router danach nach oben,
-          // bräche Safari ihren sanften Bildlauf ab.
-          void this.router.navigate(['/vertraege'], {
-            scroll: 'manual',
-            state: {
-              meldung: `„${vertragName(vertrag)}“ wurde gespeichert.`,
-              vertragId: vertrag.id,
-            },
+          this.benachrichtigungen.melden({
+            art: 'erfolg',
+            titel: `„${vertragName(vertrag)}“ wurde gespeichert.`,
           });
+          void this.router.navigate(['/vertraege']);
         },
         error: (error: unknown) => {
           this.sendet.set(false);

@@ -15,7 +15,6 @@ import {
 import { VertragAntwort } from '../../../../core/api/api';
 import { BetragPipe, betragText } from '../../../../shared/format/betrag.pipe';
 import { datumText } from '../../../../shared/format/datum.pipe';
-import { HinweisBox } from '../../../../shared/hinweis-box/hinweis-box';
 import { Chip } from '../../../../shared/chip/chip';
 import { VertragChip, VertragChips } from '../vertrag-chips/vertrag-chips';
 import {
@@ -28,15 +27,6 @@ import {
   ZAHLWEISE_TEXT,
 } from '../../vertrag-texte';
 
-export interface ZeilenMeldung {
-  text: string;
-  art: 'erfolg' | 'fehler';
-  /** Betrifft nicht diese Zeile, sondern den gelöschten Vertrag daneben: mit Trenner abgesetzt. */
-  abgesetzt?: boolean;
-  /** Unter statt über der Zeile, wenn der gelöschte Vertrag der letzte war. */
-  unten?: boolean;
-}
-
 /** Ab hier gibt es „…“ und Rechtsklick; darunter öffnet ein Tippen die Details mit allen Aktionen. */
 const DESKTOP = '(min-width: 901px)';
 
@@ -48,7 +38,7 @@ let letzteZeile = 0;
  */
 @Component({
   selector: 'app-vertrag-zeile',
-  imports: [BetragPipe, Chip, HinweisBox, VertragChips],
+  imports: [BetragPipe, Chip, VertragChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vertrag-zeile.html',
   styleUrl: './vertrag-zeile.scss',
@@ -60,7 +50,6 @@ export class VertragZeile {
   readonly vertrag = input.required<VertragAntwort>();
   /** Die Details dieses Vertrags sind offen. */
   readonly offen = input(false);
-  readonly meldung = input<ZeilenMeldung | null>(null);
   /** Die Anfrage zum Löschen läuft. */
   readonly loescht = input(false);
 

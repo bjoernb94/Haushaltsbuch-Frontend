@@ -2,6 +2,7 @@ import { HttpClient, HttpContext, provideHttpClient, withInterceptors } from '@a
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { Benachrichtigungen } from '../benachrichtigungen/benachrichtigungen';
 import { OHNE_ANMELDE_UMLEITUNG } from './auth-context';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService, KOMPONENTEN_URL } from './auth.service';
@@ -10,6 +11,7 @@ describe('authInterceptor', () => {
   let http: HttpClient;
   let backend: HttpTestingController;
   let navigiert: ReturnType<typeof vi.spyOn>;
+  const melden = vi.fn();
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -17,8 +19,10 @@ describe('authInterceptor', () => {
         provideRouter([]),
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
+        { provide: Benachrichtigungen, useValue: { melden } },
       ],
     });
+    melden.mockClear();
     http = TestBed.inject(HttpClient);
     backend = TestBed.inject(HttpTestingController);
     navigiert = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -31,6 +35,18 @@ describe('authInterceptor', () => {
     expect(navigiert).toHaveBeenCalledWith(['/login'], { queryParams: { returnUrl: '/' } });
   });
 
+  it('meldet bei 401 einmal, dass die Sitzung abgelaufen ist', () => {
+    http.get('/api/buchungen').subscribe({ error: () => undefined });
+    backend.expectOne('/api/buchungen').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(melden).toHaveBeenCalledExactlyOnceWith({
+      art: 'info',
+      titel: 'Deine Sitzung ist abgelaufen.',
+      text: 'Bitte melde dich erneut an.',
+      dauerhaft: true,
+    });
+  });
+
   it('erhält die returnUrl, wenn ein weiteres 401 auf dem Login ankommt', () => {
     const zuruecksetzen = vi.spyOn(TestBed.inject(AuthService), 'zuruecksetzen');
     vi.spyOn(TestBed.inject(Router), 'url', 'get').mockReturnValue('/login?returnUrl=%2Fvertraege');
@@ -39,6 +55,7 @@ describe('authInterceptor', () => {
     backend.expectOne('/api/buchungen').flush(null, { status: 401, statusText: 'Unauthorized' });
 
     expect(navigiert).not.toHaveBeenCalled();
+    expect(melden).not.toHaveBeenCalled();
     expect(zuruecksetzen).toHaveBeenCalled();
   });
 

@@ -34,7 +34,7 @@
         <app-hinweis-box
           text="Der Vertrag konnte nicht geladen werden."
           aktionText="Erneut versuchen"
-          (aktion)="seite.laden(true)"
+          (aktion)="seite.laden()"
         />
       } @else if (vertrag(); as v) {
         <app-wiederaufnahme-felder

@@ -1,28 +1,61 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  model,
+  viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
+import { Benachrichtigungen } from '../../core/benachrichtigungen/benachrichtigungen';
+import { Meldungscenter } from './meldungscenter';
 
 /**
- * Glocke des Meldungscenters in der Kopfzeile, neben dem Nutzermenü. Vorerst ohne Funktion: Zähler,
- * Panel und Toasts kommen mit #49.
+ * Glocke in der Kopfzeile mit dem Zähler der ungelesenen Meldungen (ab 10 „9+“); öffnet das
+ * Meldungscenter. Nicht modal wie das Nutzermenü: Esc, ein Klick daneben, das Verlassen per Tab und
+ * ein Seitenwechsel schließen es.
  */
 @Component({
   selector: 'app-glocke',
+  imports: [Meldungscenter],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<button type="button" class="glocke" aria-label="Benachrichtigungen">
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-      <path d="M13.7 21a2 2 0 0 1-3.4 0"></path>
-    </svg>
-  </button>`,
+  templateUrl: './glocke.html',
   styleUrl: './glocke.scss',
 })
-export class Glocke {}
+export class Glocke {
+  private readonly benachrichtigungen = inject(Benachrichtigungen);
+
+  /** Offen oder zu; die Kopfzeile hebt sich bis 900 px, solange es offen ist. */
+  readonly offen = model(false);
+
+  private readonly knopf = viewChild.required<ElementRef<HTMLButtonElement>>('knopf');
+
+  protected readonly ungelesen = this.benachrichtigungen.ungelesen;
+  protected readonly zaehler = computed(() =>
+    this.ungelesen() > 9 ? '9+' : String(this.ungelesen()),
+  );
+  protected readonly label = computed(() =>
+    this.ungelesen() ? `Benachrichtigungen, ${this.ungelesen()} ungelesen` : 'Benachrichtigungen',
+  );
+
+  constructor() {
+    inject(Router)
+      .events.pipe(
+        filter((e) => e instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.offen.set(false));
+  }
+
+  protected umschalten(): void {
+    this.offen.update((offen) => !offen);
+  }
+
+  protected schliessen(): void {
+    this.offen.set(false);
+    this.knopf().nativeElement.focus();
+  }
+}

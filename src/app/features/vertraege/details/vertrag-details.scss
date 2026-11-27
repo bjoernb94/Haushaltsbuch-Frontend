@@ -102,10 +102,6 @@
   }
 }
 
-.meldung:focus {
-  outline: none;
-}
-
 .kacheln {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
@@ -234,8 +230,9 @@ dd {
   .panel {
     flex: 0 0 min(440px, 46%);
     position: sticky;
-    top: 84px;
-    max-height: calc(100vh - 104px);
+    // Unter der Kopfzeile (und dem Streifen der Umgebung, der oben stehen bleibt).
+    top: calc(84px + var(--app-streifen-hoehe, 0px));
+    max-height: calc(100vh - 104px - var(--app-streifen-hoehe, 0px));
     overflow: hidden;
     border: 1px solid var(--app-trenner);
     border-radius: $radius-karte;

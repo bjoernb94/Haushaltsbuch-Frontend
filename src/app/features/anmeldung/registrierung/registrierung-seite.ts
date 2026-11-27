@@ -12,6 +12,7 @@ import { Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { STARTSEITE } from '../../../core/auth/auth.guards';
 import { AuthService } from '../../../core/auth/auth.service';
+import { Benachrichtigungen } from '../../../core/benachrichtigungen/benachrichtigungen';
 import { problemCode, problemFelder } from '../../../core/fehler/problem';
 import { Komponente } from '../../../core/api/api';
 import { KOMPONENTEN } from '../../../core/komponenten/komponente';
@@ -44,6 +45,7 @@ const FEHLER_UNBEKANNT =
 export class RegistrierungSeite {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly benachrichtigungen = inject(Benachrichtigungen);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(NonNullableFormBuilder);
 
@@ -128,10 +130,20 @@ export class RegistrierungSeite {
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (angemeldet) =>
-          void (angemeldet
-            ? this.router.navigateByUrl(STARTSEITE)
-            : this.router.navigate(['/login'], { queryParams: { registriert: true } })),
+        next: (angemeldet) => {
+          if (angemeldet) {
+            void this.router.navigateByUrl(STARTSEITE);
+            return;
+          }
+          // Die automatische Anmeldung ist gescheitert: selbst anmelden.
+          void this.router.navigateByUrl('/login').then(() =>
+            this.benachrichtigungen.melden({
+              art: 'erfolg',
+              titel: 'Dein Konto wurde angelegt.',
+              text: 'Bitte melde dich an.',
+            }),
+          );
+        },
         error: (error: unknown) => {
           this.sendet.set(false);
           this.serverFehlerAnzeigen(error);

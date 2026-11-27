@@ -2,6 +2,7 @@ import {
   afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   ElementRef,
   inject,
@@ -61,6 +62,8 @@ export function kopfAusrichten(
   styleUrl: './kopfzeile.scss',
   host: {
     '[class.app]': "variante() === 'app'",
+    // Die Toasts stehen darunter (shared/benachrichtigungen).
+    'data-kopf': '',
     '[class.menue-offen]': 'menueOffen()',
     '[class.getrennt]': 'ausrichtung().getrennt',
     '[style.--kopf-luecke.px]': 'ausrichtung().luecke',
@@ -71,7 +74,10 @@ export class Kopfzeile {
 
   protected readonly aktionen = inject(Seitenaktionen).aktionen;
   protected readonly angemeldet = inject(AuthService).angemeldet;
-  protected readonly menueOffen = signal(false);
+  protected readonly glockeOffen = signal(false);
+  protected readonly nutzerOffen = signal(false);
+  /** Center oder Nutzermenü offen: bis 900 px über die Tab-Leiste heben. */
+  protected readonly menueOffen = computed(() => this.glockeOffen() || this.nutzerOffen());
   protected readonly ausrichtung = signal({ luecke: 0, getrennt: false });
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

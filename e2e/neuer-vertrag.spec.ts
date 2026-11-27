@@ -1,5 +1,11 @@
 import { expect, Page, test } from '@playwright/test';
-import { abmelden, backendSimulieren, BEISPIEL_VERTRAEGE, tabsEinzeilig } from './backend-mock';
+import {
+  abmelden,
+  backendSimulieren,
+  BEISPIEL_VERTRAEGE,
+  tabsEinzeilig,
+  toasts,
+} from './backend-mock';
 
 /** Der Name des Tabs kann einen Fehlerzähler tragen, z. B. „Kosten 3, 3 Fehler“. */
 async function tab(page: Page, name: 'Allgemein' | 'Kosten' | 'Preisverlauf' | 'Laufzeit') {
@@ -175,11 +181,11 @@ test.describe('Neuer Vertrag', () => {
       await page.goto('/vertraege/neu');
       await pflichtfelderFuellen(page);
       await speichernUndAnfrageLesen(page, 'Sichern');
-      await expect(page.getByText('„Neuer Anbieter“ wurde gespeichert.')).toBeInViewport();
+      await expect(toasts(page).getByText('„Neuer Anbieter“ wurde gespeichert.')).toBeInViewport();
     },
   );
 
-  test.describe('holt den neuen Vertrag in einer langen Liste ins Bild', () => {
+  test.describe('meldet den neuen Vertrag als Toast, die Liste springt nicht', () => {
     const VIELE = Array.from({ length: 40 }, (_, i) => ({
       ...BEISPIEL_VERTRAEGE[0],
       id: `lang-${i}`,
@@ -187,7 +193,8 @@ test.describe('Neuer Vertrag', () => {
       bezeichnung: null,
     }));
     const scrollY = (page: Page) => page.evaluate(() => Math.round(window.scrollY));
-    const meldung = (page: Page) => page.getByText('„Neuer Anbieter“ wurde gespeichert.');
+    const meldung = (page: Page) =>
+      toasts(page).getByRole('status').filter({ hasText: '„Neuer Anbieter“ wurde gespeichert.' });
 
     async function anlegen(page: Page, knopf?: string) {
       await backendSimulieren(page, { angemeldet: true, vertraege: VIELE });
@@ -197,81 +204,36 @@ test.describe('Neuer Vertrag', () => {
       await expect(page).toHaveURL(/\/vertraege$/);
     }
 
-    test('Meldung an der Zeile im Bild, fokussiert, und das Router-Scrollen stört nicht', async ({
+    test('Toast im Bild, die Liste beginnt oben, der Fokus bleibt beim Toast weg', async ({
       page,
     }) => {
       await page.setViewportSize({ width: 1280, height: 700 });
       await anlegen(page);
       await expect(meldung(page)).toBeInViewport();
-      const zeile = page.locator('app-vertrag-zeile').last();
-      await expect(zeile.getByText('Neuer Anbieter', { exact: true })).toBeInViewport();
-      await expect(zeile.locator('.meldung')).toBeFocused();
-      await expect.poll(() => scrollY(page)).toBeGreaterThan(500);
-      // Bleibt stehen, auch wenn der Router seine Position zuletzt gesetzt hätte.
-      await page.waitForTimeout(500);
-      await expect(zeile).toBeInViewport({ ratio: 1 });
-    });
-
-    test('mit reduzierter Bewegung ebenso', async ({ page }) => {
-      await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.setViewportSize({ width: 1280, height: 700 });
-      await anlegen(page);
-      await expect(page.locator('app-vertrag-zeile').last()).toBeInViewport({ ratio: 1 });
+      await expect(page.locator('app-vertrag-zeile').last()).toBeAttached();
+      await page.waitForTimeout(300);
+      expect(await scrollY(page)).toBe(0);
+      await expect(meldung(page)).not.toBeFocused();
     });
 
     test(
-      'Handy: Die feste Navigation verdeckt die Zeile nicht',
+      'Handy: Toast unter der Kopfzeile, die Tab-Leiste verdeckt ihn nicht',
       { tag: '@mobil' },
       async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 900 });
         await anlegen(page, 'Sichern');
-        const zeile = page.locator('app-vertrag-zeile').last();
-        await expect(zeile.locator('.meldung')).toBeFocused();
-        const navigation = await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox();
-        await expect
-          .poll(async () => {
-            const box = await zeile.boundingBox();
-            return box!.y + box!.height;
-          })
-          .toBeLessThanOrEqual(navigation!.y);
         await expect(meldung(page)).toBeInViewport();
+        const toast = (await meldung(page).boundingBox())!;
+        const kopf = (await page.getByRole('banner').boundingBox())!;
+        const navigation = (await page
+          .getByRole('navigation', { name: 'Hauptmenü' })
+          .boundingBox())!;
+        expect(toast.y).toBeGreaterThanOrEqual(kopf.y + kopf.height);
+        expect(toast.y + toast.height).toBeLessThanOrEqual(navigation.y);
       },
     );
 
-    test('Zurückblättern scrollt nicht erneut', async ({ page }) => {
-      await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.setViewportSize({ width: 1280, height: 700 });
-      await anlegen(page);
-      await expect(meldung(page)).toBeInViewport();
-      await page.evaluate(() => window.scrollTo(0, 0));
-      await page
-        .getByRole('navigation', { name: 'Hauptmenü' })
-        .getByRole('link', { name: 'Übersicht' })
-        .click();
-      await expect(page).toHaveURL(/\/start$/);
-      await page.goBack();
-      await expect(page.locator('app-vertrag-zeile').last()).toBeAttached();
-      await page.waitForTimeout(300);
-      expect(await scrollY(page)).toBe(0);
-      await expect(meldung(page)).toHaveCount(0);
-    });
-
-    test('Neuladen scrollt nicht erneut', async ({ page }) => {
-      await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.setViewportSize({ width: 1280, height: 700 });
-      await anlegen(page);
-      await expect(meldung(page)).toBeInViewport();
-      await page.evaluate(() => window.scrollTo(0, 0));
-      await page.reload();
-      await expect(page.locator('app-vertrag-zeile').last()).toBeAttached();
-      await page.waitForTimeout(300);
-      expect(await scrollY(page)).toBe(0);
-      await expect(meldung(page)).toHaveCount(0);
-    });
-
-    test('Liste nicht ladbar: Meldung oben, der neue Versuch holt die Zeile ins Bild', async ({
-      page,
-    }) => {
+    test('Liste nicht ladbar: Toast und Hinweis, der neue Versuch lädt sie', async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 700 });
       await backendSimulieren(page, { angemeldet: true, vertraege: VIELE });
       await page.goto('/vertraege/neu');
@@ -283,21 +245,46 @@ test.describe('Neuer Vertrag', () => {
       await speichernUndAnfrageLesen(page);
       await expect(page.getByText('Die Verträge konnten nicht geladen werden.')).toBeVisible();
       await expect(meldung(page)).toBeInViewport();
-      expect(await scrollY(page)).toBe(0);
 
       sperren = false;
       await page.getByRole('button', { name: 'Erneut versuchen' }).click();
-      await expect(page.locator('app-vertrag-zeile').last()).toBeInViewport({ ratio: 1 });
-      await expect(meldung(page)).toBeInViewport();
+      await expect(page.locator('app-vertrag-zeile')).toHaveCount(VIELE.length + 1);
+      expect(await scrollY(page)).toBe(0);
     });
   });
+
+  for (const [breite, hoehe] of [
+    [1280, 800],
+    [390, 844],
+  ] as const) {
+    test(
+      `mit Streifen der Umgebung: der Toast überdeckt die Kopfzeile nicht (${breite} px)`,
+      { tag: '@mobil' },
+      async ({ page }) => {
+        // Ohne Einblenden (8 px von oben), sonst misst der Test mitten in der Bewegung.
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.setViewportSize({ width: breite, height: hoehe });
+        await backendSimulieren(page, { angemeldet: true, stage: 'DEV' });
+        await page.goto('/vertraege/neu');
+        await pflichtfelderFuellen(page);
+        await speichernUndAnfrageLesen(page, breite > 900 ? undefined : 'Sichern');
+        await expect(page).toHaveURL(/\/vertraege$/);
+        // Ganz oben: Der Streifen schiebt die Kopfzeile nach unten.
+        expect(await page.evaluate(() => window.scrollY)).toBe(0);
+        const toast = (await toasts(page).getByRole('status').boundingBox())!;
+        const kopf = (await page.getByRole('banner').boundingBox())!;
+        // Immer derselbe Abstand unter der Kopfzeile: 12 px, bis 900 px 8 px.
+        expect(Math.round(toast.y - (kopf.y + kopf.height))).toBe(breite > 900 ? 12 : 8);
+      },
+    );
+  }
 
   test('die Meldung erscheint beim Zurückblättern nicht wieder', async ({ page }) => {
     await backendSimulieren(page, { angemeldet: true });
     await page.goto('/vertraege/neu');
     await pflichtfelderFuellen(page);
     await speichernUndAnfrageLesen(page);
-    const meldung = page.getByText('„Neuer Anbieter“ wurde gespeichert.');
+    const meldung = toasts(page).getByText('„Neuer Anbieter“ wurde gespeichert.');
     await expect(meldung).toBeVisible();
 
     await page
@@ -308,7 +295,7 @@ test.describe('Neuer Vertrag', () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/vertraege$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Verträge');
-    await expect(meldung).toHaveCount(0);
+    await expect(meldung).toHaveCount(1);
   });
 
   test('legt einen nicht kündbaren Vertrag an: das Laufzeitende bleibt', async ({ page }) => {

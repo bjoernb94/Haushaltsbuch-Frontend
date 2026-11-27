@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
+import { backendSimulieren, BEISPIEL_VERTRAEGE, toasts } from './backend-mock';
 
 // „Wieder aufnehmen“ aus Details und Kontextmenü, die Anzeige der Unterbrechung und ihr Entfernen
 // beim Bearbeiten. Der Mock legt die Unterbrechung an wie das Backend (vertraege-mock.ts).
@@ -52,7 +52,7 @@ test.describe('Vertrag wieder aufnehmen', () => {
 
     await expect(box).toBeHidden();
     await expect(page).toHaveURL(/\/vertraege\/alt$/);
-    await expect(panel.locator('.meldung')).toContainText(
+    await expect(toasts(page).getByRole('status')).toContainText(
       '„Mobilfunk GmbH“ wird ab 01.09.2026 wieder aufgenommen.',
     );
     await expect(panel.locator('app-wiederaufnahme-leiste')).toHaveCount(0);

@@ -255,30 +255,3 @@
   font-size: $schrift-hinweis;
   line-height: 1.4;
 }
-
-.meldung {
-  position: relative;
-  z-index: 2;
-  flex: 0 0 100%;
-
-  &.unten {
-    order: 1;
-  }
-
-  // Zusammen mit dem Abstand der Zeile (12px) wie der Trenner zwischen zwei Verträgen.
-  &.abgesetzt:not(.unten) {
-    margin-bottom: $abstand-1;
-    padding-bottom: $abstand-4;
-    border-bottom: 1px solid var(--app-trenner-innen);
-  }
-
-  &.abgesetzt.unten {
-    margin-top: $abstand-1;
-    padding-top: $abstand-4;
-    border-top: 1px solid var(--app-trenner-innen);
-  }
-
-  &:focus {
-    outline: none;
-  }
-}

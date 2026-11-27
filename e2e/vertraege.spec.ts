@@ -1,5 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
-import { backendSimulieren, BEISPIEL_VERTRAEGE, tabsEinzeilig } from './backend-mock';
+import { backendSimulieren, BEISPIEL_VERTRAEGE, tabsEinzeilig, toasts } from './backend-mock';
 
 const KFZ = 'Kfz-Versicherung';
 const LETZTE = 'Mobilfunk GmbH';
@@ -436,10 +436,12 @@ test.describe('Seite Verträge', () => {
       await expect(page).toHaveURL(/\/vertraege$/);
     });
 
-    test('ein Link auf einen unbekannten Vertrag zeigt einen Hinweis', async ({ page }) => {
+    test('ein Link auf einen unbekannten Vertrag meldet es als Info', async ({ page }) => {
       await page.goto('/vertraege/gibt-es-nicht');
       await expect(page).toHaveURL(/\/vertraege$/);
-      await expect(page.getByRole('alert')).toHaveText('Diesen Vertrag gibt es nicht mehr.');
+      await expect(toasts(page).getByRole('status')).toHaveText(
+        'Info: Diesen Vertrag gibt es nicht mehr.',
+      );
     });
 
     test('das Panel bleibt beim Scrollen der Liste stehen', async ({ page }) => {

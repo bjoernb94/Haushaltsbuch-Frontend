@@ -15,6 +15,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { defer, forkJoin, shareReplay, Subscription } from 'rxjs';
 import { VertragAntwort, VertragsuebersichtAntwort } from '../../../core/api/api';
+import { Benachrichtigungen, Meldung } from '../../../core/benachrichtigungen/benachrichtigungen';
 import { problemCode } from '../../../core/fehler/problem';
 import { UngespeicherteEingaben } from '../../../core/ungespeichert/ungespeicherte-eingaben';
 import { BestaetigenDialog } from '../../../shared/bestaetigen-dialog/bestaetigen-dialog';
@@ -32,19 +33,12 @@ import {
   vertragName,
 } from '../vertrag-texte';
 import { VertragNavigation } from './vertrag-navigation';
-import { VertragZeile, ZeilenMeldung } from './vertrag-zeile/vertrag-zeile';
+import { VertragZeile } from './vertrag-zeile/vertrag-zeile';
 import { VertragService } from '../vertrag.service';
 
 interface Daten {
   vertraege: VertragAntwort[];
   uebersicht: VertragsuebersichtAntwort;
-}
-
-/** Meldung an der Zeile bzw. in den Details dieses Vertrags; ohne {@code id} oben auf der Seite. */
-export interface Meldung extends ZeilenMeldung {
-  id: string | null;
-  /** Die ganze Zeile ins Bild holen, z. B. weil die Seite nach dem Anlegen oben beginnt. */
-  zeileZeigen?: boolean;
 }
 
 const NEU = '/vertraege/neu';
@@ -53,7 +47,8 @@ const NEU = '/vertraege/neu';
  * Kennzahlen und Liste der Verträge; lädt beim Öffnen und nach Änderungen. Details ({@code :id}) und
  * Bearbeiten ({@code :id/bearbeiten}) sind Kind-Routen: am Desktop ein Panel neben der Liste bzw. ein
  * Sheet in der Fenstermitte, bis 900 px Vollbild. Die Kinder holen ihre Daten von hier, Öffnen und
- * Schließen von {@link VertragNavigation}.
+ * Schließen von {@link VertragNavigation}. Rückmeldungen nach Änderungen gehen als Toast an
+ * {@link Benachrichtigungen}; die Seite springt dafür nicht.
  */
 @Component({
   selector: 'app-vertraege-seite',
@@ -79,11 +74,10 @@ export class VertraegeSeite {
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly ungespeichert = inject(UngespeicherteEingaben);
+  private readonly benachrichtigungen = inject(Benachrichtigungen);
 
   readonly daten = signal<Daten | null>(null);
   readonly fehler = signal(false);
-
-  readonly meldung = signal<Meldung | null>(this.meldungDerNavigation());
 
   /** Erst beim ersten Bearbeiten laden; nach einem Fehler lädt der nächste Versuch neu. */
   readonly kategorien$ = defer(() => this.vertraege.kategorien()).pipe(shareReplay(1));
@@ -99,13 +93,6 @@ export class VertraegeSeite {
   });
   /** Dessen Anfrage gerade läuft. */
   readonly loeschendId = signal<string | null>(null);
-
-  /** Oben steht auch, was keine Zeile mehr hat, z. B. weil der Vertrag fort ist. */
-  protected readonly meldungOben = computed(() => {
-    const meldung = this.meldung();
-    const anZeile = !this.fehler() && this.daten()?.vertraege.some(({ id }) => id === meldung?.id);
-    return anZeile ? null : meldung;
-  });
 
   protected readonly neu = NEU;
 
@@ -136,7 +123,7 @@ export class VertraegeSeite {
       titel: 'Verträge',
       neu: { ziel: NEU, text: 'Neuer Vertrag', taste: 'n' },
     }));
-    this.laden(!!this.meldung());
+    this.laden();
 
     // Zur offenen Zeile scrollen (z. B. nach einem geteilten Link). Nach dem Schließen geht der Fokus,
     // falls er mit den Details verschwunden ist, an die Zeile, von der aus geöffnet wurde.
@@ -166,7 +153,8 @@ export class VertraegeSeite {
     });
   }
 
-  laden(meldungZeigen = false): void {
+  /** Lädt Liste und Kennzahlen; danach z. B. den Fokus setzen ({@code danach}). */
+  laden(danach?: () => void): void {
     this.fehler.set(false);
     // Ein älterer Stand darf einen neueren nicht überschreiben.
     this.ladevorgang?.unsubscribe();
@@ -178,16 +166,11 @@ export class VertraegeSeite {
       .subscribe({
         next: (daten) => {
           this.daten.set(daten);
-          if (meldungZeigen) {
-            this.meldungFokussieren();
+          if (danach) {
+            afterNextRender(danach, { injector: this.injector });
           }
         },
-        error: () => {
-          this.fehler.set(true);
-          if (meldungZeigen) {
-            this.meldungFokussieren();
-          }
-        },
+        error: () => this.fehler.set(true),
       });
   }
 
@@ -196,36 +179,26 @@ export class VertraegeSeite {
   }
 
   gespeichert(vertrag: VertragAntwort): void {
-    this.nachAenderung({
-      id: vertrag.id,
-      text: `„${vertragName(vertrag)}“ wurde gespeichert.`,
-      art: 'erfolg',
-    });
+    this.nachAenderung({ art: 'erfolg', titel: `„${vertragName(vertrag)}“ wurde gespeichert.` });
   }
 
-  konflikt(id: string): void {
+  konflikt(): void {
     this.nachAenderung({
-      id,
-      text: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
-      art: 'fehler',
+      art: 'info',
+      titel: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut bearbeiten.',
     });
   }
 
   /** Auch für einen Link auf einen Vertrag, den es nicht (mehr) gibt. */
   nichtGefunden(): void {
-    this.meldung.set({ id: null, text: 'Diesen Vertrag gibt es nicht mehr.', art: 'fehler' });
     this.navigation.schliessen(['/vertraege']);
-    this.laden(true);
+    this.nachAenderung({ art: 'info', titel: 'Diesen Vertrag gibt es nicht mehr.' });
   }
 
-  /** In den Details steht die Meldung des offenen Vertrags dort, nicht an seiner Zeile. */
-  meldungZu(id: string): Meldung | null {
-    const meldung = this.meldung();
-    return meldung?.id === id ? meldung : null;
-  }
-
-  protected zeilenMeldung(id: string): ZeilenMeldung | null {
-    return this.ansicht()?.id === id ? null : this.meldungZu(id);
+  /** Melden und neu laden, z. B. nach dem Wiederaufnehmen. */
+  nachAenderung(meldung: Meldung): void {
+    this.benachrichtigungen.melden(meldung);
+    this.laden();
   }
 
   protected loeschAntwort(ja: boolean): void {
@@ -281,33 +254,7 @@ export class VertraegeSeite {
     );
   }
 
-  /** Nach dem Neuladen, denn die Zeile kann durch die Änderung in der Liste gewandert sein. */
-  private meldungFokussieren(): void {
-    afterNextRender(
-      () => {
-        const meldung = this.element.nativeElement.querySelector<HTMLElement>('.meldung');
-        const zeile = this.meldung()?.zeileZeigen && meldung?.closest<HTMLElement>('.zeile');
-        meldung?.focus({ preventScroll: !!zeile });
-        if (zeile) {
-          inDenBlick(zeile);
-        }
-      },
-      { injector: this.injector },
-    );
-  }
-
-  private meldungDerNavigation(): Meldung | null {
-    const navigation = inject(Router).currentNavigation();
-    const state = navigation?.trigger === 'imperative' ? navigation.extras.state : null;
-    const text: unknown = state?.['meldung'];
-    const id: unknown = state?.['vertragId'];
-    return typeof text === 'string'
-      ? { id: typeof id === 'string' ? id : null, text, art: 'erfolg', zeileZeigen: true }
-      : null;
-  }
-
   private loeschen(vertrag: VertragAntwort): void {
-    this.meldung.set(null);
     this.loeschendId.set(vertrag.id);
     this.vertraege
       .loeschen(vertrag.id, vertrag.version)
@@ -322,12 +269,14 @@ export class VertraegeSeite {
   private geloescht(vertrag: VertragAntwort): void {
     this.loeschendId.set(null);
     this.ansichtSchliessen(vertrag.id);
-    this.meldung.set({
-      ...this.stelleDerZeile(vertrag.id),
-      text: `„${vertragName(vertrag)}“ wurde gelöscht.`,
+    const nachbar = this.nachbarZeile(vertrag.id);
+    this.benachrichtigungen.melden({
       art: 'erfolg',
+      titel: `„${vertragName(vertrag)}“ wurde gelöscht.`,
     });
-    this.laden(true);
+    // Die Zeile ist fort: Der Fokus geht zur nächsten, sonst zur vorherigen, ohne Verträge zu
+    // „Ersten Vertrag anlegen“. Die Ansage übernimmt der Toast.
+    this.laden(() => this.fokusNachLoeschen(nachbar));
   }
 
   private loeschFehler(vertrag: VertragAntwort, error: unknown): void {
@@ -337,20 +286,16 @@ export class VertraegeSeite {
         this.geloescht(vertrag);
         break;
       case 'KONFLIKT':
-        this.meldung.set({
-          id: vertrag.id,
-          text: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut löschen.',
-          art: 'fehler',
+        this.nachAenderung({
+          art: 'info',
+          titel: 'Der Vertrag wurde inzwischen geändert. Bitte prüfen und erneut löschen.',
         });
-        this.laden(true);
         break;
       default:
-        this.meldung.set({
-          id: vertrag.id,
-          text: 'Der Vertrag konnte nicht gelöscht werden. Bitte versuche es später erneut.',
+        this.benachrichtigungen.melden({
           art: 'fehler',
+          titel: 'Der Vertrag konnte nicht gelöscht werden. Bitte versuche es später erneut.',
         });
-        this.meldungFokussieren();
     }
   }
 
@@ -361,19 +306,22 @@ export class VertraegeSeite {
     }
   }
 
-  /** Die Zeile verschwindet: Die Meldung steht über der nächsten, bei der letzten unter der davor. */
-  private stelleDerZeile(id: string): Pick<Meldung, 'id' | 'abgesetzt' | 'unten'> {
+  /** Die Zeile nach der gelöschten, bei der letzten die davor. */
+  private nachbarZeile(id: string): string | null {
     const vertraege = this.daten()?.vertraege ?? [];
     const index = vertraege.findIndex((vertrag) => vertrag.id === id);
-    const naechster = vertraege[index + 1];
-    return naechster
-      ? { id: naechster.id, abgesetzt: true }
-      : { id: vertraege[index - 1]?.id ?? null, abgesetzt: true, unten: true };
+    return (vertraege[index + 1] ?? vertraege[index - 1])?.id ?? null;
   }
 
-  /** Meldung setzen und neu laden, z. B. nach dem Wiederaufnehmen. */
-  nachAenderung(meldung: Meldung): void {
-    this.meldung.set(meldung);
-    this.laden(true);
+  /** Auf „…“ der Zeile; bis 900 px gibt es das nicht, dann die Zeile selbst. */
+  private fokusNachLoeschen(id: string | null): void {
+    const zeile = id ? this.zeile(id) : null;
+    const mehr = zeile?.querySelector<HTMLElement>('button.mehr');
+    const ziel = zeile
+      ? mehr && (mehr.checkVisibility?.() ?? true)
+        ? mehr
+        : zeile.querySelector<HTMLElement>('button.tippen')
+      : this.element.nativeElement.querySelector<HTMLElement>('.leer a');
+    ziel?.focus();
   }
 }

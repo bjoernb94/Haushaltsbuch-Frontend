@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, Page, test } from '@playwright/test';
-import { backendSimulieren } from './backend-mock';
+import { backendSimulieren, BEISPIEL_VERTRAEGE } from './backend-mock';
 
 const { version } = JSON.parse(readFileSync('package.json', 'utf-8')) as { version: string };
 
@@ -42,14 +42,28 @@ test('die Shell zeigt den Streifen, die Version nur in den Einstellungen', async
   await expect(page.getByRole('region', { name: 'App' })).toContainText('DEV');
 });
 
-test('die Seitenleiste beginnt unter dem Streifen und passt ins Fenster', async ({ page }) => {
+test('die Seitenleiste beginnt unter dem Streifen, passt ins Fenster und bleibt es beim Scrollen', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await backendSimulieren(page, { angemeldet: true, stage: 'DEV' });
+  await backendSimulieren(page, { angemeldet: true, stage: 'DEV', vertraege: BEISPIEL_VERTRAEGE });
   await page.goto('/vertraege');
   await expect(streifen(page)).toBeVisible();
-  const leiste = (await page.getByRole('navigation', { name: 'Hauptmenü' }).boundingBox())!;
+  const hauptmenue = page.getByRole('navigation', { name: 'Hauptmenü' });
+  const leiste = (await hauptmenue.boundingBox())!;
   expect(leiste.y).toBe(24);
   expect(leiste.y + leiste.height).toBe(720);
+  const copyright = hauptmenue.getByText('© Björn Bochmann');
+  const unten = (await copyright.boundingBox())!.y;
+
+  // Der Streifen bleibt beim Scrollen oben stehen: Leiste, Kopfzeile und Copyright bewegen sich nicht.
+  const kopf = (await page.getByRole('banner').boundingBox())!;
+  await page.evaluate(() => window.scrollBy(0, 400));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+  await expect(streifen(page)).toBeInViewport();
+  expect(await hauptmenue.boundingBox()).toEqual(leiste);
+  expect(await page.getByRole('banner').boundingBox()).toEqual(kopf);
+  expect((await copyright.boundingBox())!.y).toBe(unten);
 });
 
 test('ohne Antwort des Backends steht die Version trotzdem, ohne Badge und Streifen', async ({
